@@ -146,7 +146,21 @@ CLASSIFIER_INSTRUCTION = """\
 """
 
 
-def _model() -> Gemini:
+def _uses_local_model() -> bool:
+    """AGENT_MODEL 以 openai/ 開頭時，改用 OpenAI 相容 API（例如本機 llama.cpp）。"""
+    return MODEL.startswith("openai/")
+
+
+def _model():
+    if _uses_local_model():
+        from google.adk.models.lite_llm import LiteLlm
+
+        return LiteLlm(
+            model=MODEL,
+            api_base=os.getenv("LOCAL_LLM_BASE", "http://127.0.0.1:18081/v1"),
+            api_key=os.getenv("LOCAL_LLM_API_KEY", "local"),
+            temperature=0,
+        )
     return Gemini(
         model=MODEL,
         # 503（模型忙碌）、429 時以指數退避重試
@@ -185,6 +199,8 @@ def _content_text(content: Any) -> str:
 
 
 def _has_credentials() -> bool:
+    if _uses_local_model():
+        return True
     if os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"):
         return True
     use_vertex = os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "").lower() in ("1", "true")
