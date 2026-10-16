@@ -32,9 +32,17 @@ from a2a.server.routes import (
     create_jsonrpc_routes,
 )
 from a2a.server.tasks import TaskStore
-from a2a.types import AgentCapabilities, AgentCard, AgentExtension, AgentInterface
+from a2a.types import (
+    AgentCapabilities,
+    AgentCard,
+    AgentExtension,
+    AgentInterface,
+    AgentSkill,
+    TaskArtifactUpdateEvent,
+)
 from a2a.utils.constants import AGENT_CARD_WELL_KNOWN_PATH
 from google.adk.a2a.executor.a2a_agent_executor import A2aAgentExecutor
+from google.adk.a2a.executor.config import A2aAgentExecutorConfig, ExecuteInterceptor
 from google.adk.a2a.utils.agent_card_builder import AgentCardBuilder
 
 if TYPE_CHECKING:
@@ -68,6 +76,25 @@ def _add_v0_3_compat_interface(card: AgentCard) -> AgentCard:
     return card
 
 
+def only_node_artifacts(node_name: str) -> ExecuteInterceptor:
+    """A2A 回覆只保留某個節點的文字（EZStore：respond）。
+
+    Workflow 裡其他節點的事件（例如分類器輸出的 Intent JSON）也會被轉成 A2A
+    artifact。Chat UI 依 nodeInfo.path 只顯示 respond，A2A 用戶端看到的也要一樣，
+    所以把其他節點的 artifact 丟掉；狀態更新（working、completed）照常送出。
+    """
+
+    async def after_event(executor_context, a2a_event, adk_event):
+        if not isinstance(a2a_event, TaskArtifactUpdateEvent):
+            return a2a_event
+        path = getattr(getattr(adk_event, "node_info", None), "path", "") or ""
+        if path.rsplit("/", 1)[-1].startswith(f"{node_name}@"):
+            return a2a_event
+        return None
+
+    return ExecuteInterceptor(after_event=after_event)
+
+
 def _default_capabilities() -> AgentCapabilities:
     """Returns the default A2A capabilities used by scaffolded projects."""
     return AgentCapabilities(
@@ -91,6 +118,8 @@ async def attach_a2a_routes(
     capabilities: AgentCapabilities | None = None,
     agent_version: str | None = None,
     app_url: str | None = None,
+    skills: list[AgentSkill] | None = None,
+    execute_interceptors: list[ExecuteInterceptor] | None = None,
 ) -> None:
     """Register A2A routes (JSON-RPC + agent-card endpoints) under ``rpc_path``.
 
@@ -100,6 +129,9 @@ async def attach_a2a_routes(
     override their defaults (streaming + ADK extension, ``AGENT_VERSION``,
     ``APP_URL``). Call once per app — typically in a FastAPI ``lifespan``, since
     the card is built asynchronously; repeated calls register duplicate routes.
+
+    EZStore：``skills`` 取代自動產生的 skill 清單（自動產生的會列出每個內部節點），
+    ``execute_interceptors`` 交給 A2A executor，例如 :func:`only_node_artifacts`。
     """
     resolved_app_url = app_url or os.getenv("APP_URL", "http://0.0.0.0:8000")
     resolved_agent_version = agent_version or os.getenv("AGENT_VERSION", "0.1.0")
@@ -115,8 +147,16 @@ async def attach_a2a_routes(
     # Advertise a v0.3 JSON-RPC interface for registration with Gemini.
     agent_card = _add_v0_3_compat_interface(agent_card)
 
+    if skills is not None:
+        del agent_card.skills[:]
+        agent_card.skills.extend(skills)
+
     request_handler = DefaultRequestHandler(
-        agent_executor=A2aAgentExecutor(runner=runner, force_new_version=True),
+        agent_executor=A2aAgentExecutor(
+            runner=runner,
+            config=A2aAgentExecutorConfig(execute_interceptors=execute_interceptors),
+            force_new_version=True,
+        ),
         task_store=task_store,
         agent_card=agent_card,
     )

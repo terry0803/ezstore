@@ -1,5 +1,7 @@
 """程式判定指標 link_present：回覆要附純文字系統連結，不可用 Markdown 連結。
 
+檔名用 link_presence.py，和 eval-lab 第 5 節、scripts/grading 的檔名一致。
+
 - 回覆出現 Markdown 連結 [文字](網址) → 0
 - eval_case_id 以 off_topic 開頭的離題案例不需要連結 → 1
 - 其他案例必須含 http(s)://…/quotations/<id> 或 /orders/<id> → 1，否則 0

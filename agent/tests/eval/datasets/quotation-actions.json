@@ -22,8 +22,8 @@
     },
     {
       "eval_case_id": "adjust_total_price",
-      "prompt": {"role": "user", "parts": [{"text": "我要修改報價單總價，報價單編號：QT-20260330-001，總價改為 8000"}]},
-      "reference": {"response": {"role": "model", "parts": [{"text": "先複製再調整：說明原始報價單未修改，新報價單以二分法調整報價因子讓總價接近 8000，回覆新的報價因子與實際總價，附純文字連結。"}]}}
+      "prompt": {"role": "user", "parts": [{"text": "我要修改報價單總價，報價單編號：QT-20260330-001，總價改為 100000"}]},
+      "reference": {"response": {"role": "model", "parts": [{"text": "先複製再調整：說明原始報價單未修改。這張單 10 箱影印紙的定價合計 6500，報價因子上限 5.0，總價最高只能到 32500，所以達不到 100000；回覆要誠實說明沒達到目標，列出實際總價與報價因子，附純文字連結。"}]}}
     },
     {
       "eval_case_id": "convert_to_order",

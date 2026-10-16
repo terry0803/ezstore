@@ -17,13 +17,14 @@ import os
 from collections.abc import AsyncIterator
 
 from a2a.server.tasks import InMemoryTaskStore
+from a2a.types import AgentSkill
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from google.adk.cli.fast_api import get_fast_api_app
 from google.adk.runners import Runner
 
 from quotation_agent.app_utils import services
-from quotation_agent.app_utils.a2a import attach_a2a_routes
+from quotation_agent.app_utils.a2a import attach_a2a_routes, only_node_artifacts
 
 load_dotenv()
 allow_origins = (
@@ -32,6 +33,27 @@ allow_origins = (
 otel_to_cloud = False
 
 AGENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _operation_skills() -> list[AgentSkill]:
+    """A2A agent card 上的 skill：6 個報價單操作各一個。"""
+    from quotation_agent.agent import (
+        OPERATION_DESCRIPTIONS,
+        OPERATION_EXAMPLES,
+        OPERATION_LABELS,
+        OPERATIONS,
+    )
+
+    return [
+        AgentSkill(
+            id=op,
+            name=OPERATION_LABELS[op],
+            description=OPERATION_DESCRIPTIONS[op],
+            tags=["ezstore", "quotation"],
+            examples=[OPERATION_EXAMPLES[op]],
+        )
+        for op in OPERATIONS
+    ]
 
 
 @contextlib.asynccontextmanager
@@ -53,6 +75,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         runner=runner,
         task_store=InMemoryTaskStore(),
         rpc_path=f"/a2a/{adk_app.name}",
+        skills=_operation_skills(),
+        # A2A 回覆和 Chat UI 一樣，只給 respond 節點的文字
+        execute_interceptors=[only_node_artifacts("respond")],
     )
     yield
 

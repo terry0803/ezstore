@@ -1,18 +1,18 @@
-"""eval 指標 link_present 的程式判定。"""
+"""eval 指標 link_present 的程式判定（link_presence.py）。"""
 
 import importlib.util
 from pathlib import Path
 
 _spec = importlib.util.spec_from_file_location(
-    "link_present", Path(__file__).parents[1] / "eval" / "link_present.py"
+    "link_presence", Path(__file__).parents[1] / "eval" / "link_presence.py"
 )
-link_present = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(link_present)
+link_presence = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(link_presence)
 
 
 def score(text, case_id="case"):
     instance = {"response": {"parts": [{"text": text}]}, "eval_case_id": case_id}
-    return link_present.evaluate(instance)["score"]
+    return link_presence.evaluate(instance)["score"]
 
 
 def test_plain_link_passes():

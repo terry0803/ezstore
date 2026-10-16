@@ -12,7 +12,7 @@ custom_metrics:
 
   # 程式判定：純文字系統連結
   - name: link_present
-    custom_function_file: link_present.py
+    custom_function_file: link_presence.py
 
   # LLM 評審，0/1（規則與提示在 refusal_or_action.py，只引用 {response} 與 {agent_data}）。
   # 不用 prompt_template：那會交給需要 GCP 專案的託管評估服務，AI Studio key 與本機模型跑不了。

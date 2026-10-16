@@ -72,6 +72,25 @@ OPERATION_LABELS = {
     "convert_to_order": "報價單轉訂單",
 }
 
+# A2A agent card 的 skill 說明與例句（例句同 spec 1.1–1.6）
+OPERATION_DESCRIPTIONS = {
+    "get_quotation": "依報價單編號查詢報價單與品項，回覆附純文字系統連結。",
+    "list_customer_quotations": "依客戶名稱列出該客戶的所有報價單。",
+    "duplicate_quotation": "把報價單複製成一張新的草稿，原單不動。",
+    "update_pricing_factor": "先複製報價單，再修改副本的報價因子，原單不動。",
+    "adjust_total_price": "先複製報價單，再用二分法調整副本的報價因子逼近目標總價（最多 20 次），原單不動。",
+    "convert_to_order": "依報價單的客戶與品項建立訂單並關聯這張報價單，報價單本身不動。",
+}
+
+OPERATION_EXAMPLES = {
+    "get_quotation": "我要查詢報價單，報價單編號：QT-20260330-001",
+    "list_customer_quotations": "我要查詢客戶的報價單清單，客戶名稱：史塔克工業",
+    "duplicate_quotation": "我要複製報價單，報價單編號：QT-20260330-001",
+    "update_pricing_factor": "我要修改報價單報價因子，報價單編號：QT-20260330-001，報價因子改為 1.5",
+    "adjust_total_price": "我要修改報價單總價，報價單編號：QT-20260330-001，總價改為 8000",
+    "convert_to_order": "我要將報價單轉訂單，報價單編號：QT-20260330-001",
+}
+
 REFUSAL_TEXT = (
     "抱歉，我只能協助報價單相關的操作，沒辦法處理這個需求。\n"
     "我可以幫你：查詢報價單、查詢客戶的報價單清單、複製報價單、"
