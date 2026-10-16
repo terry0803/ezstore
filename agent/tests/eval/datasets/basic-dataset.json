@@ -1,31 +1,14 @@
 {
   "eval_cases": [
     {
-      "eval_case_id": "greeting",
-      "prompt": {
-        "role": "user",
-        "parts": [{"text": "Hello, what can you help me with?"}]
-      }
+      "eval_case_id": "get_quotation",
+      "prompt": {"role": "user", "parts": [{"text": "我要查詢報價單，報價單編號：QT-20260330-001"}]},
+      "reference": {"response": {"role": "model", "parts": [{"text": "回覆 QT-20260330-001 的詳細資訊與品項，附純文字連結 http://localhost:3000/quotations/12。"}]}}
     },
     {
-      "eval_case_id": "weather_query",
-      "prompt": {
-        "role": "user",
-        "parts": [{"text": "What's the weather like in San Francisco?"}]
-      }
-    },
-    {
-      "eval_case_id": "capital_lookup",
-      "prompt": {
-        "role": "user",
-        "parts": [{"text": "What is the capital of France?"}]
-      },
-      "reference": {
-        "response": {
-          "role": "model",
-          "parts": [{"text": "The capital of France is Paris."}]
-        }
-      }
+      "eval_case_id": "off_topic_weather",
+      "prompt": {"role": "user", "parts": [{"text": "今天台北天氣如何？"}]},
+      "reference": {"response": {"role": "model", "parts": [{"text": "禮貌拒絕，說明只能協助報價單相關操作。"}]}}
     }
   ]
 }

@@ -1,11 +1,25 @@
+# EZStore 報價單 Agent 的評估指標（spec 2.7：固定四個）
 metrics_to_run:
   - custom_response_quality
+  - link_present
+  - refusal_or_action
+  - agent_turn_count
 
 custom_metrics:
-  # Default: local LLM-as-judge (see response_quality.py). Runs in-process via
-  # google-genai on Gemini platform (ADC) or Google AI Studio (GEMINI_API_KEY).
+  # LLM 評審，1–5 分（response_quality.py；JUDGE_MODEL 可指定評審模型）
   - name: custom_response_quality
     custom_function_file: response_quality.py
+
+  # 程式判定：純文字系統連結
+  - name: link_present
+    custom_function_file: link_present.py
+
+  # LLM 評審，0/1（規則與提示在 refusal_or_action.py，只引用 {response} 與 {agent_data}）。
+  # 不用 prompt_template：那會交給需要 GCP 專案的託管評估服務，AI Studio key 與本機模型跑不了。
+  - name: refusal_or_action
+    custom_function_file: refusal_or_action.py
+
+  # 回合數
   - name: agent_turn_count
     custom_function: |
       def evaluate(instance):

@@ -73,7 +73,7 @@ OPERATION_LABELS = {
 }
 
 REFUSAL_TEXT = (
-    "抱歉，我只能處理報價單相關的操作，沒辦法回答這個問題。\n"
+    "抱歉，我只能協助報價單相關的操作，沒辦法處理這個需求。\n"
     "我可以幫你：查詢報價單、查詢客戶的報價單清單、複製報價單、"
     "修改報價因子、修改報價單總價、報價單轉訂單。"
 )
@@ -142,7 +142,9 @@ CLASSIFIER_INSTRUCTION = """\
 - target_total_price：目標總價，轉成數字（例如「八千」寫 8000）
 - 訊息裡沒有提到的欄位一律留空，不要猜
 
-輸入會附上「待補的前一輪操作」。使用者這一句只補資料時，意圖填 provide_info。
+輸入會附上「待補的前一輪操作」，有時還會附上「上一輪對話」。
+- 有待補的前一輪操作，而使用者這一句只是補資料：意圖填 provide_info。
+- 沒有待補操作，但上一輪對話顯示助手正在追問資料，而這一句補上了：意圖填上一輪使用者要做的那個操作，並抽出這一句補上的欄位。
 """
 
 
@@ -261,8 +263,32 @@ async def _call_mcp_tool(ctx: Context, tool_name: str, args: dict[str, Any]) -> 
 # ---------------------------------------------------------------------------
 
 
+def _previous_turn(ctx: Context, current_text: str) -> tuple[str, str]:
+    """回傳上一輪的（使用者訊息, 助手回覆）。session state 沒有待補操作時用來接續追問。"""
+    user_text, reply_text = "", ""
+    seen_current = False
+    for ev in reversed(list(getattr(ctx.session, "events", []) or [])):
+        text = _content_text(getattr(ev, "content", None))
+        if not text or text.startswith("待補的前一輪操作"):  # 分類器的輸入，不是使用者原話
+            continue
+        if ev.author == "user":
+            if not seen_current:
+                seen_current = text == current_text
+                if seen_current:
+                    continue
+            user_text = text
+            break
+        if seen_current and not reply_text and ev.author != classify_intent.name and not text.lstrip().startswith("{"):
+            reply_text = text
+    return user_text, reply_text
+
+
+def _is_clarification(text: str) -> bool:
+    return text.startswith("請提供") or text.startswith("請告訴我您要對報價單")
+
+
 def load_context(ctx: Context, node_input: Any):
-    """整理使用者這一句與待補的前一輪操作，交給 classify_intent。"""
+    """整理使用者這一句、待補的前一輪操作與上一輪對話，交給 classify_intent。"""
     text = _content_text(node_input)
     if not _has_credentials():
         return Event(
@@ -276,6 +302,7 @@ def load_context(ctx: Context, node_input: Any):
         )
 
     pending = ctx.state.get("pending_intent")
+    clarify_source = ""
     if pending:
         known = ", ".join(
             f"{k}={pending[k]}" for k in FIELD_LABELS if pending.get(k) is not None
@@ -284,11 +311,23 @@ def load_context(ctx: Context, node_input: Any):
             f"{pending['intent']}（{OPERATION_LABELS.get(pending['intent'], '')}）"
             f"，已知欄位：{known or '無'}"
         )
+        prompt = f"待補的前一輪操作：{pending_desc}\n使用者這一句：{text}"
     else:
-        pending_desc = "無"
+        prompt = f"待補的前一輪操作：無\n使用者這一句：{text}"
+        # state 沒有待補操作（例如對話紀錄是外部帶進來的），改看上一輪是否在追問
+        prev_user, prev_reply = _previous_turn(ctx, text)
+        if prev_user and _is_clarification(prev_reply):
+            clarify_source = prev_user
+            prompt = (
+                f"待補的前一輪操作：無\n上一輪對話：使用者說「{prev_user}」，"
+                f"助手追問「{prev_reply.splitlines()[0]}」\n使用者這一句：{text}"
+            )
 
-    prompt = f"待補的前一輪操作：{pending_desc}\n使用者這一句：{text}"
-    return Event(output=prompt, route="classify", state={"last_user_text": text})
+    return Event(
+        output=prompt,
+        route="classify",
+        state={"last_user_text": text, "clarify_source_text": clarify_source},
+    )
 
 
 def route(ctx: Context, node_input: Any):
@@ -329,8 +368,11 @@ def route(ctx: Context, node_input: Any):
         if intent.target_total_price is not None
         else _clean_number(carry.get("target_total_price")),
     }
-    # 報價單編號以使用者原文為準（程式抽取，不靠 LLM）
+    # 報價單編號以使用者原文為準（程式抽取，不靠 LLM）；這一句沒有時，
+    # 若上一輪是追問，再看上一輪使用者的原文
     match = QUOTATION_NUMBER_RE.search(text)
+    if not match and not carry:
+        match = QUOTATION_NUMBER_RE.search(ctx.state.get("clarify_source_text", "") or "")
     if match:
         fields["quotation_number"] = match.group(0)
     if fields["quotation_number"]:
@@ -390,14 +432,15 @@ def clarify(node_input: dict) -> str:
     operation = node_input.get("operation")
     if not operation:
         return (
-            "請問你要對這筆資料做什麼操作？我可以查詢報價單、查詢客戶的報價單清單、"
+            "請告訴我您要對報價單做什麼操作：查詢報價單、查詢客戶的報價單清單、"
             "複製報價單、修改報價因子、修改報價單總價、報價單轉訂單。"
         )
-    lines = [f"好的，要{OPERATION_LABELS[operation]}，還需要你提供："]
-    for name in node_input.get("missing", []):
-        lines.append(f"- {FIELD_LABELS[name]}")
+    asks = [FIELD_LABELS[name] for name in node_input.get("missing", [])]
+    asks += [FIELD_LABELS[name] for name in node_input.get("invalid", [])]
+    lines = [f"請提供{'、'.join(asks)}，我才能幫你{OPERATION_LABELS[operation]}。"]
     for name in node_input.get("invalid", []):
-        lines.append(f"- {FIELD_LABELS[name]}（你給的數字不大於 0，請重新提供）")
+        label = FIELD_LABELS[name].split("（")[0]
+        lines.append(f"{label}必須大於 0，你給的數字不符合。")
     known = node_input.get("fields", {})
     given = [
         f"{FIELD_LABELS[k].split('（')[0]}：{_format_number(v) if isinstance(v, float) else v}"
