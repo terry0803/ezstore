@@ -59,3 +59,15 @@ Ask the user: Option A (simple single-project) or Option B (full CI/CD pipeline 
 - **Run Python with `uv`**: `uv run python script.py`. Run `agents-cli install` first.
 - **Stop on repeated errors**: If the same error appears 3+ times, fix the root cause instead of retrying.
 - **Terraform conflicts** (Error 409): Use `terraform import` instead of retrying creation.
+
+---
+
+## EZStore 專屬注意事項
+
+- ADK app 名稱必須是 `quotation_agent`，最終回覆只能從 `respond` 節點輸出（Chat UI 與評分都靠 `nodeInfo.path` 找它）。
+- 只有 `classify_intent` 呼叫 LLM。工具、參數、追問、拒答都在 `route` 用程式決定，不要改成讓 LLM 自己挑工具。
+- ADK 2.11 的 `edges`：tuple 是一條鏈，分支用 `(node, {route: target})`。
+- `CLASSIFIER_INSTRUCTION` 裡不要寫大括號或 JSON，ADK 會當成 state 變數替換。
+- 拒答文字要含「只能協助」，追問要以「請提供」開頭；`scripts/grading/link_presence.py` 靠這兩個慣例辨認拒答與追問。
+- 不要改 `mcp_server/`、`frontend/`、`backend/`。
+- 本機模型（`AGENT_MODEL=openai/...`）只有一個推論槽時，eval 要加 `--concurrency 1`。

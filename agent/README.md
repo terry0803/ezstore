@@ -1,92 +1,72 @@
-# ezstore-agent
+# EZStore 報價單管理 Agent
 
-Simple ReAct agent
-Agent generated with `agents-cli` version `1.10.0`
+用 Google ADK 2.11 的 Graph Workflow 寫成的報價單助手。它透過 MCP Server 的 6 個工具操作報價單，由前端 Chat UI（`/agent-api`）呼叫。ADK 的 app 名稱是 `quotation_agent`。
 
-## Project Structure
+## 圖的設計
 
 ```
-ezstore-agent/
-├── quotation_agent/         # Core agent code
-│   ├── agent.py               # Main agent logic
-│   ├── fast_api_app.py        # FastAPI Backend server
-│   └── app_utils/             # App utilities and helpers
-├── tests/                     # Unit, integration, and load tests
-├── GEMINI.md                  # AI-assisted development guide
-└── pyproject.toml             # Project dependencies
+START → load_context ──（no_credentials）──────────────────────────────┐
+          │                                                             │
+          └─（classify）→ classify_intent → route                       │
+                            ├─ get_quotation                            │
+                            ├─ list_customer_quotations                 │
+                            ├─ duplicate_quotation                      │
+                            ├─ update_pricing_factor                    │
+                            ├─ adjust_total_price                       │
+                            ├─ convert_to_order                         │
+                            ├─ clarify                                  │
+                            └─ off_topic                                │
+                          全部 ───────────────────────────────→ respond ←┘
 ```
 
-> 💡 **Tip:** Use [Antigravity CLI](https://antigravity.google/) for AI-assisted development - project context is pre-configured in `GEMINI.md`.
+| 節點 | 種類 | 做什麼 |
+|------|------|--------|
+| `load_context` | 函式 | 取出使用者這一句。沒有任何模型憑證就直接走 `no_credentials` 到 `respond`，回覆設定說明。有待補的前一輪操作（`state.pending_intent`）就附在提示裡；state 是空的、但上一輪助手在追問時，改附上一輪的對話 |
+| `classify_intent` | `LlmAgent` | 唯一呼叫 LLM 的節點。輸出 Pydantic 的 `Intent`：八種意圖之一（6 個操作、`provide_info`、`off_topic`）加上抽出來的欄位 |
+| `route` | 函式 | 依 `Intent` 決定下一個節點與工具參數。先跑程式拒答規則（提示注入、客戶／產品增修刪），再合併本輪與待補操作的欄位，報價單編號用正規表示式從原文抓。缺欄位或數字不大於 0 就走 `clarify` 並存下 `pending_intent`，齊了就走對應的操作節點並清掉 `pending_intent` |
+| 6 個操作節點 | 函式 | 各呼叫一個 MCP 工具（`McpToolset.get_tools()` 取得工具後 `run_async`），回傳工具的文字。工具錯誤轉成「操作失敗：…」 |
+| `clarify` | 函式 | 回「請提供…」列出缺的欄位與已知資料；沒有操作可接時回「請告訴我您要對報價單做什麼操作」 |
+| `off_topic` | 函式 | 固定的拒答文字（含「只能協助報價單相關的操作」） |
+| `respond` | 函式 | 唯一輸出給使用者看的節點。Chat UI 依事件的 `nodeInfo.path` 只顯示 `respond@N` 的文字 |
 
-## Requirements
+幾個設計重點：
 
-Before you begin, ensure you have:
-- **uv**: Python package manager (used for all dependency management in this project) - [Install](https://docs.astral.sh/uv/getting-started/installation/) ([add packages](https://docs.astral.sh/uv/concepts/dependencies/) with `uv add <package>`)
-- **agents-cli**: Agents CLI - Install with `uv tool install google-agents-cli`
-- **Google Cloud SDK**: For GCP services - [Install](https://cloud.google.com/sdk/docs/install)
+- 每則訊息都從 `START` 重跑一次圖，不靠 LLM 記對話。跨回合只靠 `pending_intent` 與上一輪對話。
+- LLM 只負責「聽懂」，不決定要不要呼叫工具。所以離題、注入、缺資料這些情況，換模型也不會跑出不該有的工具呼叫。
+- 修改類工具在 MCP Server 端就是先複製再改，回覆也已經寫「原始報價單（未修改）」，Agent 原樣呈現，連結都是純文字。
+- 路由邊的寫法是 `(route, {"get_quotation": get_quotation, ...})`。ADK 2.11 的 `edges` 裡，一般的 tuple 是一條鏈（`(a, b, c)` 代表 a→b→c），要分支得用 dict。
 
+## 新增一個操作
 
-## Quick Start
+假設 MCP Server 多了一個工具 `publish_quotation(quotation_number)`：
 
-Install `agents-cli` and its skills if not already installed:
+1. `quotation_agent/agent.py` 的常數：
+   - `OPERATIONS` 加 `"publish_quotation"`
+   - `REQUIRED_FIELDS["publish_quotation"] = ("quotation_number",)`
+   - `OPERATION_LABELS["publish_quotation"] = "發佈報價單"`
+   - 有新欄位時，`FIELD_LABELS` 也要加
+2. `Intent.intent` 的 `Literal` 加上 `"publish_quotation"`；有新欄位就在 `Intent` 加欄位。
+3. `CLASSIFIER_INSTRUCTION` 的意圖清單加一行說明。注意 instruction 裡不要寫大括號，ADK 會把 `{...}` 當成 state 變數。
+4. 加一個節點函式：
+
+   ```python
+   async def publish_quotation(ctx: Context, node_input: dict) -> str:
+       return await _call_mcp_tool(ctx, "publish_quotation", node_input)
+   ```
+
+5. `root_agent` 的 `edges`：`route` 的路由 dict 加 `"publish_quotation": publish_quotation`，再加一條 `(publish_quotation, respond)`。
+6. 測試：`tests/unit/test_route.py` 加路由測試；`tests/eval/datasets/quotation-actions.json` 加一題，`eval_case_id` 用工具名。
+
+`McpToolset` 的 `tool_filter` 直接用 `OPERATIONS`，不用另外改。
+
+## 執行
 
 ```bash
-uvx google-agents-cli setup
+cp .env.example .env              # GEMINI_API_KEY，MCP_URL=http://localhost:8010/mcp
+uv sync --group dev --extra eval
+agents-cli playground --port 8501 # http://127.0.0.1:8501
+uv run pytest tests/unit tests/integration -q
+agents-cli eval run --dataset tests/eval/datasets/quotation-guardrails.json
 ```
 
-Install required packages:
-
-```bash
-agents-cli install
-```
-
-Test the agent with a local web server:
-
-```bash
-agents-cli playground
-```
-
-You can also use features from the [ADK](https://adk.dev/) CLI with `uv run adk`.
-
-## Commands
-
-| Command              | Description                                                                                 |
-| -------------------- | ------------------------------------------------------------------------------------------- |
-| `agents-cli install` | Install dependencies using uv                                                         |
-| `agents-cli playground` | Launch local development environment                                                  |
-| `agents-cli lint`    | Run code quality checks                                                               |
-| `agents-cli eval`    | Evaluate agent behavior (generate, grade, analyze, and more — see `agents-cli eval --help`) |
-| `uv run pytest tests/unit tests/integration` | Run unit and integration tests                                                        || [A2A Inspector](https://github.com/a2aproject/a2a-inspector) | Launch A2A Protocol Inspector                                                        |
-
-## 🛠️ Project Management
-
-| Command | What It Does |
-|---------|--------------|
-| `agents-cli scaffold enhance` | Add CI/CD pipelines and Terraform infrastructure |
-| `agents-cli infra cicd` | One-command setup of entire CI/CD pipeline + infrastructure |
-| `agents-cli scaffold upgrade` | Auto-upgrade to latest version while preserving customizations |
-
----
-
-## Development
-
-Edit your agent logic in `quotation_agent/agent.py` and test with `agents-cli playground` - it auto-reloads on save.
-
-## Deployment
-
-```bash
-gcloud config set project <your-project-id>
-agents-cli deploy
-```
-
-To add CI/CD and Terraform, run `agents-cli scaffold enhance`.
-To set up your production infrastructure, run `agents-cli infra cicd`.
-
-## Observability
-
-Built-in telemetry exports to Cloud Trace, BigQuery, and Cloud Logging.
-
-## A2A Inspector
-
-This agent supports the [A2A Protocol](https://a2a-protocol.org/). Use the [A2A Inspector](https://github.com/a2aproject/a2a-inspector) to test interoperability.
-See the [A2A Inspector docs](https://github.com/a2aproject/a2a-inspector) for details.
+模型由 `AGENT_MODEL` 決定，預設 `gemini-3.8-flash`。設成 `openai/<模型>` 會經 LiteLLM 改走 OpenAI 相容 API（位址 `LOCAL_LLM_BASE`），例如本機 llama.cpp 的 `openai/qwen3.5-9b`。評估指標的評審模型用 `JUDGE_MODEL`，沒設就跟 `AGENT_MODEL` 一樣。
