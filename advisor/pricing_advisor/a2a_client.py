@@ -10,6 +10,7 @@ agent card 裡的 JSON-RPC 位址可能是 Compose 內部的 http://agent:8080/.
 
 from __future__ import annotations
 
+import logging
 import os
 from dataclasses import dataclass, field
 
@@ -24,6 +25,11 @@ REQUIRED_SKILLS = ("get_quotation", "adjust_total_price", "convert_to_order")
 
 class A2AError(RuntimeError):
     """抓不到 agent card、對方不是預期的 Agent、或 task 沒有完成。"""
+
+    def __init__(self, message: str, *, may_have_written: bool = True):
+        super().__init__(message)
+        # A lost response does not prove that the remote mutation stopped.
+        self.may_have_written = may_have_written
 
 
 @dataclass
@@ -61,13 +67,13 @@ class QuotationAgentClient:
         try:
             card = await A2ACardResolver(http, self.base_url).get_agent_card()
         except Exception as e:
-            raise A2AError(f"抓不到報價單 Agent 的 agent card（{self.base_url}）：{e.__class__.__name__}") from e
+            raise A2AError(f"抓不到報價單 Agent 的 agent card（{self.base_url}）：{e.__class__.__name__}", may_have_written=False) from e
         if card.name != EXPECTED_AGENT:
-            raise A2AError(f"agent card 的名稱是 {card.name}，不是 {EXPECTED_AGENT}")
+            raise A2AError(f"agent card 的名稱是 {card.name}，不是 {EXPECTED_AGENT}", may_have_written=False)
         skills = {s.id for s in card.skills}
         missing = [s for s in REQUIRED_SKILLS if s not in skills]
         if missing:
-            raise A2AError(f"報價單 Agent 沒有需要的 skill：{', '.join(missing)}")
+            raise A2AError(f"報價單 Agent 沒有需要的 skill：{', '.join(missing)}", may_have_written=False)
         for interface in card.supported_interfaces:
             interface.url = self.base_url
         return card
@@ -75,7 +81,10 @@ class QuotationAgentClient:
     async def send(self, text: str) -> A2AResult:
         async with httpx.AsyncClient(timeout=self.timeout) as http:
             card = await self.fetch_card(http)
-            client = ClientFactory(ClientConfig(streaming=False, httpx_client=http)).create(card)
+            try:
+                client = ClientFactory(ClientConfig(streaming=False, httpx_client=http)).create(card)
+            except Exception as e:
+                raise A2AError(f"無法準備 A2A 用戶端：{e.__class__.__name__}", may_have_written=False) from e
             message = new_text_message(text, role=Role.ROLE_USER)
             task = None
             reply = None
@@ -88,7 +97,12 @@ class QuotationAgentClient:
             except Exception as e:
                 raise A2AError(f"A2A 呼叫失敗：{e.__class__.__name__}") from e
             finally:
-                await client.close()
+                try:
+                    await client.close()
+                except Exception as e:
+                    # Preserve a completed result or the original send failure.
+                    # Cleanup failure is not a reason to send the mutation again.
+                    logging.getLogger(__name__).warning("A2A client cleanup failed: %s", type(e).__name__)
 
         skills = [s.id for s in card.skills]
         if task is not None:

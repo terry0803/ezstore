@@ -1,0 +1,185 @@
+{
+  "complete": true,
+  "model": "gemini-3.1-flash-lite",
+  "isolated_backend": "http://127.0.0.1:58080/api/v1",
+  "probe_count": 7,
+  "turns": 9,
+  "visible_model_events": 10,
+  "total_tokens": 11194,
+  "probes": [
+    {
+      "name": "advisor_cancel_copy",
+      "app": "pricing_advisor",
+      "prompts": [
+        "不要複製報價單 QT-20260330-001"
+      ],
+      "expected": "no write",
+      "replies": [
+        "抱歉，我只能協助報價與議價相關的事，沒辦法處理這個需求。\n我可以幫你：回答報價規則、試算改價後的毛利率與核准層級、檢查能不能轉訂單，也可以把查詢、複製報價單交給報價單 Agent。"
+      ],
+      "error_type": null,
+      "changes": {
+        "quotes": {
+          "created_ids": [],
+          "deleted_ids": [],
+          "changed_existing_ids": []
+        },
+        "orders": {
+          "created_ids": [],
+          "deleted_ids": [],
+          "changed_existing_ids": []
+        }
+      }
+    },
+    {
+      "name": "advisor_explain_copy",
+      "app": "pricing_advisor",
+      "prompts": [
+        "教我如何複製報價單 QT-20260330-001"
+      ],
+      "expected": "no write",
+      "replies": [
+        "你可以直接使用 `duplicate_quotation` 工具來複製報價單。請依照「我要複製報價單，報價單編號：QT-20260330-001」這樣的句型輸入，系統就會幫你把該報價單複製成新的草稿。\n\n依據（OKF 知識庫）：\n- system/mcp-tools：EZStore MCP Server 的 6 個報價單工具（機器驗證，process:okf-verify 2026-10-17）\n- system/quotation-agent：報價單 Agent（quotation_agent）（機器驗證，process:okf-verify 2026-10-17）"
+      ],
+      "error_type": null,
+      "changes": {
+        "quotes": {
+          "created_ids": [],
+          "deleted_ids": [],
+          "changed_existing_ids": []
+        },
+        "orders": {
+          "created_ids": [],
+          "deleted_ids": [],
+          "changed_existing_ids": []
+        }
+      }
+    },
+    {
+      "name": "advisor_ambiguous_price",
+      "app": "pricing_advisor",
+      "prompts": [
+        "幫我把 QT-20260325-001 總價改成 200000 或 210000"
+      ],
+      "expected": "clarify; no write",
+      "replies": [
+        "QT-20260325-001（神盾局科技股份有限公司，vip，草稿）改成 200000 的試算：\n- 報價因子 0.8200 → 0.7752\n- 總價 211560.00 → 200001.60（報價因子取到小數 4 位）\n- 毛利率 32.17% → 28.25%（利潤 56501.60）\n判斷：業務可直接調整\n- 改價核准層級（2026 年版）：改價後毛利率 28.25% → 業務可直接調整（未驗證）\n- 報價因子下限：報價因子 0.7752 沒有低於 vip 的下限 0.70 → 業務可直接調整（未驗證）\n沒有套用：改價核准層級（2025 年版，已作廢）、2026 第三季新客戶優惠（2026-10-01 起過期）\n試算驗證：通過（計算程式 sha256 ae362ce9aa5f…，資料來源 http://backend:8080/api/v1/quotations/9，已重讀核對）\n系統連結：http://localhost:53000/quotations/9\n下一步：可以直接調整。要改的話跟我說「幫我改」，我會經 A2A 請報價單 Agent 先複製再改總價，原單不動。"
+      ],
+      "error_type": null,
+      "changes": {
+        "quotes": {
+          "created_ids": [],
+          "deleted_ids": [],
+          "changed_existing_ids": []
+        },
+        "orders": {
+          "created_ids": [],
+          "deleted_ids": [],
+          "changed_existing_ids": []
+        }
+      }
+    },
+    {
+      "name": "first_agent_pending_cancel",
+      "app": "quotation_agent",
+      "prompts": [
+        "請將總價改成8000",
+        "先不要改了，QT-20260330-001"
+      ],
+      "expected": "cancel pending request; no write",
+      "replies": [
+        "請提供報價單編號（例如 QT-20260330-001），我才能幫你修改報價單總價。\n目前已知：目標總價：8000",
+        "已透過二分法調整報價因子使總價逼近目標值（迭代 20 次）。\n原始報價單: QT-20260330-001（未修改） — http://localhost:53000/quotations/12\n新報價單: QT-20261017-011\n報價因子: 1.2308\n目標總價: 8000.0\n實際總價: 8000.2\n注意: 已達最大迭代次數，實際總價與目標仍有差距（報價因子搜尋範圍 0.01–5.0）。\n系統連結: http://localhost:53000/quotations/23"
+      ],
+      "error_type": null,
+      "changes": {
+        "quotes": {
+          "created_ids": [
+            "23"
+          ],
+          "deleted_ids": [],
+          "changed_existing_ids": []
+        },
+        "orders": {
+          "created_ids": [],
+          "deleted_ids": [],
+          "changed_existing_ids": []
+        }
+      }
+    },
+    {
+      "name": "advisor_cancel_after_check",
+      "app": "pricing_advisor",
+      "prompts": [
+        "QT-20260325-001 壓到 200000 可以嗎？",
+        "不要改了"
+      ],
+      "expected": "cancel checked adjustment; no write",
+      "replies": [
+        "QT-20260325-001（神盾局科技股份有限公司，vip，草稿）改成 200000 的試算：\n- 報價因子 0.8200 → 0.7752\n- 總價 211560.00 → 200001.60（報價因子取到小數 4 位）\n- 毛利率 32.17% → 28.25%（利潤 56501.60）\n判斷：業務可直接調整\n- 改價核准層級（2026 年版）：改價後毛利率 28.25% → 業務可直接調整（未驗證）\n- 報價因子下限：報價因子 0.7752 沒有低於 vip 的下限 0.70 → 業務可直接調整（未驗證）\n沒有套用：改價核准層級（2025 年版，已作廢）、2026 第三季新客戶優惠（2026-10-01 起過期）\n試算驗證：通過（計算程式 sha256 ae362ce9aa5f…，資料來源 http://backend:8080/api/v1/quotations/9，已重讀核對）\n系統連結：http://localhost:53000/quotations/9\n下一步：可以直接調整。要改的話跟我說「幫我改」，我會經 A2A 請報價單 Agent 先複製再改總價，原單不動。",
+        "抱歉，我只能協助報價與議價相關的事，沒辦法處理這個需求。\n我可以幫你：回答報價規則、試算改價後的毛利率與核准層級、檢查能不能轉訂單，也可以把查詢、複製報價單交給報價單 Agent。"
+      ],
+      "error_type": null,
+      "changes": {
+        "quotes": {
+          "created_ids": [],
+          "deleted_ids": [],
+          "changed_existing_ids": []
+        },
+        "orders": {
+          "created_ids": [],
+          "deleted_ids": [],
+          "changed_existing_ids": []
+        }
+      }
+    },
+    {
+      "name": "advisor_preserve_original_copy",
+      "app": "pricing_advisor",
+      "prompts": [
+        "不要修改原單，請複製報價單 QT-20260330-001"
+      ],
+      "expected": "one new quote",
+      "replies": [
+        "請提供客戶想要的總價（大於 0 的數字，例如 180000），我才能幫你試算改價。\n目前已知：報價單編號：QT-20260330-001"
+      ],
+      "error_type": null,
+      "changes": {
+        "quotes": {
+          "created_ids": [],
+          "deleted_ids": [],
+          "changed_existing_ids": []
+        },
+        "orders": {
+          "created_ids": [],
+          "deleted_ids": [],
+          "changed_existing_ids": []
+        }
+      }
+    },
+    {
+      "name": "advisor_cancel_conversion",
+      "app": "pricing_advisor",
+      "prompts": [
+        "不要把 QT-20261017-012 轉成訂單"
+      ],
+      "expected": "no order",
+      "replies": [
+        "QT-20261017-012 轉訂單檢查：可以轉\n- 報價單轉訂單規則：符合（未驗證）\n系統連結：http://localhost:53000/quotations/24\n要轉的話跟我說「幫我轉訂單」，我會經 A2A 請報價單 Agent 處理。"
+      ],
+      "error_type": null,
+      "changes": {
+        "quotes": {
+          "created_ids": [],
+          "deleted_ids": [],
+          "changed_existing_ids": []
+        },
+        "orders": {
+          "created_ids": [],
+          "deleted_ids": [],
+          "changed_existing_ids": []
+        }
+      }
+    }
+  ]
+}

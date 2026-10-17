@@ -1,0 +1,165 @@
+ Image ezstore-recheck-agent:test Building 
+ Image ezstore-recheck-frontend:test Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 2.07kB 0.0s done
+#1 DONE 0.0s
+
+#2 [frontend internal] load build definition from Dockerfile
+#2 transferring dockerfile: 311B 0.0s done
+#2 DONE 0.0s
+
+#3 [agent internal] load build definition from Dockerfile
+#3 transferring dockerfile: 828B done
+#3 DONE 0.0s
+
+#4 [auth] oven/bun:pull token for registry-1.docker.io
+#4 DONE 0.0s
+
+#5 [auth] library/nginx:pull token for registry-1.docker.io
+#5 DONE 0.0s
+
+#6 [auth] library/python:pull token for registry-1.docker.io
+#6 DONE 0.0s
+
+#7 [agent internal] load metadata for ghcr.io/astral-sh/uv:0.12.20
+#7 DONE 0.1s
+
+#8 [agent internal] load metadata for docker.io/library/python:3.12-slim
+#8 ...
+
+#9 [frontend internal] load metadata for docker.io/oven/bun:1.4
+#9 DONE 1.3s
+
+#10 [frontend internal] load metadata for docker.io/library/nginx:alpine
+#10 DONE 1.3s
+
+#8 [agent internal] load metadata for docker.io/library/python:3.12-slim
+#8 DONE 1.3s
+
+#11 [frontend internal] load .dockerignore
+#11 transferring context: 2B 0.0s done
+#11 DONE 0.0s
+
+#12 [agent internal] load .dockerignore
+#12 transferring context: 2B done
+#12 DONE 0.0s
+
+#13 [agent internal] load build context
+#13 DONE 0.0s
+
+#14 [frontend internal] load build context
+#14 transferring context: 12.50kB 0.0s done
+#14 DONE 0.0s
+
+#15 [agent] FROM ghcr.io/astral-sh/uv:0.12.20@sha256:100047e74f30778ab704942321a09750d6158739573ff58bf3924085cc6cd2d8
+#15 resolve ghcr.io/astral-sh/uv:0.12.20@sha256:100047e74f30778ab704942321a09750d6158739573ff58bf3924085cc6cd2d8
+#15 resolve ghcr.io/astral-sh/uv:0.12.20@sha256:100047e74f30778ab704942321a09750d6158739573ff58bf3924085cc6cd2d8 0.1s done
+#15 DONE 0.1s
+
+#16 [frontend stage-1 1/3] FROM docker.io/library/nginx:alpine@sha256:892bb2152464f0c5d8972593a5f5afaf8054552580b699d95f8ff4af08c2d33d
+#16 resolve docker.io/library/nginx:alpine@sha256:892bb2152464f0c5d8972593a5f5afaf8054552580b699d95f8ff4af08c2d33d 0.1s done
+#16 DONE 0.1s
+
+#17 [frontend builder 1/6] FROM docker.io/oven/bun:1.4@sha256:ec06c3b6cea04192ae6770c434f668ca41d343ad19fa6472216c7b48be39c598
+#17 resolve docker.io/oven/bun:1.4@sha256:ec06c3b6cea04192ae6770c434f668ca41d343ad19fa6472216c7b48be39c598 0.1s done
+#17 DONE 0.1s
+
+#18 [frontend builder 2/6] WORKDIR /app
+#18 CACHED
+
+#19 [frontend builder 3/6] COPY package.json bun.lock ./
+#19 CACHED
+
+#20 [frontend builder 4/6] RUN bun install --frozen-lockfile
+#20 CACHED
+
+#21 [agent stage-0 1/7] FROM docker.io/library/python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
+#21 resolve docker.io/library/python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1 0.1s done
+#21 DONE 0.1s
+
+#22 [frontend builder 5/6] COPY . .
+#22 DONE 0.1s
+
+#13 [agent internal] load build context
+#13 transferring context: 38.34kB 0.0s done
+#13 DONE 0.1s
+
+#23 [agent stage-0 3/7] WORKDIR /code
+#23 CACHED
+
+#24 [agent stage-0 2/7] COPY --from=ghcr.io/astral-sh/uv:0.12.20 /uv /uvx /bin/
+#24 CACHED
+
+#25 [agent stage-0 4/7] COPY ./pyproject.toml ./README.md ./uv.lock ./
+#25 CACHED
+
+#26 [agent stage-0 5/7] RUN uv sync --frozen --no-dev --no-install-project
+#26 CACHED
+
+#27 [agent stage-0 6/7] COPY ./quotation_agent ./quotation_agent
+#27 DONE 0.1s
+
+#28 [frontend builder 6/6] RUN bun run build
+#28 0.282 $ tsc && vite build
+#28 ...
+
+#29 [agent stage-0 7/7] RUN uv sync --frozen --no-dev
+#29 0.590    Building ezstore-agent @ file:///code
+#29 2.394       Built ezstore-agent @ file:///code
+#29 2.396 Prepared 1 package in 1.80s
+#29 2.397 Installed 1 package in 0.90ms
+#29 2.397  + ezstore-agent==0.1.0 (from file:///code)
+#29 DONE 2.4s
+
+#30 [agent] exporting to image
+#30 exporting layers
+#30 exporting layers 0.3s done
+#30 exporting manifest sha256:7216ce5500b4bd39bbd019917458126cffe3513692d2d759f8204f57e39957ff 0.0s done
+#30 exporting config sha256:07f9252e27e5cdbd1a45302610f514218bf7b5eded467f02c2ea1387264d7afe 0.0s done
+#30 exporting attestation manifest sha256:97780f4090ae6d5007d036e009d9e52387b493d950d5307e4eedff7ae826304c 0.0s done
+#30 exporting manifest list sha256:fa5ab0148aa7968628c077b4a17e9d1d023553d03da8aebdfc5ccef289a3b01b 0.0s done
+#30 naming to docker.io/library/ezstore-recheck-agent:test done
+#30 unpacking to docker.io/library/ezstore-recheck-agent:test
+#30 unpacking to docker.io/library/ezstore-recheck-agent:test 0.1s done
+#30 DONE 0.6s
+
+#28 [frontend builder 6/6] RUN bun run build
+#28 ...
+
+#31 [agent] resolving provenance for metadata file
+#31 DONE 0.0s
+
+#28 [frontend builder 6/6] RUN bun run build
+#28 3.387 vite v8.3.1 building client environment for production...
+#28 3.396 transforming...
+#28 3.513 ✓ 150 modules transformed.
+#28 3.810 rendering chunks...
+#28 4.078 computing gzip size...
+#28 4.083 dist/index.html                   0.50 kB │ gzip:   0.36 kB
+#28 4.083 dist/assets/index-BgKAczim.css   20.18 kB │ gzip:   4.80 kB
+#28 4.083 dist/assets/index-rxSZ2u2D.js   423.23 kB │ gzip: 131.00 kB
+#28 4.083 
+#28 4.087 ✓ built in 699ms
+#28 DONE 5.2s
+
+#32 [frontend stage-1 2/3] COPY --from=builder /app/dist /usr/share/nginx/html
+#32 CACHED
+
+#33 [frontend stage-1 3/3] COPY nginx.conf /etc/nginx/conf.d/default.conf
+#33 CACHED
+
+#34 [frontend] exporting to image
+#34 exporting layers done
+#34 exporting manifest sha256:cef70786f59844927cc3071879990a58387f0f75859ebc84e5dd5da0a0e849d5 0.0s done
+#34 exporting config sha256:ac1864ca0c9e76a9003968b25f6df59ce62b1abba0ff85b4e2125a0ca4926d63 0.0s done
+#34 exporting attestation manifest sha256:8f8fe98dc1910f58328c71fd883e6599e67283655f2b95dd2524480e58193426
+#34 exporting attestation manifest sha256:8f8fe98dc1910f58328c71fd883e6599e67283655f2b95dd2524480e58193426 0.0s done
+#34 exporting manifest list sha256:b0a4db80121391565334c53e9085a8ea9233a5564e210ced8dc1cacb0b9c1d00 0.0s done
+#34 naming to docker.io/library/ezstore-recheck-frontend:test done
+#34 unpacking to docker.io/library/ezstore-recheck-frontend:test 0.0s done
+#34 DONE 0.2s
+
+#35 [frontend] resolving provenance for metadata file
+#35 DONE 0.0s
+ Image ezstore-recheck-frontend:test Built 
+ Image ezstore-recheck-agent:test Built 

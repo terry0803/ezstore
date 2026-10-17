@@ -73,7 +73,7 @@ ezstore/
     │   ├── types/index.ts      # TypeScript 型別定義
     │   ├── App.tsx             # Router + QueryClientProvider
     │   └── main.tsx            # React 入口
-    └── e2e/                    # Playwright E2E 測試（規劃中）
+    └── e2e/                    # Playwright E2E 測試
 ```
 
 ### 開發環境需求

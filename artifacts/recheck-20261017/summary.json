@@ -1,0 +1,105 @@
+{
+  "completed_at": "2026-10-17T09:43:57.873299+00:00",
+  "baseline_head": "e68052e34a975cc3a2f12f9f065b33ba1fa32f5e",
+  "status": "completed",
+  "model": "gemini-3.1-flash-lite",
+  "qwen_calls": 0,
+  "tests": {
+    "quotation_agent": 172,
+    "advisor": 167,
+    "mcp": 17,
+    "scripts": 28,
+    "scripts_subtests": 28,
+    "backend": 21,
+    "backend_real_postgres_subset": 7,
+    "frontend_unit": 7,
+    "frontend_e2e": 15,
+    "frontend_build": true,
+    "go_vet": true
+  },
+  "okf": {
+    "entries": 17,
+    "validation_errors": 0,
+    "validation_warnings": 0,
+    "machine_checks_passed": 10,
+    "unverified_entries": 7
+  },
+  "gemini_full": {
+    "complete": true,
+    "expected_cases": 30,
+    "cases_completed": 30,
+    "cases_passed": 30,
+    "turns": 37,
+    "visible_model_events": 37,
+    "prompt_tokens": 30649,
+    "candidate_tokens": 2126,
+    "total_tokens": 32775,
+    "failed_attempts": 2,
+    "evidence": "gemini-acceptance.json"
+  },
+  "gemini_targeted": {
+    "complete": true,
+    "expected_cases": 5,
+    "cases_completed": 5,
+    "cases_passed": 5,
+    "turns": 6,
+    "visible_model_events": 6,
+    "prompt_tokens": 4438,
+    "candidate_tokens": 344,
+    "total_tokens": 4782,
+    "failed_attempts": 0,
+    "evidence": "gemini-guards.json"
+  },
+  "main_ui": {
+    "passed": true,
+    "turns": 1,
+    "evidence": "main-ui.json"
+  },
+  "main_data_unchanged": true,
+  "main_counts": {
+    "quotes": 12,
+    "orders": 10
+  },
+  "isolated_resources_remaining": {
+    "containers": [],
+    "networks": [],
+    "volumes": []
+  },
+  "source_sha256": {
+    "advisor/pricing_advisor/a2a_client.py": "f9b18de33aa21322618dfa059ccf16e36b08675f2bbe4855da5412270fdf6ed3",
+    "advisor/pricing_advisor/agent.py": "8a0f614830898e93cbb292422954dcca9f2df6d4fe0e2de394e58ef9ba4072a8",
+    "advisor/tests/integration/test_workflow_offline.py": "0bac448cb610567ac9ba7b66ed5c67df708464252470d02d4c8feaddf339fa64",
+    "advisor/tests/unit/test_a2a_client.py": "fb5cb1403772fc84ea6adb50c514bc65709abd7b60c3d55c2458dd65597b58b2",
+    "advisor/tests/unit/test_conversion_safety.py": "2de01906cb9538ed2548d33550554c5f06fc044b4bf635a7e395d44998865c0a",
+    "agent/quotation_agent/agent.py": "602f166e0ed829aa409a073250e37278e706565bd50b63ed111459239fa13e0b",
+    "agent/tests/unit/test_keyword_safety.py": "cb2883f61b2fbd47ce782bf050a5c2d799a7aab9118961b86932d9a4b11b4a0c",
+    "backend/repositories/order_repo.go": "a6290541247639749434f6b301803d096fe7772c30e9eee18daf928ccf182015",
+    "backend/repositories/quotation_repo.go": "7d8593f0943d990b3581974f583203d88336c81cb1d2f2d28b0e2e25ddfabb81",
+    "backend/services/database_integration_test.go": "81df3f9e9b114c13852d004c219516072265bca04af62b2f415b1dd835c41196",
+    "backend/tests/test-postgres.ps1": "4258d0752fb0a3d524da24e659a7a5e29b10c839f6b25ffa9e0731bae5a8e814",
+    "frontend/e2e/edit-cache.spec.ts": "6dee44d947bfc4ee751acc9d25e512f6b7da9771b385a92b1ea87c64b3d4d9df",
+    "frontend/src/pages/CustomerFormPage.tsx": "c3f429c06274f6d192b97a5a1edd7566e5fddf580cf218c741aded052deb9d14",
+    "frontend/src/pages/ProductFormPage.tsx": "819583651bcba362e9774dc1805ae48f515fe841cd050eee4c5bc69df3a58138",
+    "frontend/src/pages/QuotationFormPage.tsx": "8799453f884c4d4a6f4ce67031f8481415383aa62c6fca4c6ba810e50accb988",
+    "mcp_server/tests/test_server.py": "f3382afd8795bb394074f3236cfd9a380750d0af593d4ac485d64ecefb714b9b",
+    "scripts/generate_trust_summary.py": "0a419f4561241250e9b4213204a5c0ff64890f0f39775fc4e0f31b3a067b6426",
+    "scripts/verify_recheck_guards.py": "09cc53e043f1bcabb5447eb41f5a2bebb80a20482901fb6385fb0d83a76a5546"
+  },
+  "limits": [
+    "Two Gemini 503 overload failures were retained; only unfinished full-suite cases were resumed.",
+    "Visible usage is not total billed usage: peer A2A, UI, and failed-call usage may not be included.",
+    "The last preservation/polite-copy guard refinement was followed by the full 172 offline suite and the five targeted live cases; full30 also contains earlier core-case results before that refinement.",
+    "Advisor conversion uncertainty guard is process-local, not restart-safe or multi-replica idempotency.",
+    "No new teacher grader score; historical 98.4/99.2 are previous-version self-evaluations."
+  ],
+  "deliverable_sha256": {
+    "reports/本輪完整檢查紀錄.md": "3322d43c2f1e4674d91dcbba5276a6ba8bd8b5d1cb5dd612f02b65540e0a6231",
+    "reports/可信賴度報告_一頁摘要.pdf": "b80967267a8c6666497ab18ae0f5bc9ed93cd7f60a165e3ee2834d84b3ffbea2",
+    "scripts/generate_trust_summary.py": "0a419f4561241250e9b4213204a5c0ff64890f0f39775fc4e0f31b3a067b6426"
+  },
+  "pdf_validation": {
+    "pages": 1,
+    "rendered_and_visually_checked": true,
+    "result": "No clipping, overlap, or missing Chinese glyphs observed."
+  }
+}

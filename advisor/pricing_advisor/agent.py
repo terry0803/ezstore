@@ -21,6 +21,7 @@ import asyncio
 import math
 import os
 import re
+from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, Literal
@@ -856,13 +857,24 @@ _NEW_QUOTATION_RE = re.compile(r"新報價單:\s*(QT-\d{8}-\d{3,})")
 _NEW_ORDER_RE = re.compile(r"訂單編號:\s*(ORD-\d{8}-\d{3,})")
 
 
+@dataclass(frozen=True)
+class _WriteVerification:
+    text: str
+    verified: bool = False
+
+
 async def _verify_after_write(purpose: str, request: dict, reply: str) -> str:
+    """保留文字介面；A2A 發送端另用結構化 verified 狀態決定是否解除保護。"""
+    return (await _verify_write_result(purpose, request, reply)).text
+
+
+async def _verify_write_result(purpose: str, request: dict, reply: str) -> _WriteVerification:
     """核對新單內容、使用者的目標與原單完整快照；對方宣告成功不算驗證。"""
     if purpose not in ("apply_price", "convert_order"):
-        return ""
+        return _WriteVerification("")
 
     def failed(reason):
-        return f"改完後核對失敗：{reason}。不能確認上方操作成功，請到系統核對，勿直接重試。"
+        return _WriteVerification(f"改完後核對失敗：{reason}。不能確認上方操作成功，請到系統核對，勿直接重試。")
 
     def amount(value):
         if isinstance(value, bool):
@@ -948,7 +960,7 @@ async def _verify_after_write(purpose: str, request: dict, reply: str) -> str:
             if request.get("original_factor") is not None:
                 lines.append(f"原單 {request['quotation_number']} 的報價因子還是 {request['original_factor']}")
             lines.append("原單完整內容未變；新單客戶、產品與數量一致，總價符合指定目標的精度容差。")
-            return "\n".join(lines)
+            return _WriteVerification("\n".join(lines), verified=True)
         if purpose == "convert_order":
             numbers = list(dict.fromkeys(_NEW_ORDER_RE.findall(reply)))
             if len(numbers) != 1:
@@ -980,11 +992,12 @@ async def _verify_after_write(purpose: str, request: dict, reply: str) -> str:
             original_now = await backend.find_quotation(request["quotation_number"])
             if original_now is None or sha256_hex(canonical_json(original_now)) != original_hash:
                 return failed("原報價單在核對期間發生變動")
-            return (f"改完後核對：後端查得到 {numbers[0]}，關聯 {request['quotation_number']}，狀態 {order.get('status')}。"
-                    "原單完整內容未變；新訂單客戶、產品、數量、單價與總價均符合。")
+            return _WriteVerification(
+                f"改完後核對：後端查得到 {numbers[0]}，關聯 {request['quotation_number']}，狀態 {order.get('status')}。"
+                "原單完整內容未變；新訂單客戶、產品、數量、單價與總價均符合。", verified=True)
     except (BackendError, ComputationError, OKFError, KeyError, TypeError, ValueError, InvalidOperation) as exc:
         return failed(f"資料不完整或驗證發生錯誤（{type(exc).__name__}）")
-    return ""
+    return _WriteVerification("")
 
 
 async def order_check(ctx: Context, node_input: dict):
@@ -1027,6 +1040,9 @@ async def order_check(ctx: Context, node_input: dict):
 # 同一張報價單的轉訂單一次只做一個。order_check 到真的送出之間有空檔，兩個請求同時進來
 # 會都看到「還沒有訂單」；排隊後重新檢查，第二個就會看到第一個建好的訂單。只在單一程序內有效。
 _CONVERT_LOCKS: dict[str, asyncio.Lock] = {}
+# 僅排隊不足以涵蓋逾時：遠端可能在本機放開鎖後才完成。送出結果不明時保留阻擋，
+# 直到能證明尚未送出、核對到成功，或重讀已存在的訂單。此狀態仍限同一程序生命週期。
+_CONVERT_UNCERTAIN: set[str] = set()
 
 
 async def _recheck_order_conversion(node_input: dict) -> str | None:
@@ -1039,8 +1055,13 @@ async def _recheck_order_conversion(node_input: dict) -> str | None:
         return f"送出前重新檢查時讀不到報價單或訂單：{e}。這次沒有轉訂單。"
     if quotation is None:
         return f"送出前重新檢查時找不到報價單 {number}。這次沒有轉訂單。"
-    decision = evaluate_order_conversion(_bundle(), quotation, orders)
+    try:
+        decision = evaluate_order_conversion(_bundle(), quotation, orders)
+    except OKFError as e:
+        return f"送出前重新檢查時讀不到轉單規則：{e}。這次沒有轉訂單。"
     if not decision.allowed:
+        if decision.existing_orders:
+            _CONVERT_UNCERTAIN.discard(number)
         reasons = "；".join(decision.reasons) or "不符合轉訂單規則"
         return f"送出前重新檢查：{reasons}。可能是剛才另一個請求已經轉了，所以這次沒有轉訂單。"
     node_input["original_source_sha256"] = sha256_hex(canonical_json(quotation))
@@ -1057,8 +1078,22 @@ async def delegate_a2a(ctx: Context, node_input: dict):
             if blocked:
                 head = node_input.get("preface") or ""
                 return Event(output="\n".join(part for part in (head, blocked) if part))
+            number = node_input["quotation_number"]
+            if number in _CONVERT_UNCERTAIN:
+                return Event(output=(f"{number} 上一次轉訂單尚未確認結果，遠端可能仍在處理。"
+                                     "這次沒有再次送出；請先至系統確認並由管理員核對未完成工作，勿直接重試。"))
+            # Set before awaiting the peer, so cancellation also keeps the guard.
+            _CONVERT_UNCERTAIN.add(number)
             return await _send_a2a(node_input)
     return await _send_a2a(node_input)
+
+
+def _definitely_not_written(reply: str) -> bool:
+    """報價單 Agent 已完成、而且明確回報失敗（例如找不到報價單、後端拒絕資料），代表沒有寫入。
+    「操作中斷」「可能已經建立」表示 MCP 途中斷線或逾時，後端可能還在處理，不算。"""
+    text = reply.strip()
+    return (text.startswith("操作失敗：") and not _NEW_ORDER_RE.search(text)
+            and not any(word in text for word in ("操作中斷", "可能已經建立", "逾時", "無法連線")))
 
 
 async def _send_a2a(node_input: dict) -> Event:
@@ -1066,11 +1101,17 @@ async def _send_a2a(node_input: dict) -> Event:
     try:
         result = await quotation_agent.send(request)
     except A2AError as e:
-        return Event(output=f"{node_input.get('preface') or ''}\n沒辦法連到報價單 Agent：{e}".strip())
+        if node_input.get("purpose") == "convert_order" and not e.may_have_written:
+            _CONVERT_UNCERTAIN.discard(node_input["quotation_number"])
+        warning = ("可能已送出操作，尚未確認結果；請先至系統核對，勿直接重試。"
+                   if e.may_have_written and node_input.get("purpose") in ("convert_order", "apply_price") else "")
+        return Event(output=f"{node_input.get('preface') or ''}\n沒辦法連到報價單 Agent：{e}\n{warning}".strip())
     head = node_input.get("preface") or ""
     trace = f"（經 A2A 交給報價單 Agent，task {result.task_id[:8]}，狀態 {result.state}）"
-    after = await _verify_after_write(node_input.get("purpose", ""), node_input, result.text)
-    text = "\n".join(part for part in (head, trace, result.text, after) if part).strip()
+    verification = await _verify_write_result(node_input.get("purpose", ""), node_input, result.text)
+    if node_input.get("purpose") == "convert_order" and (verification.verified or _definitely_not_written(result.text)):
+        _CONVERT_UNCERTAIN.discard(node_input["quotation_number"])
+    text = "\n".join(part for part in (head, trace, result.text, verification.text) if part).strip()
     return Event(output=text, state={"last_a2a": {**result.trace(), "request": request}})
 
 

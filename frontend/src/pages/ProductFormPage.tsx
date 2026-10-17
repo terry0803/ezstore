@@ -43,7 +43,8 @@ export default function ProductFormPage() {
   const mutation = useMutation({
     mutationFn: (data: FormData) =>
       isEdit ? productApi.update(Number(id), data as never) : productApi.create(data as never),
-    onSuccess: () => {
+    onSuccess: (saved) => {
+      queryClient.setQueryData(['product', String(saved.id)], saved);
       queryClient.invalidateQueries({ queryKey: ['products'] });
       navigate('/products');
     },

@@ -1,7 +1,7 @@
 {
   "agent-offline-summary.json": {
-    "bytes": 514,
-    "sha256": "84da6736e8edd7b102e3a79a2cf72f840d074e461018cd2ea225d15555647262"
+    "bytes": 1073,
+    "sha256": "b5f5bdf69b574eaebdb235854e14c29dea440455bbb15ff2ba0bc17ae11e1f1c"
   },
   "agent-offline-tests.log": {
     "bytes": 641,
@@ -12,8 +12,8 @@
     "sha256": "9b0a11f0bdd55d2d35a8449b575bd75a1c1a8a4cbdde8f49723d3353bd00a9a3"
   },
   "final-offline-summary.json": {
-    "bytes": 2930,
-    "sha256": "66b66f75eab36cc19ad32dc4fe5d6a7c3f45dadbebf83d006f226df98376ad9a"
+    "bytes": 3554,
+    "sha256": "fc71f10bff64ef551fb080d59072cea1c7e959e3333836587b5b8352417ac375"
   },
   "frontend-build.log": {
     "bytes": 378,
@@ -32,8 +32,8 @@
     "sha256": "7fa706033fb258023a8faccc60ea03823205c65cda135ae35332293349c85bdc"
   },
   "frontend-verification.json": {
-    "bytes": 1463,
-    "sha256": "c3f73dff666992dfad1f291bfe757c82614ce7463beee4b6cb5c6437c22a6c96"
+    "bytes": 2068,
+    "sha256": "bb564e7b8a4593618641be9a3be832b998fce2d81c04395debc699054055d1ff"
   },
   "gemini-full-acceptance.json": {
     "bytes": 359005,
@@ -88,8 +88,8 @@
     "sha256": "2c7d434c7a1ae0403da4ceeb5660e31dd7fa1b16eb217a6eae7d9b285a24600b"
   },
   "README.md": {
-    "bytes": 6948,
-    "sha256": "3367ab5b38753dc5500edc01eb80516fb75121908a997640820bbac1ba906fe4"
+    "bytes": 9361,
+    "sha256": "c1b17a7e2c454cc0cba13801008345a69fe64577b619dbe204c6b5d50dfd6dc2"
   },
   "repair-go-tests.log": {
     "bytes": 1905,

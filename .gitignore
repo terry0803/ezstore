@@ -64,7 +64,7 @@ playwright-report/
 # Claude
 .claude/
 
-# Commit only the root artifacts/fix-20261017 evidence bundle; agent/ and advisor/
+# Commit the selected root fix/recheck evidence bundles; agent/ and advisor/
 # eval artifacts and the machine-specific test Compose file stay local.
 !/artifacts/
 /artifacts/*
@@ -72,3 +72,6 @@ playwright-report/
 !/artifacts/fix-20261017/**
 /artifacts/fix-20261017/compose.test.yml
 /artifacts/fix-20261017/compose.gemini-test.yml
+!/artifacts/recheck-20261017/
+!/artifacts/recheck-20261017/**
+/artifacts/recheck-20261017/compose*.yml

@@ -109,7 +109,8 @@ export default function QuotationFormPage() {
   const mutation = useMutation({
     mutationFn: (data: QuotationCreateInput) =>
       isEdit ? quotationApi.update(Number(id), data) : quotationApi.create(data),
-    onSuccess: () => {
+    onSuccess: (saved) => {
+      queryClient.setQueryData(['quotation', String(saved.id)], saved);
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
       navigate('/quotations');
     },

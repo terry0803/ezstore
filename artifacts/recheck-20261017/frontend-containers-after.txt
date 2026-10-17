@@ -1,0 +1,12 @@
+ezstore-recheck-backend-1|81bed49dda46|ezstore-recheck-backend:test
+ezstore-recheck-frontend-1|74cdbdaf62d5|ezstore-recheck-frontend:test
+ezstore-recheck-advisor-1|59db9d54a88b|ezstore-recheck-advisor:test
+ezstore-recheck-agent-1|e434b8bb0781|ezstore-recheck-agent:test
+ezstore-recheck-mcp-server-1|cd14cbe784a0|ezstore-recheck-mcp-server:test
+ezstore-recheck-db-1|a1e075f800e8|postgres:16-alpine
+ezstore-advisor-1|3873fa965a4b|ezstore-advisor:local
+ezstore-agent-1|d78c0250197b|ezstore-agent:local
+ezstore-frontend-1|f19f211e3ed3|ezstore-frontend:local
+ezstore-mcp-server-1|f908fc4031e5|ezstore-mcp-server:local
+ezstore-backend-1|a7799bc0e547|ezstore-backend:local
+ezstore-db-1|d6a2837889c1|postgres:16-alpine

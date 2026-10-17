@@ -2,7 +2,9 @@
 
 import httpx
 import pytest
+from types import SimpleNamespace
 
+import pricing_advisor.a2a_client as a2a
 from pricing_advisor.a2a_client import A2AError, QuotationAgentClient
 
 BASE = "http://localhost:3000/agent-api/a2a/quotation_agent"
@@ -49,3 +51,48 @@ async def test_missing_skill_is_rejected():
     async with client_with(card(skills=("get_quotation",))) as http:
         with pytest.raises(A2AError, match="adjust_total_price"):
             await QuotationAgentClient(BASE).fetch_card(http)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("send_fails", [False, True])
+async def test_cleanup_failure_does_not_replace_send_outcome(monkeypatch, send_fails):
+    fake_card = SimpleNamespace(name="quotation_agent", skills=[])
+
+    async def fetch(self, http):
+        return fake_card
+
+    class Peer:
+        async def send_message(self, request):
+            if send_fails:
+                raise ValueError("send failed")
+            yield SimpleNamespace(HasField=lambda field: field == "message",
+                                  message=SimpleNamespace(context_id="context"))
+
+        async def close(self):
+            raise RuntimeError("cleanup failed")
+
+    monkeypatch.setattr(QuotationAgentClient, "fetch_card", fetch)
+    monkeypatch.setattr(a2a, "ClientFactory", lambda config: SimpleNamespace(create=lambda card: Peer()))
+    monkeypatch.setattr(a2a, "get_message_text", lambda message: "completed reply")
+    if send_fails:
+        with pytest.raises(A2AError, match="ValueError") as error:
+            await QuotationAgentClient(BASE).send("test")
+        assert error.value.may_have_written is True
+    else:
+        result = await QuotationAgentClient(BASE).send("test")
+        assert result.text == "completed reply"
+
+
+@pytest.mark.asyncio
+async def test_factory_failure_is_known_not_sent(monkeypatch):
+    async def fetch(self, http):
+        return SimpleNamespace(name="quotation_agent", skills=[])
+
+    def broken(card):
+        raise ValueError("unsupported transport")
+
+    monkeypatch.setattr(QuotationAgentClient, "fetch_card", fetch)
+    monkeypatch.setattr(a2a, "ClientFactory", lambda config: SimpleNamespace(create=broken))
+    with pytest.raises(A2AError) as error:
+        await QuotationAgentClient(BASE).send("test")
+    assert error.value.may_have_written is False

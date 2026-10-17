@@ -72,5 +72,11 @@
       "command": "docker run --rm --network none [backend source:ro, cached Go modules/build volumes] golang:1.26-alpine go test -mod=readonly -count=1 -v ./...",
       "log_sha256": "4089b81fbb3ab3d87131da17d7f71acd1d1f7cda5ace92ae365c88db4b984407"
     }
-  ]
+  ],
+  "_embedded_log_integrity": {
+    "representation": "original UTF-8 log bytes with CRLF line endings",
+    "scope": "Embedded log_sha256, or logs.*.sha256 and logs.*.bytes, retain the original run values.",
+    "committed_files": "Log text was normalized to LF for Git. Use evidence-manifest.json for current committed byte sizes and SHA-256.",
+    "verification": "To check the retained original values, normalize CRLF to LF, then convert LF to CRLF before calculating bytes and SHA-256. No test result or original hash was changed."
+  }
 }

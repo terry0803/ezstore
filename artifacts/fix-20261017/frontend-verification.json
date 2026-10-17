@@ -54,5 +54,11 @@
       "sha256": "d5d52933718339f3e62165b51848ae30c8ab2894bd497a2bd8295e24e0f95f2f",
       "bytes": 15463
     }
+  },
+  "_embedded_log_integrity": {
+    "representation": "original UTF-8 log bytes with CRLF line endings",
+    "scope": "Embedded log_sha256, or logs.*.sha256 and logs.*.bytes, retain the original run values.",
+    "committed_files": "Log text was normalized to LF for Git. Use evidence-manifest.json for current committed byte sizes and SHA-256.",
+    "verification": "To check the retained original values, normalize CRLF to LF, then convert LF to CRLF before calculating bytes and SHA-256. No test result or original hash was changed."
   }
 }

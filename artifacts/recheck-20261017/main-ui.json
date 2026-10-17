@@ -1,0 +1,19 @@
+{
+  "observed_at": "2026-10-17T09:42:30.631928+00:00",
+  "url": "http://localhost:3000/agent",
+  "method": "CUA browser UI: reload, type prompt, submit, inspect rendered response and console",
+  "prompt": "查詢報價單 QT-20260330-001",
+  "passed": true,
+  "visible_quote": "QT-20260330-001",
+  "visible_total": 6175,
+  "visible_pricing_factor": 0.95,
+  "visible_link": "http://localhost:3000/quotations/12",
+  "console_warnings_or_errors": [],
+  "screenshot": "main-ui-gemini.jpg",
+  "model": "gemini-3.1-flash-lite",
+  "model_evidence": "main-deployment.json",
+  "business_records_unchanged": true,
+  "business_snapshot_evidence": "main-deployment.json",
+  "model_turns": 1,
+  "limits": "UI reply and deployment model verified; token usage for this UI turn was not captured."
+}

@@ -30,7 +30,8 @@ export default function CustomerFormPage() {
   const mutation = useMutation({
     mutationFn: (data: FormData) =>
       isEdit ? customerApi.update(Number(id), data) : customerApi.create(data),
-    onSuccess: () => {
+    onSuccess: (saved) => {
+      queryClient.setQueryData(['customer', String(saved.id)], saved);
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       navigate('/customers');
     },

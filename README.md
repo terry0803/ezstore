@@ -73,7 +73,7 @@ ezstore/
     │   ├── types/index.ts      # TypeScript type definitions
     │   ├── App.tsx             # Router + QueryClientProvider
     │   └── main.tsx            # React entry point
-    └── e2e/                    # Playwright E2E tests (planned)
+    └── e2e/                    # Playwright E2E tests
 ```
 
 ### Prerequisites

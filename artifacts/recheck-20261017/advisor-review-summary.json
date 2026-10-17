@@ -1,0 +1,52 @@
+{
+  "reviewed_head": "e68052e34a975cc3a2f12f9f065b33ba1fa32f5e",
+  "scope": "advisor Python/A2A/OKF; fresh offline review",
+  "network": "All pytest tests ran with existing autouse socket and DNS guards; fake model graph nodes, backend, and peer only.",
+  "real_model_calls": 0,
+  "main_database_writes": 0,
+  "baseline": {"passed": 159, "failed": 0, "seconds": 7.53, "log": "advisor-baseline-tests.log"},
+  "final": {"passed": 167, "failed": 0, "seconds": 7.60, "log": "advisor-final-tests.log"},
+  "findings_fixed": [
+    {
+      "severity": "P1",
+      "title": "A2A timeout or cancellation releases the local conversion lock while the remote write may still commit",
+      "evidence": "Deterministic delayed fake peer reproduces duplicate dispatch on timeout, cancellation, and an unverified completed response. The new uncertainty marker blocks another send until a safe outcome is known.",
+      "location": "advisor/pricing_advisor/agent.py:1045",
+      "tests": "advisor/tests/unit/test_conversion_safety.py"
+    },
+    {
+      "severity": "P2",
+      "title": "A2A client cleanup failure replaces a completed reply or the original failure",
+      "evidence": "Fake client.close raises after both successful and failed send. Cleanup is now logged without replacing either outcome; pre-dispatch factory failures are classified as not sent.",
+      "location": "advisor/pricing_advisor/a2a_client.py:98",
+      "tests": "advisor/tests/unit/test_a2a_client.py"
+    },
+    {
+      "severity": "P2",
+      "title": "Rule reload failure escapes the conversion recheck instead of returning a no-write response",
+      "evidence": "Injected OKFError during the last pre-dispatch policy read now returns a clear rejection and sends nothing.",
+      "location": "advisor/pricing_advisor/agent.py:1058",
+      "tests": "advisor/tests/unit/test_conversion_safety.py"
+    }
+  ],
+  "changed_files": [
+    "advisor/pricing_advisor/agent.py",
+    "advisor/pricing_advisor/a2a_client.py",
+    "advisor/tests/unit/test_conversion_safety.py",
+    "advisor/tests/unit/test_a2a_client.py",
+    "advisor/tests/integration/test_workflow_offline.py",
+    "advisor/README.md"
+  ],
+  "extra_checks": [
+    "Workflow fixture resets both conversion lock and uncertainty state per test.",
+    "Delayed remote completion is recognized on reread; existing order still blocks duplicate conversion.",
+    "Known pre-dispatch failures allow safe retry; verified completion clears uncertainty.",
+    "git diff --check -- advisor passed."
+  ],
+  "limits": [
+    "Protection remains process-local and does not survive a restart or coordinate multiple replicas/other clients.",
+    "Restart is not a safe way to clear an uncertain result; an administrator must reconcile the remote work and order state first.",
+    "No persistent backend idempotency key was added; first Agent and MCP repeated conversion contract is unchanged.",
+    "No real Qwen/Gemini/API execution or main database writes were performed."
+  ]
+}

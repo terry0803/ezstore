@@ -1,4 +1,6 @@
 import pytest
+import asyncio
+import copy
 
 import server
 
@@ -92,3 +94,64 @@ async def test_unreachable_total_still_copies_and_reports_actual_total(monkeypat
     assert "注意: 已達最大迭代次數" in text
     actual = float(text.split("實際總價: ")[1].split()[0])
     assert 32400 < actual <= 32500
+
+
+@pytest.mark.asyncio
+async def test_repeated_conversion_creates_each_order_and_keeps_source(monkeypatch):
+    """第一 Agent 契約允許再次轉單；Advisor 的額外檢查不改 MCP 語意。"""
+    original = {"id": 12, "customer_id": 7, "quotation_number": "QT-TEST-001",
+                "items": [{"product_id": 3, "unit_price": "12.34", "quantity": 2}]}
+    unchanged = copy.deepcopy(original)
+    writes = []
+
+    async def require(_number):
+        return original
+
+    async def get(path):
+        assert path == "/quotations/12"
+        return original
+
+    async def post(path, json):
+        assert path == "/orders"
+        writes.append(copy.deepcopy(json))
+        order_id = len(writes)
+        await asyncio.sleep(0)
+        return {"id": order_id, "order_number": f"ORD-TEST-{order_id:03d}", "total_price": "24.68"}
+
+    monkeypatch.setattr(server, "_require_quotation", require)
+    monkeypatch.setattr(server, "_get", get)
+    monkeypatch.setattr(server, "_post", post)
+    replies = await asyncio.gather(*(server.convert_to_order("QT-TEST-001") for _ in range(2)))
+    assert len(writes) == 2
+    assert all(body["quotation_id"] == 12 and body["customer_id"] == 7 for body in writes)
+    assert all(body["items"] == [{"product_id": 3, "unit_price": 12.34, "quantity": 2}] for body in writes)
+    assert "ORD-TEST-001" in replies[0] and "ORD-TEST-002" in replies[1]
+    assert original == unchanged
+
+
+@pytest.mark.asyncio
+async def test_factor_change_only_writes_the_duplicate(monkeypatch):
+    source = {"id": 12, "quotation_number": "QT-TEST-001", "pricing_factor": "0.9", "total_price": "90"}
+    duplicate = {"id": 13, "customer_id": 7, "notes": "copied",
+                 "items": [{"product_id": 3, "quantity": 1}]}
+    writes = []
+
+    async def require(_number):
+        return source
+
+    async def duplicate_q(q):
+        assert q is source
+        return duplicate
+
+    async def put(path, body):
+        writes.append((path, body))
+        return {"id": 13, "quotation_number": "QT-TEST-002", "pricing_factor": "0.85", "total_price": "85"}
+
+    monkeypatch.setattr(server, "_require_quotation", require)
+    monkeypatch.setattr(server, "_duplicate", duplicate_q)
+    monkeypatch.setattr(server, "_put", put)
+    reply = await server.update_pricing_factor("QT-TEST-001", 0.85)
+    assert len(writes) == 1 and writes[0][0] == "/quotations/13"
+    assert writes[0][1]["pricing_factor"] == 0.85
+    assert source["pricing_factor"] == "0.9"
+    assert "（未修改）" in reply and "QT-TEST-002" in reply

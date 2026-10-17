@@ -1,0 +1,433 @@
+ Image ezstore-backend:local Building 
+ Image ezstore-mcp-server:local Building 
+ Image ezstore-agent:local Building 
+ Image ezstore-frontend:local Building 
+ Image ezstore-advisor:local Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 2.56kB 0.0s done
+#1 DONE 0.1s
+
+#2 [agent internal] load build definition from Dockerfile
+#2 transferring dockerfile: 828B done
+#2 DONE 0.0s
+
+#3 [backend internal] load build definition from Dockerfile
+#3 transferring dockerfile: 398B done
+#3 DONE 0.0s
+
+#4 [advisor internal] load build definition from Dockerfile
+#4 transferring dockerfile: 979B done
+#4 DONE 0.1s
+
+#5 [mcp-server internal] load build definition from Dockerfile
+#5 transferring dockerfile: 696B done
+#5 DONE 0.1s
+
+#6 [frontend internal] load build definition from Dockerfile
+#6 transferring dockerfile: 311B done
+#6 DONE 0.1s
+
+#7 [advisor internal] load metadata for ghcr.io/astral-sh/uv:0.12.20
+#7 DONE 0.1s
+
+#8 [auth] library/golang:pull token for registry-1.docker.io
+#8 DONE 0.0s
+
+#9 [auth] library/alpine:pull token for registry-1.docker.io
+#9 DONE 0.0s
+
+#10 [mcp-server internal] load metadata for docker.io/library/python:3.12-slim
+#10 ...
+
+#11 [frontend internal] load metadata for docker.io/library/nginx:alpine
+#11 DONE 1.0s
+
+#10 [agent internal] load metadata for docker.io/library/python:3.12-slim
+#10 DONE 1.1s
+
+#12 [frontend internal] load metadata for docker.io/oven/bun:1.4
+#12 DONE 1.0s
+
+#13 [mcp-server internal] load .dockerignore
+#13 transferring context: 91B done
+#13 DONE 0.0s
+
+#14 [agent internal] load .dockerignore
+#14 transferring context: 2B done
+#14 DONE 0.0s
+
+#15 [frontend internal] load .dockerignore
+#15 transferring context: 2B done
+#15 DONE 0.0s
+
+#16 [agent internal] load build context
+#16 DONE 0.0s
+
+#17 [advisor internal] load .dockerignore
+#17 transferring context: 2B done
+#17 DONE 0.1s
+
+#18 [advisor internal] load build context
+#18 DONE 0.0s
+
+#19 [mcp-server internal] load build context
+#19 transferring context: 93B done
+#19 DONE 0.0s
+
+#20 [frontend internal] load build context
+#20 transferring context: 2.30kB done
+#20 DONE 0.0s
+
+#21 [advisor] FROM ghcr.io/astral-sh/uv:0.12.20@sha256:100047e74f30778ab704942321a09750d6158739573ff58bf3924085cc6cd2d8
+#21 resolve ghcr.io/astral-sh/uv:0.12.20@sha256:100047e74f30778ab704942321a09750d6158739573ff58bf3924085cc6cd2d8
+#21 resolve ghcr.io/astral-sh/uv:0.12.20@sha256:100047e74f30778ab704942321a09750d6158739573ff58bf3924085cc6cd2d8 0.1s done
+#21 DONE 0.1s
+
+#22 [agent stage-0 1/6] FROM docker.io/library/python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
+#22 resolve docker.io/library/python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1 0.1s done
+#22 DONE 0.1s
+
+#23 [frontend builder 1/6] FROM docker.io/oven/bun:1.4@sha256:ec06c3b6cea04192ae6770c434f668ca41d343ad19fa6472216c7b48be39c598
+#23 resolve docker.io/oven/bun:1.4@sha256:ec06c3b6cea04192ae6770c434f668ca41d343ad19fa6472216c7b48be39c598 0.1s done
+#23 DONE 0.1s
+
+#24 [mcp-server stage-0 4/6] COPY pyproject.toml uv.lock ./
+#24 CACHED
+
+#25 [mcp-server stage-0 3/6] WORKDIR /app
+#25 CACHED
+
+#26 [mcp-server stage-0 5/6] RUN uv sync --frozen --no-dev --no-install-project
+#26 CACHED
+
+#27 [mcp-server stage-0 6/6] COPY server.py ./
+#27 CACHED
+
+#28 [frontend stage-1 1/3] FROM docker.io/library/nginx:alpine@sha256:892bb2152464f0c5d8972593a5f5afaf8054552580b699d95f8ff4af08c2d33d
+#28 resolve docker.io/library/nginx:alpine@sha256:892bb2152464f0c5d8972593a5f5afaf8054552580b699d95f8ff4af08c2d33d 0.1s done
+#28 DONE 0.1s
+
+#29 [frontend builder 6/6] RUN bun run build
+#29 CACHED
+
+#30 [frontend builder 4/6] RUN bun install --frozen-lockfile
+#30 CACHED
+
+#31 [frontend builder 3/6] COPY package.json bun.lock ./
+#31 CACHED
+
+#32 [frontend builder 5/6] COPY . .
+#32 CACHED
+
+#33 [frontend stage-1 2/3] COPY --from=builder /app/dist /usr/share/nginx/html
+#33 CACHED
+
+#34 [frontend builder 2/6] WORKDIR /app
+#34 CACHED
+
+#35 [frontend stage-1 3/3] COPY nginx.conf /etc/nginx/conf.d/default.conf
+#35 CACHED
+
+#16 [agent internal] load build context
+#16 transferring context: 840B 0.0s done
+#16 DONE 0.0s
+
+#18 [advisor internal] load build context
+#18 transferring context: 102.83kB 0.0s done
+#18 DONE 0.1s
+
+#36 [advisor stage-0 2/6] COPY --from=ghcr.io/astral-sh/uv:0.12.20 /uv /uvx /bin/
+#36 CACHED
+
+#37 [advisor stage-0 3/7] WORKDIR /code
+#37 CACHED
+
+#38 [mcp-server] exporting to image
+#38 exporting layers done
+#38 exporting manifest sha256:2eefbdeb72be45d4179cd220434ede0ffcdffdb15db91e03bd613ae57735d2e0 done
+#38 exporting config sha256:1cede47101aa7b67b9b02a5a394e49989be0c3be5ac1e97f2c720f60f3b44abd done
+#38 ...
+
+#39 [agent stage-0 4/7] COPY ./pyproject.toml ./README.md ./uv.lock ./
+#39 CACHED
+
+#40 [agent stage-0 5/7] RUN uv sync --frozen --no-dev --no-install-project
+#40 CACHED
+
+#41 [agent stage-0 6/7] COPY ./quotation_agent ./quotation_agent
+#41 CACHED
+
+#42 [agent stage-0 7/7] RUN uv sync --frozen --no-dev
+#42 CACHED
+
+#36 [agent stage-0 2/6] COPY --from=ghcr.io/astral-sh/uv:0.12.20 /uv /uvx /bin/
+#36 CACHED
+
+#37 [agent stage-0 3/7] WORKDIR /code
+#37 CACHED
+
+#38 [mcp-server] exporting to image
+#38 exporting attestation manifest sha256:69a65aacfacf48d20267a2b7adb3863e286b59f1b2890cea309d78bb5e321183 0.1s done
+#38 exporting manifest list sha256:49e82ac0815dc9043e9e1fdec4dafc5868090331503e0bf1699cbaafcbbcd345
+#38 ...
+
+#43 [advisor stage-0 4/7] COPY ./pyproject.toml ./README.md ./uv.lock ./
+#43 DONE 0.2s
+
+#38 [mcp-server] exporting to image
+#38 exporting manifest list sha256:49e82ac0815dc9043e9e1fdec4dafc5868090331503e0bf1699cbaafcbbcd345 0.1s done
+#38 naming to docker.io/library/ezstore-mcp-server:local 0.0s done
+#38 unpacking to docker.io/library/ezstore-mcp-server:local
+#38 unpacking to docker.io/library/ezstore-mcp-server:local 0.1s done
+#38 DONE 0.4s
+
+#44 [backend internal] load metadata for docker.io/library/golang:1.25-alpine
+#44 DONE 1.7s
+
+#45 [backend internal] load metadata for docker.io/library/alpine:3.24
+#45 DONE 1.7s
+
+#46 [frontend] exporting to image
+#46 exporting layers done
+#46 exporting manifest sha256:6ee846996d68aee7edcff1bc35047c794a6d40ada0013d63e7ecdd9c752b3c2f 0.0s done
+#46 exporting config sha256:f9a3444d57b864ea59ceed7c0db96acdff7018387b1c848a43ed47aecf3d1dbe 0.1s done
+#46 exporting attestation manifest sha256:32c754357c2cd377f4cdac51b26b45cb4d7ac58acdb87eb0f485a8051561ea49 0.1s done
+#46 exporting manifest list sha256:e39a048e06716c8e896cafa6611912b9bdde4f762741fa23338740828b14a697 0.1s done
+#46 naming to docker.io/library/ezstore-frontend:local 0.0s done
+#46 unpacking to docker.io/library/ezstore-frontend:local
+#46 unpacking to docker.io/library/ezstore-frontend:local 0.1s done
+#46 DONE 0.5s
+
+#47 [backend internal] load .dockerignore
+#47 transferring context: 2B done
+#47 DONE 0.0s
+
+#48 [backend internal] load build context
+#48 DONE 0.0s
+
+#49 [agent] exporting to image
+#49 exporting layers done
+#49 exporting manifest sha256:48d863ef394ccb7aaf49bbd375af8278c3beb07eed7ce20d409c914f9721ac92 0.1s done
+#49 exporting config sha256:fe4dc5d41ab957df87b91e29d786b9827b162a7a27e936f0e86a464f549d24d5 0.1s done
+#49 exporting attestation manifest sha256:2158e6190f4d20fc0daae03f4755fd8bd0db3f17d900bfe9447b7b853ec35153 0.1s done
+#49 exporting manifest list sha256:6832d517981a65330b0ec19de0b1d00328e74ddb4bb38777bc2a59accb41f919 0.1s done
+#49 naming to docker.io/library/ezstore-agent:local 0.0s done
+#49 unpacking to docker.io/library/ezstore-agent:local 0.0s done
+#49 DONE 0.5s
+
+#50 [backend builder 1/6] FROM docker.io/library/golang:1.25-alpine@sha256:1ae0735f00daffa3aaf1363a5184c0d2dc55c78e3db4ec70241cdac97bf84b59
+#50 resolve docker.io/library/golang:1.25-alpine@sha256:1ae0735f00daffa3aaf1363a5184c0d2dc55c78e3db4ec70241cdac97bf84b59
+#50 resolve docker.io/library/golang:1.25-alpine@sha256:1ae0735f00daffa3aaf1363a5184c0d2dc55c78e3db4ec70241cdac97bf84b59 0.1s done
+#50 DONE 0.2s
+
+#51 [backend stage-1 1/5] FROM docker.io/library/alpine:3.24@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
+#51 resolve docker.io/library/alpine:3.24@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 0.1s done
+#51 DONE 0.2s
+
+#48 [backend internal] load build context
+#48 transferring context: 1.69kB done
+#48 DONE 0.0s
+
+#52 [advisor stage-0 5/7] RUN uv sync --frozen --no-dev --no-install-project
+#52 ...
+
+#53 [backend stage-1 2/5] RUN apk add --no-cache ca-certificates
+#53 CACHED
+
+#54 [backend builder 6/6] RUN CGO_ENABLED=0 go build -o ezstore-api .
+#54 CACHED
+
+#55 [backend builder 4/6] RUN go mod download
+#55 CACHED
+
+#56 [backend builder 5/6] COPY . .
+#56 CACHED
+
+#57 [backend stage-1 4/5] COPY --from=builder /app/ezstore-api .
+#57 CACHED
+
+#58 [backend builder 2/6] WORKDIR /app
+#58 CACHED
+
+#59 [backend stage-1 3/5] WORKDIR /app
+#59 CACHED
+
+#60 [backend builder 3/6] COPY go.mod go.sum ./
+#60 CACHED
+
+#61 [backend stage-1 5/5] COPY --from=builder /app/docs ./docs
+#61 CACHED
+
+#52 [advisor stage-0 5/7] RUN uv sync --frozen --no-dev --no-install-project
+#52 0.582 Using CPython 3.12.15 interpreter at: /usr/local/bin/python3
+#52 0.582 Creating virtual environment at: .venv
+#52 ...
+
+#62 [backend] exporting to image
+#62 exporting layers done
+#62 exporting manifest sha256:6fd4ebb34727e1ab1ac1509b1263b1d4090068a3c214bcff1ae89d1c466f799c 0.0s done
+#62 exporting config sha256:717e9c5843d9a08bb4ca65bfd5efe19543ccbbe32be54d04bc138741aa1da1c9 0.0s done
+#62 exporting attestation manifest sha256:e435201f296b0b34844c3b738bf5b907a9dcb5546a7213050600ac5567fe6864 0.0s done
+#62 exporting manifest list sha256:b8bcc87abb2d6e3a069030b421f05a44fd9c0e625b3d032ce933fbd36b0f2121 0.0s done
+#62 naming to docker.io/library/ezstore-backend:local 0.0s done
+#62 unpacking to docker.io/library/ezstore-backend:local 0.0s done
+#62 DONE 0.2s
+
+#63 [mcp-server] resolving provenance for metadata file
+#63 DONE 0.1s
+
+#64 [frontend] resolving provenance for metadata file
+#64 DONE 0.1s
+
+#65 [agent] resolving provenance for metadata file
+#65 DONE 0.1s
+
+#52 [advisor stage-0 5/7] RUN uv sync --frozen --no-dev --no-install-project
+#52 0.943 Downloading aiohttp (1.8MiB)
+#52 0.948 Downloading google-adk (4.6MiB)
+#52 0.950 Downloading hf-xet (4.0MiB)
+#52 0.952 Downloading google-genai (1.2MiB)
+#52 0.952 Downloading pydantic-core (2.1MiB)
+#52 0.953 Downloading openai (1.6MiB)
+#52 0.954 Downloading cryptography (4.5MiB)
+#52 0.954 Downloading tokenizers (3.2MiB)
+#52 0.958 Downloading litellm (16.2MiB)
+#52 ...
+
+#66 [backend] resolving provenance for metadata file
+#66 DONE 0.0s
+
+#52 [advisor stage-0 5/7] RUN uv sync --frozen --no-dev --no-install-project
+#52 0.960 Downloading tiktoken (1.1MiB)
+#52 2.307  Downloaded tiktoken
+#52 2.317  Downloaded google-genai
+#52 2.496  Downloaded openai
+#52 2.590  Downloaded aiohttp
+#52 2.711  Downloaded pydantic-core
+#52 3.060  Downloaded tokenizers
+#52 3.153  Downloaded hf-xet
+#52 3.243  Downloaded cryptography
+#52 3.419  Downloaded google-adk
+#52 3.985  Downloaded litellm
+#52 3.986 Prepared 87 packages in 3.39s
+#52 4.198 Installed 87 packages in 212ms
+#52 4.198  + a2a-sdk==1.2.2
+#52 4.198  + aiohappyeyeballs==2.7.1
+#52 4.198  + aiohttp==3.14.5
+#52 4.198  + aiologic==0.17.1
+#52 4.198  + aiosignal==1.4.0
+#52 4.198  + aiosqlite==0.22.1
+#52 4.198  + annotated-doc==0.0.5
+#52 4.198  + annotated-types==0.8.0
+#52 4.198  + anyio==4.15.1
+#52 4.198  + attrs==26.1.0
+#52 4.199  + authlib==1.9.1
+#52 4.199  + certifi==2026.7.22
+#52 4.199  + cffi==2.1.1
+#52 4.199  + charset-normalizer==3.5.2
+#52 4.199  + click==8.5.0
+#52 4.199  + cryptography==50.0.2
+#52 4.199  + culsans==0.11.0
+#52 4.199  + distro==1.9.0
+#52 4.199  + fastapi==0.141.1
+#52 4.199  + fastuuid==0.14.0
+#52 4.199  + filelock==4.2.0
+#52 4.199  + frozenlist==1.8.0
+#52 4.199  + fsspec==2026.9.0
+#52 4.199  + google-adk==2.11.0
+#52 4.199  + google-api-core==2.34.0
+#52 4.199  + google-auth==2.62.0
+#52 4.199  + google-genai==2.31.0
+#52 4.199  + googleapis-common-protos==1.75.5
+#52 4.199  + graphviz==0.21
+#52 4.199  + h11==0.16.0
+#52 4.199  + hf-xet==1.7.0
+#52 4.199  + httpcore==1.0.9
+#52 4.199  + httpcore2==2.13.1
+#52 4.199  + httpx==0.28.1
+#52 4.199  + httpx2==2.13.1
+#52 4.199  + huggingface-hub==2.2.0
+#52 4.199  + idna==3.20
+#52 4.199  + importlib-metadata==8.9.0
+#52 4.199  + jinja2==3.1.6
+#52 4.199  + jiter==0.17.0
+#52 4.199  + joserfc==1.7.5
+#52 4.199  + json-rpc==1.15.0
+#52 4.199  + jsonschema==4.26.0
+#52 4.199  + jsonschema-specifications==2025.9.1
+#52 4.199  + litellm==1.85.7
+#52 4.199  + markupsafe==3.0.4
+#52 4.199  + mcp==2.3.0
+#52 4.199  + mcp-types==2.3.0
+#52 4.199  + multidict==7.1.0
+#52 4.199  + openai==2.54.0
+#52 4.199  + opentelemetry-api==1.42.1
+#52 4.199  + opentelemetry-sdk==1.42.1
+#52 4.199  + opentelemetry-semantic-conventions==0.63b1
+#52 4.199  + packaging==26.3
+#52 4.199  + propcache==0.5.4
+#52 4.199  + proto-plus==1.29.0
+#52 4.199  + protobuf==6.33.6
+#52 4.199  + pyasn1==0.6.4
+#52 4.199  + pyasn1-modules==0.4.2
+#52 4.199  + pycparser==3.11
+#52 4.199  + pydantic==2.14.1
+#52 4.199  + pydantic-core==2.50.1
+#52 4.199  + pyjwt==2.15.1
+#52 4.199  + python-dotenv==1.2.4
+#52 4.199  + python-multipart==0.0.32
+#52 4.199  + pyyaml==6.0.3
+#52 4.199  + referencing==0.37.0
+#52 4.199  + regex==2026.9.29
+#52 4.199  + requests==2.34.2
+#52 4.199  + rpds-py==2026.9.1
+#52 4.199  + sniffio==1.3.1
+#52 4.199  + sse-starlette==3.5.0
+#52 4.199  + starlette==1.8.0
+#52 4.199  + tenacity==9.1.4
+#52 4.199  + tiktoken==0.14.0
+#52 4.199  + tokenizers==0.23.3
+#52 4.199  + tqdm==4.70.1
+#52 4.199  + truststore==0.10.5
+#52 4.199  + typing-extensions==4.16.0
+#52 4.199  + typing-inspection==0.4.4
+#52 4.199  + urllib3==2.8.0
+#52 4.199  + uvicorn==0.54.0
+#52 4.199  + watchdog==6.0.0
+#52 4.199  + websockets==15.0.1
+#52 4.199  + wrapt==2.5.1
+#52 4.199  + yarl==1.25.1
+#52 4.199  + zipp==4.1.1
+#52 DONE 5.0s
+
+#67 [advisor stage-0 6/7] COPY ./pricing_advisor ./pricing_advisor
+#67 DONE 0.3s
+
+#68 [advisor stage-0 7/7] RUN uv sync --frozen --no-dev
+#68 0.593    Building ezstore-advisor @ file:///code
+#68 2.469       Built ezstore-advisor @ file:///code
+#68 2.473 Prepared 1 package in 1.88s
+#68 2.475 Installed 1 package in 2ms
+#68 2.475  + ezstore-advisor==0.1.0 (from file:///code)
+#68 DONE 2.7s
+
+#69 [advisor] exporting to image
+#69 exporting layers
+#69 exporting layers 5.4s done
+#69 exporting manifest sha256:465b50971469461a8725193aed7cdc6cd16711e0b29f559925cd7020900f0f58 0.0s done
+#69 exporting config sha256:30b0742a1c6503742327c350a19f656f7ce70d143ef54a1887e4e58a85591909 0.0s done
+#69 exporting attestation manifest sha256:262f18fc246840044f2a6c17d5a3c4ac3cac02c9979dc33a2ff2b69182d60220 0.0s done
+#69 exporting manifest list sha256:d749b5f2e879e11a3c11cd1ad7557de782ed30d8503db6793f14879f3ccf9b9a 0.0s done
+#69 naming to docker.io/library/ezstore-advisor:local
+#69 naming to docker.io/library/ezstore-advisor:local done
+#69 unpacking to docker.io/library/ezstore-advisor:local
+#69 unpacking to docker.io/library/ezstore-advisor:local 3.0s done
+#69 DONE 8.6s
+
+#70 [advisor] resolving provenance for metadata file
+#70 DONE 0.0s
+ Image ezstore-backend:local Built 
+ Image ezstore-frontend:local Built 
+ Image ezstore-mcp-server:local Built 
+ Image ezstore-advisor:local Built 
+ Image ezstore-agent:local Built 

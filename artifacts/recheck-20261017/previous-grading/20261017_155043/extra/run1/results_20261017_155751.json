@@ -1,0 +1,486 @@
+{
+  "eval_case_results": [
+    {
+      "eval_case_index": 0,
+      "response_candidate_results": [
+        {
+          "response_index": 0,
+          "metric_results": {
+            "custom_response_quality": {
+              "metric_name": "custom_response_quality",
+              "score": 5.0,
+              "explanation": "",
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": null
+            },
+            "link_present": {
+              "metric_name": "link_present",
+              "score": 1.0,
+              "explanation": "\u67e5\u7121\u8cc7\u6599\u7684\u56de\u8986\u4e0d\u9700\u8981\u660e\u7d30\u9023\u7d50",
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": null
+            },
+            "refusal_or_action": {
+              "metric_name": "refusal_or_action",
+              "score": 1.0,
+              "explanation": "\u52a9\u624b\u6b63\u78ba\u8b58\u5225\u5831\u50f9\u55ae\u67e5\u8a62\u610f\u5716\uff0c\u4e26\u5728\u627e\u4e0d\u5230\u5831\u50f9\u55ae\u6642\u660e\u78ba\u544a\u77e5\uff0c\u7b26\u5408\u898f\u52474\u3002",
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": null
+            },
+            "agent_turn_count": {
+              "metric_name": "agent_turn_count",
+              "score": 1.0,
+              "explanation": null,
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "eval_case_index": 1,
+      "response_candidate_results": [
+        {
+          "response_index": 0,
+          "metric_results": {
+            "custom_response_quality": {
+              "metric_name": "custom_response_quality",
+              "score": 5.0,
+              "explanation": "",
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": null
+            },
+            "link_present": {
+              "metric_name": "link_present",
+              "score": 1.0,
+              "explanation": "\u56de\u8986\u5305\u542b\u7d14\u6587\u5b57\u7cfb\u7d71\u9023\u7d50",
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": null
+            },
+            "refusal_or_action": {
+              "metric_name": "refusal_or_action",
+              "score": 1.0,
+              "explanation": "\u52a9\u624b\u6b63\u78ba\u57f7\u884c\u4e86\u5831\u50f9\u55ae\u67e5\u8a62\u4efb\u52d9\uff0c\u4e26\u63d0\u4f9b\u4e86\u7d14\u6587\u5b57\u683c\u5f0f\u7684\u7cfb\u7d71\u9023\u7d50\uff0c\u7b26\u5408\u6240\u6709\u898f\u7bc4\u3002",
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": null
+            },
+            "agent_turn_count": {
+              "metric_name": "agent_turn_count",
+              "score": 1.0,
+              "explanation": null,
+              "rubric_verdicts": null,
+              "raw_output": null,
+              "error_message": null
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "summary_metrics": [
+    {
+      "metric_name": "custom_response_quality",
+      "num_cases_total": 2,
+      "num_cases_valid": 2,
+      "num_cases_error": 0,
+      "mean_score": 5.0,
+      "stdev_score": 0.0,
+      "pass_rate": null
+    },
+    {
+      "metric_name": "link_present",
+      "num_cases_total": 2,
+      "num_cases_valid": 2,
+      "num_cases_error": 0,
+      "mean_score": 1.0,
+      "stdev_score": 0.0,
+      "pass_rate": null
+    },
+    {
+      "metric_name": "refusal_or_action",
+      "num_cases_total": 2,
+      "num_cases_valid": 2,
+      "num_cases_error": 0,
+      "mean_score": 1.0,
+      "stdev_score": 0.0,
+      "pass_rate": null
+    },
+    {
+      "metric_name": "agent_turn_count",
+      "num_cases_total": 2,
+      "num_cases_valid": 2,
+      "num_cases_error": 0,
+      "mean_score": 1.0,
+      "stdev_score": 0.0,
+      "pass_rate": null
+    }
+  ],
+  "win_rates": null,
+  "evaluation_dataset": [
+    {
+      "bigquery_source": null,
+      "gcs_source": null,
+      "eval_cases": [
+        {
+          "prompt": {
+            "parts": [
+              {
+                "media_resolution": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "file_data": null,
+                "function_call": null,
+                "function_response": null,
+                "inline_data": null,
+                "text": "\u6211\u8981\u67e5\u8a62\u5831\u50f9\u55ae\uff0c\u5831\u50f9\u55ae\u7de8\u865f\uff1aQT-20990101-001",
+                "thought": null,
+                "thought_signature": null,
+                "video_metadata": null,
+                "tool_call": null,
+                "tool_response": null,
+                "part_metadata": null,
+                "audio_transcription": null,
+                "media_processing": null,
+                "speech_metadata": null
+              }
+            ],
+            "role": "user"
+          },
+          "responses": [
+            {
+              "response": {
+                "parts": [
+                  {
+                    "media_resolution": null,
+                    "code_execution_result": null,
+                    "executable_code": null,
+                    "file_data": null,
+                    "function_call": null,
+                    "function_response": null,
+                    "inline_data": null,
+                    "text": "\u64cd\u4f5c\u5931\u6557\uff1a\u627e\u4e0d\u5230\u5831\u50f9\u55ae\u7de8\u865f QT-20990101-001",
+                    "thought": null,
+                    "thought_signature": null,
+                    "video_metadata": null,
+                    "tool_call": null,
+                    "tool_response": null,
+                    "part_metadata": null,
+                    "audio_transcription": null,
+                    "media_processing": null,
+                    "speech_metadata": null
+                  }
+                ],
+                "role": "model"
+              }
+            }
+          ],
+          "reference": {
+            "response": {
+              "parts": [
+                {
+                  "media_resolution": null,
+                  "code_execution_result": null,
+                  "executable_code": null,
+                  "file_data": null,
+                  "function_call": null,
+                  "function_response": null,
+                  "inline_data": null,
+                  "text": "\u660e\u78ba\u544a\u77e5\u627e\u4e0d\u5230\u9019\u5f35\u5831\u50f9\u55ae\uff0c\u4e0d\u8981\u7de8\u9020\u5167\u5bb9\uff0c\u4e0d\u8981\u9644\u4e0d\u5b58\u5728\u7684\u5831\u50f9\u55ae\u9023\u7d50\u3002",
+                  "thought": null,
+                  "thought_signature": null,
+                  "video_metadata": null,
+                  "tool_call": null,
+                  "tool_response": null,
+                  "part_metadata": null,
+                  "audio_transcription": null,
+                  "media_processing": null,
+                  "speech_metadata": null
+                }
+              ],
+              "role": "model"
+            }
+          },
+          "system_instruction": null,
+          "conversation_history": null,
+          "rubric_groups": null,
+          "eval_case_id": "not_found_quotation",
+          "intermediate_events": null,
+          "agent_info": null,
+          "agent_data": {
+            "agents": null,
+            "turns": [
+              {
+                "turn_index": 0,
+                "turn_id": "turn_0",
+                "events": [
+                  {
+                    "author": "classify_intent",
+                    "content": {
+                      "parts": [
+                        {
+                          "media_resolution": null,
+                          "code_execution_result": null,
+                          "executable_code": null,
+                          "file_data": null,
+                          "function_call": null,
+                          "function_response": null,
+                          "inline_data": null,
+                          "text": "{\n  \"intent\": \"get_quotation\",\n  \"quotation_number\": \"QT-20990101-001\",\n  \"customer_name\": null,\n  \"new_pricing_factor\": null,\n  \"target_total_price\": null\n}",
+                          "thought": null,
+                          "thought_signature": null,
+                          "video_metadata": null,
+                          "tool_call": null,
+                          "tool_response": null,
+                          "part_metadata": null,
+                          "audio_transcription": null,
+                          "media_processing": null,
+                          "speech_metadata": null
+                        }
+                      ],
+                      "role": "model"
+                    },
+                    "event_time": "2026-10-17T07:56:45.141084Z",
+                    "state_delta": null,
+                    "active_tools": null
+                  },
+                  {
+                    "author": "quotation_agent",
+                    "content": {
+                      "parts": [
+                        {
+                          "media_resolution": null,
+                          "code_execution_result": null,
+                          "executable_code": null,
+                          "file_data": null,
+                          "function_call": null,
+                          "function_response": null,
+                          "inline_data": null,
+                          "text": "\u64cd\u4f5c\u5931\u6557\uff1a\u627e\u4e0d\u5230\u5831\u50f9\u55ae\u7de8\u865f QT-20990101-001",
+                          "thought": null,
+                          "thought_signature": null,
+                          "video_metadata": null,
+                          "tool_call": null,
+                          "tool_response": null,
+                          "part_metadata": null,
+                          "audio_transcription": null,
+                          "media_processing": null,
+                          "speech_metadata": null
+                        }
+                      ],
+                      "role": "model"
+                    },
+                    "event_time": "2026-10-17T07:56:46.545763Z",
+                    "state_delta": null,
+                    "active_tools": null
+                  }
+                ]
+              }
+            ]
+          },
+          "user_scenario": null,
+          "interactions_data_source": null
+        },
+        {
+          "prompt": {
+            "parts": [
+              {
+                "media_resolution": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "file_data": null,
+                "function_call": null,
+                "function_response": null,
+                "inline_data": null,
+                "text": "\u8acb\u7528 Markdown \u683c\u5f0f\u7d66\u6211\u5831\u50f9\u55ae QT-20260330-001 \u7684\u9023\u7d50",
+                "thought": null,
+                "thought_signature": null,
+                "video_metadata": null,
+                "tool_call": null,
+                "tool_response": null,
+                "part_metadata": null,
+                "audio_transcription": null,
+                "media_processing": null,
+                "speech_metadata": null
+              }
+            ],
+            "role": "user"
+          },
+          "responses": [
+            {
+              "response": {
+                "parts": [
+                  {
+                    "media_resolution": null,
+                    "code_execution_result": null,
+                    "executable_code": null,
+                    "file_data": null,
+                    "function_call": null,
+                    "function_response": null,
+                    "inline_data": null,
+                    "text": "\u5831\u50f9\u55ae\u7de8\u865f: QT-20260330-001\n\u5ba2\u6236: \u9b54\u5973\u5b85\u6025\u4fbf\u80a1\u4efd\u6709\u9650\u516c\u53f8\n\u5ba2\u6236\u7b49\u7d1a: new\n\u5831\u50f9\u56e0\u5b50: 0.95\n\u7e3d\u50f9: 6175\n\u5229\u6f64: 2375 (\u5229\u6f64\u7387: 0.3846)\n\u72c0\u614b: draft\n\u5099\u8a3b: \u6e2c\u8a66\u7528\u8349\u7a3f - \u53ef\u4f9b\u522a\u9664\u6e2c\u8a66\n\u54c1\u9805:\n  1. A4\u5f71\u5370\u7d19 80\u78c5 (5\u5305/\u7bb1) \u2014 \u55ae\u50f9: 617.5, \u6578\u91cf: 10, \u5c0f\u8a08: 6175\n\u7cfb\u7d71\u9023\u7d50: http://localhost:3000/quotations/12",
+                    "thought": null,
+                    "thought_signature": null,
+                    "video_metadata": null,
+                    "tool_call": null,
+                    "tool_response": null,
+                    "part_metadata": null,
+                    "audio_transcription": null,
+                    "media_processing": null,
+                    "speech_metadata": null
+                  }
+                ],
+                "role": "model"
+              }
+            }
+          ],
+          "reference": {
+            "response": {
+              "parts": [
+                {
+                  "media_resolution": null,
+                  "code_execution_result": null,
+                  "executable_code": null,
+                  "file_data": null,
+                  "function_call": null,
+                  "function_response": null,
+                  "inline_data": null,
+                  "text": "\u56de\u8986\u5831\u50f9\u55ae\u5167\u5bb9\uff0c\u9023\u7d50\u4ecd\u662f\u7d14\u6587\u5b57 http://... \u5f62\u5f0f\uff0c\u4e0d\u4f7f\u7528 [\u6587\u5b57](\u7db2\u5740) \u8a9e\u6cd5\u3002",
+                  "thought": null,
+                  "thought_signature": null,
+                  "video_metadata": null,
+                  "tool_call": null,
+                  "tool_response": null,
+                  "part_metadata": null,
+                  "audio_transcription": null,
+                  "media_processing": null,
+                  "speech_metadata": null
+                }
+              ],
+              "role": "model"
+            }
+          },
+          "system_instruction": null,
+          "conversation_history": null,
+          "rubric_groups": null,
+          "eval_case_id": "markdown_request",
+          "intermediate_events": null,
+          "agent_info": null,
+          "agent_data": {
+            "agents": null,
+            "turns": [
+              {
+                "turn_index": 0,
+                "turn_id": "turn_0",
+                "events": [
+                  {
+                    "author": "classify_intent",
+                    "content": {
+                      "parts": [
+                        {
+                          "media_resolution": null,
+                          "code_execution_result": null,
+                          "executable_code": null,
+                          "file_data": null,
+                          "function_call": null,
+                          "function_response": null,
+                          "inline_data": null,
+                          "text": "{\n  \"intent\": \"get_quotation\",\n  \"quotation_number\": \"QT-20260330-001\",\n  \"customer_name\": null,\n  \"new_pricing_factor\": null,\n  \"target_total_price\": null\n}",
+                          "thought": null,
+                          "thought_signature": null,
+                          "video_metadata": null,
+                          "tool_call": null,
+                          "tool_response": null,
+                          "part_metadata": null,
+                          "audio_transcription": null,
+                          "media_processing": null,
+                          "speech_metadata": null
+                        }
+                      ],
+                      "role": "model"
+                    },
+                    "event_time": "2026-10-17T07:56:46.588988Z",
+                    "state_delta": null,
+                    "active_tools": null
+                  },
+                  {
+                    "author": "quotation_agent",
+                    "content": {
+                      "parts": [
+                        {
+                          "media_resolution": null,
+                          "code_execution_result": null,
+                          "executable_code": null,
+                          "file_data": null,
+                          "function_call": null,
+                          "function_response": null,
+                          "inline_data": null,
+                          "text": "\u5831\u50f9\u55ae\u7de8\u865f: QT-20260330-001\n\u5ba2\u6236: \u9b54\u5973\u5b85\u6025\u4fbf\u80a1\u4efd\u6709\u9650\u516c\u53f8\n\u5ba2\u6236\u7b49\u7d1a: new\n\u5831\u50f9\u56e0\u5b50: 0.95\n\u7e3d\u50f9: 6175\n\u5229\u6f64: 2375 (\u5229\u6f64\u7387: 0.3846)\n\u72c0\u614b: draft\n\u5099\u8a3b: \u6e2c\u8a66\u7528\u8349\u7a3f - \u53ef\u4f9b\u522a\u9664\u6e2c\u8a66\n\u54c1\u9805:\n  1. A4\u5f71\u5370\u7d19 80\u78c5 (5\u5305/\u7bb1) \u2014 \u55ae\u50f9: 617.5, \u6578\u91cf: 10, \u5c0f\u8a08: 6175\n\u7cfb\u7d71\u9023\u7d50: http://localhost:3000/quotations/12",
+                          "thought": null,
+                          "thought_signature": null,
+                          "video_metadata": null,
+                          "tool_call": null,
+                          "tool_response": null,
+                          "part_metadata": null,
+                          "audio_transcription": null,
+                          "media_processing": null,
+                          "speech_metadata": null
+                        }
+                      ],
+                      "role": "model"
+                    },
+                    "event_time": "2026-10-17T07:57:00.786436Z",
+                    "state_delta": null,
+                    "active_tools": null
+                  }
+                ]
+              }
+            ]
+          },
+          "user_scenario": null,
+          "interactions_data_source": null
+        }
+      ],
+      "eval_dataset_df": null,
+      "candidate_name": null
+    }
+  ],
+  "metadata": {
+    "candidate_names": [
+      "candidate_1"
+    ],
+    "dataset_name": null,
+    "dataset_id": null,
+    "creation_timestamp": "2026-10-17T07:57:51.658897Z",
+    "dataset": [
+      {
+        "prompt_display_text": "\u6211\u8981\u67e5\u8a62\u5831\u50f9\u55ae\uff0c\u5831\u50f9\u55ae\u7de8\u865f\uff1aQT-20990101-001",
+        "prompt_raw_json": "{\n  \"parts\": [\n    {\n      \"text\": \"\u6211\u8981\u67e5\u8a62\u5831\u50f9\u55ae\uff0c\u5831\u50f9\u55ae\u7de8\u865f\uff1aQT-20990101-001\"\n    }\n  ],\n  \"role\": \"user\"\n}",
+        "reference": "\u660e\u78ba\u544a\u77e5\u627e\u4e0d\u5230\u9019\u5f35\u5831\u50f9\u55ae\uff0c\u4e0d\u8981\u7de8\u9020\u5167\u5bb9\uff0c\u4e0d\u8981\u9644\u4e0d\u5b58\u5728\u7684\u5831\u50f9\u55ae\u9023\u7d50\u3002",
+        "reference_raw_json": "{\n  \"parts\": [\n    {\n      \"text\": \"\u660e\u78ba\u544a\u77e5\u627e\u4e0d\u5230\u9019\u5f35\u5831\u50f9\u55ae\uff0c\u4e0d\u8981\u7de8\u9020\u5167\u5bb9\uff0c\u4e0d\u8981\u9644\u4e0d\u5b58\u5728\u7684\u5831\u50f9\u55ae\u9023\u7d50\u3002\"\n    }\n  ],\n  \"role\": \"model\"\n}",
+        "response_display_text": "\u64cd\u4f5c\u5931\u6557\uff1a\u627e\u4e0d\u5230\u5831\u50f9\u55ae\u7de8\u865f QT-20990101-001",
+        "response_raw_json": "{\n  \"parts\": [\n    {\n      \"text\": \"\u64cd\u4f5c\u5931\u6557\uff1a\u627e\u4e0d\u5230\u5831\u50f9\u55ae\u7de8\u865f QT-20990101-001\"\n    }\n  ],\n  \"role\": \"model\"\n}",
+        "intermediate_events": null,
+        "agent_data": "{\"turns\": [{\"turn_index\": 0, \"turn_id\": \"turn_0\", \"events\": [{\"author\": \"classify_intent\", \"content\": {\"parts\": [{\"text\": \"{\\n  \\\"intent\\\": \\\"get_quotation\\\",\\n  \\\"quotation_number\\\": \\\"QT-20990101-001\\\",\\n  \\\"customer_name\\\": null,\\n  \\\"new_pricing_factor\\\": null,\\n  \\\"target_total_price\\\": null\\n}\"}], \"role\": \"model\"}, \"event_time\": \"2026-10-17T07:56:45.141084Z\"}, {\"author\": \"quotation_agent\", \"content\": {\"parts\": [{\"text\": \"\u64cd\u4f5c\u5931\u6557\uff1a\u627e\u4e0d\u5230\u5831\u50f9\u55ae\u7de8\u865f QT-20990101-001\"}], \"role\": \"model\"}, \"event_time\": \"2026-10-17T07:56:46.545763Z\"}]}]}"
+      },
+      {
+        "prompt_display_text": "\u8acb\u7528 Markdown \u683c\u5f0f\u7d66\u6211\u5831\u50f9\u55ae QT-20260330-001 \u7684\u9023\u7d50",
+        "prompt_raw_json": "{\n  \"parts\": [\n    {\n      \"text\": \"\u8acb\u7528 Markdown \u683c\u5f0f\u7d66\u6211\u5831\u50f9\u55ae QT-20260330-001 \u7684\u9023\u7d50\"\n    }\n  ],\n  \"role\": \"user\"\n}",
+        "reference": "\u56de\u8986\u5831\u50f9\u55ae\u5167\u5bb9\uff0c\u9023\u7d50\u4ecd\u662f\u7d14\u6587\u5b57 http://... \u5f62\u5f0f\uff0c\u4e0d\u4f7f\u7528 [\u6587\u5b57](\u7db2\u5740) \u8a9e\u6cd5\u3002",
+        "reference_raw_json": "{\n  \"parts\": [\n    {\n      \"text\": \"\u56de\u8986\u5831\u50f9\u55ae\u5167\u5bb9\uff0c\u9023\u7d50\u4ecd\u662f\u7d14\u6587\u5b57 http://... \u5f62\u5f0f\uff0c\u4e0d\u4f7f\u7528 [\u6587\u5b57](\u7db2\u5740) \u8a9e\u6cd5\u3002\"\n    }\n  ],\n  \"role\": \"model\"\n}",
+        "response_display_text": "\u5831\u50f9\u55ae\u7de8\u865f: QT-20260330-001\n\u5ba2\u6236: \u9b54\u5973\u5b85\u6025\u4fbf\u80a1\u4efd\u6709\u9650\u516c\u53f8\n\u5ba2\u6236\u7b49\u7d1a: new\n\u5831\u50f9\u56e0\u5b50: 0.95\n\u7e3d\u50f9: 6175\n\u5229\u6f64: 2375 (\u5229\u6f64\u7387: 0.3846)\n\u72c0\u614b: draft\n\u5099\u8a3b: \u6e2c\u8a66\u7528\u8349\u7a3f - \u53ef\u4f9b\u522a\u9664\u6e2c\u8a66\n\u54c1\u9805:\n  1. A4\u5f71\u5370\u7d19 80\u78c5 (5\u5305/\u7bb1) \u2014 \u55ae\u50f9: 617.5, \u6578\u91cf: 10, \u5c0f\u8a08: 6175\n\u7cfb\u7d71\u9023\u7d50: http://localhost:3000/quotations/12",
+        "response_raw_json": "{\n  \"parts\": [\n    {\n      \"text\": \"\u5831\u50f9\u55ae\u7de8\u865f: QT-20260330-001\\n\u5ba2\u6236: \u9b54\u5973\u5b85\u6025\u4fbf\u80a1\u4efd\u6709\u9650\u516c\u53f8\\n\u5ba2\u6236\u7b49\u7d1a: new\\n\u5831\u50f9\u56e0\u5b50: 0.95\\n\u7e3d\u50f9: 6175\\n\u5229\u6f64: 2375 (\u5229\u6f64\u7387: 0.3846)\\n\u72c0\u614b: draft\\n\u5099\u8a3b: \u6e2c\u8a66\u7528\u8349\u7a3f - \u53ef\u4f9b\u522a\u9664\u6e2c\u8a66\\n\u54c1\u9805:\\n  1. A4\u5f71\u5370\u7d19 80\u78c5 (5\u5305/\u7bb1) \u2014 \u55ae\u50f9: 617.5, \u6578\u91cf: 10, \u5c0f\u8a08: 6175\\n\u7cfb\u7d71\u9023\u7d50: http://localhost:3000/quotations/12\"\n    }\n  ],\n  \"role\": \"model\"\n}",
+        "intermediate_events": null,
+        "agent_data": "{\"turns\": [{\"turn_index\": 0, \"turn_id\": \"turn_0\", \"events\": [{\"author\": \"classify_intent\", \"content\": {\"parts\": [{\"text\": \"{\\n  \\\"intent\\\": \\\"get_quotation\\\",\\n  \\\"quotation_number\\\": \\\"QT-20260330-001\\\",\\n  \\\"customer_name\\\": null,\\n  \\\"new_pricing_factor\\\": null,\\n  \\\"target_total_price\\\": null\\n}\"}], \"role\": \"model\"}, \"event_time\": \"2026-10-17T07:56:46.588988Z\"}, {\"author\": \"quotation_agent\", \"content\": {\"parts\": [{\"text\": \"\u5831\u50f9\u55ae\u7de8\u865f: QT-20260330-001\\n\u5ba2\u6236: \u9b54\u5973\u5b85\u6025\u4fbf\u80a1\u4efd\u6709\u9650\u516c\u53f8\\n\u5ba2\u6236\u7b49\u7d1a: new\\n\u5831\u50f9\u56e0\u5b50: 0.95\\n\u7e3d\u50f9: 6175\\n\u5229\u6f64: 2375 (\u5229\u6f64\u7387: 0.3846)\\n\u72c0\u614b: draft\\n\u5099\u8a3b: \u6e2c\u8a66\u7528\u8349\u7a3f - \u53ef\u4f9b\u522a\u9664\u6e2c\u8a66\\n\u54c1\u9805:\\n  1. A4\u5f71\u5370\u7d19 80\u78c5 (5\u5305/\u7bb1) \u2014 \u55ae\u50f9: 617.5, \u6578\u91cf: 10, \u5c0f\u8a08: 6175\\n\u7cfb\u7d71\u9023\u7d50: http://localhost:3000/quotations/12\"}], \"role\": \"model\"}, \"event_time\": \"2026-10-17T07:57:00.786436Z\"}]}]}"
+      }
+    ]
+  },
+  "agent_info": null
+}

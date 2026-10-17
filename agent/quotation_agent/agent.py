@@ -253,6 +253,28 @@ def _is_rule_refusal(text: str) -> bool:
 # 分類器把明確的報價單操作判成離題時（例如沒給編號的「我要查詢報價單」），由程式依關鍵字改判。
 # 只在句子提到報價單、而且沒有刪除／新增／發佈這類不支援的動作時才改判；順序有意義，先比對較具體的操作。
 _UNSUPPORTED_ACTION_RE = re.compile(r"刪除|移除|新增|建立|發佈|作廢|取消")
+# Keyword recovery is deliberately conservative: a classifier's refusal must
+# never turn an explanation, hypothetical, or negated request into a write.
+# Stop at clause boundaries so "原單不要動，請複製…" remains a direct request.
+# 「分別」「特別」裡的別不是否定；「不要用 Markdown 顯示」否定的是做法，不是操作本身。
+_NEGATED_ACTION_RE = re.compile(
+    r"(?:不要|請勿|不必|不用|(?<![分特個區識類告離差性級辨派])別|不想|不需要|先不|暫時不)(?![用以])[^，。；;,\n]{0,60}"
+    r"(?:複製|轉(?:成|為)?訂單|修改|變更|調整|動|改(?:成|為|到)|查詢|查看|顯示)"
+    r"|\b(?:do\s+not|don't|never)\b",
+    re.IGNORECASE,
+)
+_EXPLANATION_REQUEST_RE = re.compile(
+    r"^\s*(?:請|麻煩|我想|想要)?\s*(?:如何|怎麼|教我|說明|解釋|如果|假設)"
+    r"|^\s*(?:please\s+)?(?:how\s+to|explain|what\s+if)\b",
+    re.IGNORECASE,
+)
+_PRESERVE_ORIGINAL_RE = re.compile(
+    r"(?:請)?(?:不要|請勿|別|不用)(?:修改|更動|變更|調整|動)(?:原單|原報價單|原始報價單)(?:內容|資料)?"
+    r"|(?:原單|原報價單|原始報價單)(?:內容|資料)?(?:不要|請勿|別|不用)(?:修改|更動|變更|調整|動)"
+)
+# 「如果可以／如果方便的話，請…」是禮貌的請求；後面接說明、流程或問句的才是假設或發問。
+_POLITE_PREFIX_RE = re.compile(r"^\s*如果(?:可以|方便|能夠?|可能)(?:的話)?\s*[，,]?\s*(?=請|麻煩|幫我|幫忙)")
+_NOT_A_REQUEST_RE = re.compile(r"說明|流程|如何|怎麼|會怎樣|會發生|會不會|[?？嗎呢]\s*[。.]?\s*$")
 _KEYWORD_OPERATIONS = (
     ("convert_to_order", re.compile(r"轉(?:成|為)?訂單")),
     ("adjust_total_price", re.compile(r"(?:改|修改|調整|調|變更|設定?).{0,8}總價|總價.{0,8}(?:改|修改|調整|調|變更)")),
@@ -263,8 +285,25 @@ _KEYWORD_OPERATIONS = (
 )
 
 
+def _request_guard_text(text: str) -> str:
+    """只豁免完整的保留原單子句；剩餘文字仍必須明確帶有操作。"""
+    parts = re.split(r"([，。；;,\n])", text)
+    remaining = "".join("" if _PRESERVE_ORIGINAL_RE.fullmatch(part.strip()) else part for part in parts)
+    remaining = remaining.strip(" \t\r\n，。；;,")
+    if any(pattern.search(remaining) for _, pattern in _KEYWORD_OPERATIONS):
+        text = remaining
+    # 只放行禮貌請求，不放行「如果…」的假設或流程說明。
+    polite = _POLITE_PREFIX_RE.match(text)
+    if polite and not _NOT_A_REQUEST_RE.search(text[polite.end():]):
+        text = text[polite.end():]
+    return text
+
+
 def _keyword_operation(text: str) -> str | None:
-    if not re.search(r"報價單|quotation|QT-\d{8}-\d{3,}", text, re.IGNORECASE) or _UNSUPPORTED_ACTION_RE.search(text):
+    guard_text = _request_guard_text(text)
+    if (not re.search(r"報價單|quotation|QT-\d{8}-\d{3,}", text, re.IGNORECASE)
+            or _UNSUPPORTED_ACTION_RE.search(text) or _NEGATED_ACTION_RE.search(guard_text)
+            or _EXPLANATION_REQUEST_RE.search(guard_text)):
         return None
     for operation, pattern in _KEYWORD_OPERATIONS:
         if pattern.search(text):
@@ -611,6 +650,15 @@ def route(ctx: Context, node_input: Any):
         operation = _keyword_operation(text)
         if operation is None:
             return Event(output=REFUSAL_TEXT, route="off_topic", state={"pending_intent": None})
+
+    # Even a mistaken positive classification cannot authorize a negated write
+    # or an explanation-only request. Clear pending state so a later bare
+    # confirmation cannot revive the operation that was just cancelled.
+    guard_text = _request_guard_text(text)
+    if _NEGATED_ACTION_RE.search(guard_text) or (
+        operation in _WRITE_TOOLS and _EXPLANATION_REQUEST_RE.search(guard_text)
+    ):
+        return Event(output=REFUSAL_TEXT, route="off_topic", state={"pending_intent": None})
 
     if "quotation_number" in REQUIRED_FIELDS[operation] and any(
         not QUOTATION_NUMBER_RE.fullmatch(token) for token in QUOTATION_TOKEN_RE.findall(text)
