@@ -94,8 +94,9 @@ def _ask_gemini(model: str, prompt: str) -> _Verdict | None:
 def evaluate(instance):
     agent_data = instance.get("agent_data", "")
     if not isinstance(agent_data, str):
-        agent_data = json.dumps(agent_data, ensure_ascii=False, default=str)
-    prompt = PROMPT_TEMPLATE.format(response=_response_text(instance), agent_data=agent_data[:12000])
+        # 整份紀錄都交給評審，只壓縮 JSON 空白；截斷會漏掉後面的工具結果或最後一則使用者訊息
+        agent_data = json.dumps(agent_data, ensure_ascii=False, default=str, separators=(",", ":"))
+    prompt = PROMPT_TEMPLATE.format(response=_response_text(instance), agent_data=agent_data)
     model = _judge_model()
     verdict = _ask_openai_compatible(model, prompt) if model.startswith("openai/") else _ask_gemini(model, prompt)
     if verdict is None:
