@@ -145,8 +145,12 @@ async def check_quotations_table(ctx: VerifyContext, concept) -> tuple[bool, lis
     missing = [c for c in columns if f'json:"{c}"' not in code]
     notes = [f"models/quotation.go 欄位 {len(columns) - len(missing)}/{len(columns)}"]
     ok = not missing and "decimal(5,4)" in code and "default:'draft'" in code
-    if concept.frontmatter.get("derived_amounts_consistent") is not True:
-        return False, notes + ["條目未明確要求 derived_amounts_consistent: true ✗"]
+    # 老師的 seed 有幾張單存的總價、利潤、利潤率和品項重算不同。條目把這些單列在
+    # seed_mismatches，實際資料要和清單完全一致：多了代表資料被改壞，少了代表條目過時。
+    stated = concept.frontmatter.get("seed_mismatches")
+    fields = ("total_price", "profit_amount", "profit_rate")
+    if not isinstance(stated, dict) or not all(isinstance(stated.get(f), list) for f in fields):
+        return False, notes + ["條目沒有寫出 seed_mismatches（total_price、profit_amount、profit_rate 三份清單）✗"]
     total_bad, profit_bad, rate_bad, invalid = set(), set(), set(), set()
     seen, duplicate = set(), set()
     for q in await ctx.quotations():
@@ -183,8 +187,11 @@ async def check_quotations_table(ctx: VerifyContext, concept) -> tuple[bool, lis
     notes.append(f"利潤率不一致（ROUND_HALF_UP，小數 4 位）：{sorted(rate_bad)}")
     if missing_quotes or duplicate or invalid:
         notes.append(f"缺少：{sorted(missing_quotes)}；重複：{sorted(duplicate)}；無法重算：{sorted(invalid)} ✗")
-    # Historical discrepancies in prose are not the expected current state.
-    return ok and not any((total_bad, profit_bad, rate_bad, missing_quotes, duplicate, invalid)), notes
+    same = (total_bad == set(stated["total_price"]) and profit_bad == set(stated["profit_amount"])
+            and rate_bad == set(stated["profit_rate"]))
+    if not same:
+        notes.append("和條目 seed_mismatches 寫的不一致清單不同 ✗（測試資料可能沒有重灌，或條目過時）")
+    return ok and same and not any((missing_quotes, duplicate, invalid)), notes
 
 
 async def check_orders_table(ctx: VerifyContext, concept) -> tuple[bool, list[str]]:

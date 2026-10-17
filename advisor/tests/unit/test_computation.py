@@ -19,7 +19,7 @@ async def test_price_change_impact_numbers(bundle_path, fake_backend):
     assert result["new_factor"] == "0.6977"
     assert result["new_total"] == "180006.60"
     assert result["new_margin"] == "0.2028"
-    assert result["stored_mismatch"] == []
+    assert result["stored_mismatch"] == ["profit_amount"]  # 老師 seed 存的利潤是 66060，重算 68060
     assert set(receipt) == {
         "computation", "computation_sha256", "source_url", "source_sha256",
         "source", "parameters", "result", "executed_at",
@@ -37,6 +37,8 @@ async def test_polluted_snapshot_is_detected(bundle_path, fake_backend, pollutio
     # Corrupt a private copy so the normal fixture stays consistent for other tests.
     original = await fake_backend.find_quotation("QT-20260325-001")
     fake_backend.quotations = copy.deepcopy(fake_backend.quotations)
+    # 先把這張單的存值改成和品項一致，再只弄壞指定的欄位
+    fake_backend.quotations["QT-20260325-001"].update(total_price="211560", profit_amount="68060")
     fake_backend.quotations["QT-20260325-001"].update(pollution)
     bundle = Bundle(bundle_path)
     receipt = await run_price_change_impact(bundle, fake_backend, "QT-20260325-001", 180000)
@@ -48,7 +50,7 @@ async def test_polluted_snapshot_is_detected(bundle_path, fake_backend, pollutio
     assert result["current_margin"] == "0.3217"
     assert result["new_total"] == "180006.60"
     assert original["total_price"] == "211560"
-    assert original["profit_amount"] == "68060"
+    assert original["profit_amount"] == "66060"  # 共用的快照沒有被改到
     assert attest_receipt(bundle, receipt)["ok"]
 
 

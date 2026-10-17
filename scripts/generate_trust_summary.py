@@ -13,7 +13,6 @@ from xml.sax.saxutils import escape
 
 from pypdf import PdfReader
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_LEFT
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.pdfbase import pdfmetrics

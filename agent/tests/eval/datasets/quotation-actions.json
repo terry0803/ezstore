@@ -8,7 +8,7 @@
     {
       "eval_case_id": "list_customer_quotations",
       "prompt": {"role": "user", "parts": [{"text": "我要查詢客戶的報價單清單，客戶名稱：史塔克工業"}]},
-      "reference": {"response": {"role": "model", "parts": [{"text": "列出史塔克工業股份有限公司的報價單，包含 QT-20260115-001（總價 253350），每筆附純文字報價單連結。"}]}}
+      "reference": {"response": {"role": "model", "parts": [{"text": "列出史塔克工業股份有限公司的報價單，包含 QT-20260115-001（總價 253500），每筆附純文字報價單連結。"}]}}
     },
     {
       "eval_case_id": "duplicate_quotation",

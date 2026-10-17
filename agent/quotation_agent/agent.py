@@ -607,8 +607,48 @@ def _previous_turn(ctx: Context, current_text: str) -> tuple[str, str]:
     return user_text, reply_text
 
 
+# 對話紀錄可能是外部帶進來的（例如評分題庫預先寫好的第一輪），助手的追問不一定是我們的用字。
+# 回覆裡有系統連結就是已經做完的結果；沒有連結、而且像在要資料（請提供、請問、問句結尾、
+# 「需要…編號」），就當成追問。
+_CLARIFY_REPLY_RE = re.compile(
+    r"^\s*(?:請提供|請告訴我|請問|麻煩提供|麻煩告訴我|請輸入|請給我|請再提供|請補上|請補充)"
+    r"|[？?]\s*$"
+    r"|(?:需要|缺少|還缺|少了|還沒有|沒有提供)[^。\n]{0,12}(?:編號|報價因子|因子|總價|金額|客戶名稱|客戶)",
+    re.MULTILINE,
+)
+_CHITCHAT_RE = re.compile(r"天氣|你好|您好|謝謝|感謝|笑話|嗨|哈囉|再見|\b(?:hi|hello|thanks?)\b", re.IGNORECASE)
+
+
 def _is_clarification(text: str) -> bool:
-    return text.startswith("請提供") or text.startswith("請告訴我您要對報價單")
+    text = (text or "").strip()
+    if not text or re.search(r"https?://", text):
+        return False
+    return bool(_CLARIFY_REPLY_RE.search(text))
+
+
+def _bare_answer(text: str, pending: dict, clarify_source: str) -> tuple[str, str] | None:
+    """追問之後使用者只回一個資料（編號、數字、客戶名稱），分類器卻判成離題時，由程式接回原本的操作。
+
+    回傳（操作, 補上的欄位）；不像是在回答缺少的欄位就回 None，照樣拒答。
+    """
+    operation = pending.get("intent") or (_keyword_operation(clarify_source) if clarify_source else None)
+    if operation not in OPERATIONS:
+        return None
+    answer = text.strip().strip("。.!！")
+    if not answer or len(answer) > 40 or re.search(r"[?？嗎呢]", answer):
+        return None
+    missing = [name for name in REQUIRED_FIELDS[operation] if pending.get(name) in (None, "")]
+    if "quotation_number" in missing and QUOTATION_NUMBER_RE.fullmatch(answer):
+        return operation, "quotation_number"
+    for name in ("new_pricing_factor", "target_total_price"):
+        if name in missing and re.fullmatch(rf"[-+負负]?[\s0-9{_NUMERIC_CHARS},.]+(?:元|塊|圓)?", answer):
+            value, _ = _numeric_target(answer, name, allow_bare=True)
+            if value is not None:
+                return operation, name
+    if ("customer_name" in missing and not _CHITCHAT_RE.search(answer)
+            and re.fullmatch(r"[一-鿿A-Za-z0-9（）()&．.·\-\s]{2,40}", answer)):
+        return operation, "customer_name"
+    return None
 
 
 def load_context(ctx: Context, node_input: Any):
@@ -644,7 +684,7 @@ def load_context(ctx: Context, node_input: Any):
             clarify_source = prev_user
             prompt = (
                 f"待補的前一輪操作：無\n上一輪對話：使用者說「{prev_user}」，"
-                f"助手追問「{prev_reply.splitlines()[0]}」\n使用者這一句：{text}"
+                f"助手追問「{' '.join(prev_reply.split())[:200]}」\n使用者這一句：{text}"
             )
 
     return Event(
@@ -669,8 +709,10 @@ def route(ctx: Context, node_input: Any):
         return Event(output=REFUSAL_TEXT, route="off_topic", state={"pending_intent": None})
 
     operation = intent.intent
+    clarify_source = ctx.state.get("clarify_source_text", "") or ""
     if operation == "provide_info":
-        operation = pending.get("intent")
+        # 外部帶進來的對話沒有 pending_intent，改從上一輪使用者的原文判斷要接哪個操作
+        operation = pending.get("intent") or (_keyword_operation(clarify_source) if clarify_source else None)
         if not operation:
             return Event(
                 output={"operation": None, "missing": [], "fields": {}},
@@ -678,9 +720,13 @@ def route(ctx: Context, node_input: Any):
                 state={"pending_intent": None},
             )
     elif operation == "off_topic" or operation not in OPERATIONS:
-        operation = _keyword_operation(text)
+        bare = _bare_answer(text, pending, clarify_source)
+        operation = _keyword_operation(text) or (bare[0] if bare else None)
         if operation is None:
             return Event(output=REFUSAL_TEXT, route="off_topic", state={"pending_intent": None})
+        if bare and bare[1] == "customer_name":
+            # 分類器判成離題，沒有抽出客戶名稱；這一句本身就是名稱
+            intent = Intent(intent=operation, customer_name=text.strip().strip("。.!！"))
 
     # Even a mistaken positive classification cannot authorize a negated write
     # or an explanation-only request. Clear pending state so a later bare

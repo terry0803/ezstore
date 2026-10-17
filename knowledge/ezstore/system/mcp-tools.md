@@ -8,7 +8,7 @@ mcp_tools: [get_quotation, list_customer_quotations, duplicate_quotation, update
 bisect: { low: 0.01, high: 5.0, max_iterations: 20, tolerance: 0.01 }
 generated: { by: claude-code/claude-opus-5-5, at: 2026-10-16T17:10:00Z }
 verified:
-  - { by: process:okf-verify, at: 2026-10-17T08:00:26Z }
+  - { by: process:okf-verify, at: 2026-10-17T12:32:06Z }
 status: stable
 stale_after: 2027-04-01T00:00:00Z
 sources:
@@ -26,7 +26,7 @@ Streamable HTTP，Compose 內部 `http://mcp-server:8000/mcp`，對本機開 `ht
 | 工具 | 參數 | 做什麼 |
 |---|---|---|
 | `get_quotation` | `quotation_number` | 查報價單與品項 |
-| `list_customer_quotations` | `customer_name` | 客戶名稱模糊搜尋，完全相符的優先 |
+| `list_customer_quotations` | `customer_name` | 客戶名稱模糊搜尋，讀完所有分頁。完全相符的優先；沒有完全相符時只有一筆才用，好幾筆就回錯誤，請使用者講完整名稱 |
 | `duplicate_quotation` | `quotation_number` | 複製成新草稿 |
 | `update_pricing_factor` | `quotation_number`、`new_pricing_factor` | 先複製，再改副本的報價因子 |
 | `adjust_total_price` | `quotation_number`、`target_total_price` | 先複製，再用二分法調副本的報價因子 |

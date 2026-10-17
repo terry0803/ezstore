@@ -137,7 +137,6 @@ def mid_operation_pause():
         subprocess.run(["docker", "unpause", container], capture_output=True)
     wait_healthy("http://127.0.0.1:58080/health")
     after = counts()
-    newest = httpx.get(API + "/quotations", params={"page_size": 1, "sort": "id", "order": "desc"}, timeout=10).json()
     record("改總價途中後端暫停", is_error and after[0] == before[0] + 1,
            在哪一個請求暫停=flag.get("paused_at"), MCP回覆=text, 秒數=round(time.time() - started, 1),
            報價單筆數前後=(before[0], after[0]), 說明="複製單已建立但總價沒調完；要看 Agent 有沒有提醒使用者去查")

@@ -1,4 +1,4 @@
-"""Current-data verification against offline seed data and mocked pagination."""
+"""報價單資料表的驗證：老師 seed 裡對不上的單要和條目的 seed_mismatches 完全一致（離線，用 seed 檔與假分頁）。"""
 
 import copy
 import csv
@@ -51,52 +51,54 @@ def context(bundle_path, rows):
     return ctx, ctx.bundle.get("system/quotations-table")
 
 
+CONSISTENT = "QT-20260330-001"  # 老師 seed 裡金額和品項一致的一張
+
+
+def _row(rows, number):
+    return next(row for row in rows if row["quotation_number"] == number)
+
+
 @pytest.mark.asyncio
-async def test_corrected_seed_all_twelve_are_consistent(bundle_path):
+async def test_teacher_seed_matches_documented_mismatches(bundle_path):
     rows = seed_quotations()
     assert len(rows) == 12
     ctx, concept = context(bundle_path, rows)
-    assert concept.frontmatter["derived_amounts_consistent"] is True
+    assert concept.frontmatter["seed_mismatches"]["total_price"] == ["QT-20260115-001"]
     ok, notes = await check_quotations_table(ctx, concept)
-    assert ok
+    assert ok, notes
     assert any("12/12" in note for note in notes)
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("field,bad", [("total_price", "253500"), ("profit_amount", "72000"), ("profit_rate", "0.2840")])
-async def test_polluted_derived_value_fails(bundle_path, field, bad):
+@pytest.mark.parametrize("field,bad", [("total_price", "6176"), ("profit_amount", "2376"), ("profit_rate", "0.3847")])
+async def test_new_mismatch_on_a_consistent_quotation_fails(bundle_path, field, bad):
     rows = seed_quotations()
-    rows[0][field] = bad
+    _row(rows, CONSISTENT)[field] = bad
     ctx, concept = context(bundle_path, rows)
     ok, notes = await check_quotations_table(ctx, concept)
     assert not ok
-    assert any("QT-20260115-001" in note for note in notes)
+    assert any(CONSISTENT in note for note in notes)
 
 
 @pytest.mark.asyncio
-async def test_historical_one_total_seven_profits_is_not_a_passing_state(bundle_path):
+async def test_fixing_a_documented_mismatch_means_the_concept_is_stale(bundle_path):
     rows = seed_quotations()
-    old_profits = {
-        "QT-20260115-001": "72000", "QT-20260120-001": "82120",
-        "QT-20260210-001": "21320", "QT-20260218-001": "39450",
-        "QT-20260325-001": "66060", "QT-20260326-001": "39960", "QT-20260328-001": "33000",
-    }
-    for quote in rows:
-        if quote["quotation_number"] in old_profits:
-            quote["profit_amount"] = old_profits[quote["quotation_number"]]
-    rows[0]["total_price"] = "253500"
+    _row(rows, "QT-20260115-001")["total_price"] = "253350"  # 改成重算值，資料和條目就對不起來
     ctx, concept = context(bundle_path, rows)
-    assert not (await check_quotations_table(ctx, concept))[0]
+    ok, notes = await check_quotations_table(ctx, concept)
+    assert not ok
+    assert any("條目過時" in note for note in notes)
 
 
 @pytest.mark.asyncio
 async def test_profit_rate_rounds_half_up_to_four_places(bundle_path):
     rows = seed_quotations()
-    rows[0].update(pricing_factor="1", total_price="200", profit_amount="24.69", profit_rate="0.1235",
-                   items=[{"list_price": "200", "unit_price": "200", "product_cost": "175.31", "quantity": 1, "subtotal": "200"}])
+    row = _row(rows, CONSISTENT)
+    row.update(pricing_factor="1", total_price="200", profit_amount="24.69", profit_rate="0.1235",
+               items=[{"list_price": "200", "unit_price": "200", "product_cost": "175.31", "quantity": 1, "subtotal": "200"}])
     ctx, concept = context(bundle_path, rows)
     assert (await check_quotations_table(ctx, concept))[0]
-    rows[0]["profit_rate"] = "0.1234"  # Half-even would round the exact .12345 tie down.
+    row["profit_rate"] = "0.1234"  # Half-even would round the exact .12345 tie down.
     assert not (await check_quotations_table(ctx, concept))[0]
 
 
@@ -114,7 +116,7 @@ async def test_incomplete_evidence_never_passes(bundle_path, problem):
         rows[0]["profit_rate"] = "NaN"
     ctx, concept = context(bundle_path, rows)
     if problem == "missing_claim":
-        concept.frontmatter.pop("derived_amounts_consistent")
+        concept.frontmatter.pop("seed_mismatches")
     assert not (await check_quotations_table(ctx, concept))[0]
 
 

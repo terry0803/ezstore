@@ -48,7 +48,7 @@ from .computation import (
     sha256_hex,
     stale_note,
 )
-from .okf import Bundle, OKFError, format_date_tw, load_bundle, utc_now
+from .okf import Bundle, OKFError, load_bundle, utc_now
 from .policies import APPROVAL_LABELS, evaluate_order_conversion, evaluate_price_change
 
 load_dotenv()

@@ -18,4 +18,4 @@
 # PostgreSQL Table
 
 * [訂單資料表（orders、order_items）](orders-table.md) - 訂單欄位、和報價單的關聯，以及測試資料裡已經轉成訂單的報價單。
-* [報價單資料表（quotations、quotation_items）](quotations-table.md) - 報價單與報價品項的欄位、狀態，以及測試資料金額修正的紀錄。
+* [報價單資料表（quotations、quotation_items）](quotations-table.md) - 報價單與報價品項的欄位、狀態，以及測試資料裡存值和重算不一致的報價單。
