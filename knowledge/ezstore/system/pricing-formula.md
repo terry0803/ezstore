@@ -5,7 +5,7 @@ description: 單價、小計、總價、利潤與利潤率的計算方式、後�
 tags: [pricing, quotation, formula]
 generated: { by: claude-code/claude-opus-5-5, at: 2026-10-16T17:10:00Z }
 verified:
-  - { by: process:okf-verify, at: 2026-10-16T17:29:21Z }
+  - { by: process:okf-verify, at: 2026-10-17T03:58:50Z }
 status: stable
 stale_after: 2027-04-01T00:00:00Z
 sources:

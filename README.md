@@ -345,7 +345,7 @@ The four metrics in `agent/tests/eval/eval_config.yaml` (`custom_response_qualit
 - `agents-cli eval grade` still builds a Google Cloud Storage client at start-up and needs Application Default Credentials. Without `gcloud`, point `GOOGLE_APPLICATION_CREDENTIALS` at a placeholder `authorized_user` JSON file; it is never used to read local datasets.
 - A local model served with a single slot needs `agents-cli eval run --concurrency 1`.
 
-Trustworthiness evaluation labs for learners: [eval-lab-quick.md](eval-lab-quick.md) (25 min, in class) and [eval-lab.md](eval-lab.md) (60–90 min, full version).
+Trustworthiness evaluation labs for learners: [eval-lab-quick.md](eval-lab-quick.md) (25 min, in class) and [eval-lab.md](eval-lab.md) (60–90 min, full version). Results of the full lab for this agent and the one-page report: [reports/可信賴度報告.md](reports/可信賴度報告.md) (Chinese).
 
 ### Second Agent: Pricing Advisor (A2A + OKF knowledge)
 

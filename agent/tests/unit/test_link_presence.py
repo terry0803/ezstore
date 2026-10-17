@@ -24,6 +24,10 @@ def test_markdown_link_fails():
     assert score("[報價單](http://localhost:3000/quotations/12)") == 0
 
 
+def test_not_found_reply_needs_no_link():
+    assert score("操作失敗：找不到報價單編號 QT-20990101-001", case_id="not_found_quotation") == 1
+
+
 def test_missing_link_fails_except_off_topic():
     assert score("好的") == 0
     assert score("抱歉，我只能協助報價單相關的操作", case_id="off_topic_weather") == 1

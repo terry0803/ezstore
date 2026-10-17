@@ -36,6 +36,14 @@ START → load_context ──（no_credentials）──────────�
 - 修改類工具在 MCP Server 端就是先複製再改，回覆也已經寫「原始報價單（未修改）」，Agent 原樣呈現，連結都是純文字。
 - 路由邊的寫法是 `(route, {"get_quotation": get_quotation, ...})`。ADK 2.11 的 `edges` 裡，一般的 tuple 是一條鏈（`(a, b, c)` 代表 a→b→c），要分支得用 dict。
 
+## A2A
+
+`fast_api_app.py` 在 `/a2a/quotation_agent` 提供 A2A 端點，agent card 在 `/a2a/quotation_agent/.well-known/agent-card.json`：
+
+- skill 是 6 個操作各一個，例句同 spec 1.1–1.6（`OPERATION_DESCRIPTIONS`、`OPERATION_EXAMPLES`）。
+- A2A 回覆只帶 `respond` 節點的文字（`app_utils/a2a.py` 的 `only_node_artifacts`），分類器輸出的 Intent JSON 不會出現在 task artifact 裡。
+- 第二個 Agent（`../advisor`，議價顧問）就是用這個端點請報價單 Agent 改總價、轉訂單。Compose 內部位址是 `http://agent:8080/a2a/quotation_agent`，本機可以經前端 nginx：`http://localhost:3000/agent-api/a2a/quotation_agent`。
+
 ## 新增一個操作
 
 假設 MCP Server 多了一個工具 `publish_quotation(quotation_number)`：
@@ -54,7 +62,7 @@ START → load_context ──（no_credentials）──────────�
        return await _call_mcp_tool(ctx, "publish_quotation", node_input)
    ```
 
-5. `root_agent` 的 `edges`：`route` 的路由 dict 加 `"publish_quotation": publish_quotation`，再加一條 `(publish_quotation, respond)`。
+5. `root_agent` 的 `edges`：`route` 的路由 dict 加 `"publish_quotation": publish_quotation`，再加一條 `(publish_quotation, respond)`。A2A agent card 也要在 `OPERATION_DESCRIPTIONS`、`OPERATION_EXAMPLES` 各加一筆。
 6. 測試：`tests/unit/test_route.py` 加路由測試；`tests/eval/datasets/quotation-actions.json` 加一題，`eval_case_id` 用工具名。
 
 `McpToolset` 的 `tool_filter` 直接用 `OPERATIONS`，不用另外改。

@@ -1,6 +1,7 @@
 # Directory Update Log
 
 ## 2026-10-17
+* **Verification**: `process:okf-verify` 對照原始碼與執行中的系統，10 個條目通過：`system/customer-levels`、`system/pricing-formula`、`system/quotations-table`、`system/orders-table`、`system/backend-api`、`system/mcp-tools`、`system/quotation-agent`、`computations/price-change-impact`、`glossary/pricing-factor`、`glossary/profit-rate`。
 * **Verification**: `process:okf-verify` 對照原始碼與執行中的系統，1 個條目通過：`system/quotation-agent`。
 * **Verification**: `process:okf-verify` 對照原始碼與執行中的系統，10 個條目通過：`system/customer-levels`、`system/pricing-formula`、`system/quotations-table`、`system/orders-table`、`system/backend-api`、`system/mcp-tools`、`system/quotation-agent`、`computations/price-change-impact`、`glossary/pricing-factor`、`glossary/profit-rate`。
 * **Creation**: 建立知識庫，條目由 `claude-code/claude-opus-5-5` 依 EZStore `workshop-start` 的原始碼與測試資料撰寫。

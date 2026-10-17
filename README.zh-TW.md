@@ -345,7 +345,7 @@ cd .. && python3 scripts/grading/grade_agent.py --suite scripts/grading/student-
 - `agents-cli eval grade` 啟動時還是會建立 Google Cloud Storage 客戶端，需要預設憑證（ADC）。沒有 `gcloud` 的話，把 `GOOGLE_APPLICATION_CREDENTIALS` 指到一個佔位用的 `authorized_user` JSON 檔就好，讀本機題庫時不會用到它。
 - 本機模型如果只開一個推論槽，要用 `agents-cli eval run --concurrency 1`。
 
-學員用的可信賴度評鑑 LAB：課堂版 [eval-lab-quick.zh-TW.md](eval-lab-quick.zh-TW.md)（25 分鐘）、完整版 [eval-lab.zh-TW.md](eval-lab.zh-TW.md)（60–90 分鐘，回家做）。
+學員用的可信賴度評鑑 LAB：課堂版 [eval-lab-quick.zh-TW.md](eval-lab-quick.zh-TW.md)（25 分鐘）、完整版 [eval-lab.zh-TW.md](eval-lab.zh-TW.md)（60–90 分鐘，回家做）。這個 Agent 照完整版做完的結果與一頁報告見 [reports/可信賴度報告.md](reports/可信賴度報告.md)。
 
 ### 第二個 Agent：議價顧問（A2A 與 OKF 知識庫）
 
