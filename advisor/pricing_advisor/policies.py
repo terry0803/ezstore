@@ -83,13 +83,49 @@ def _percent(value: Decimal) -> str:
     return f"{(value * 100).quantize(Decimal('0.01'))}%"
 
 
-def evaluate_price_change(bundle: Bundle, result: dict[str, Any], now: datetime | None = None) -> PriceDecision:
+FACTOR_STEP = Decimal("0.0001")
+# 改價必須同時有這兩類規則可用，少了任何一類就不放行
+REQUIRED_RULES = {"margin_tiers": "改價核准層級", "factor_floor": "報價因子下限"}
+
+
+def _approval(value: Any) -> str:
+    """規則裡寫的核准層級；寫錯的當成不可報價，修好之前不能靠它放行。"""
+    return value if value in APPROVAL_ORDER else "forbidden"
+
+
+def _tier_of(margin: Decimal, tiers: list, below: str) -> str:
+    for tier in tiers:
+        if margin >= Decimal(str(tier["min_margin"])):
+            return _approval(tier.get("approval"))
+    return below
+
+
+def gate_numbers(result: dict[str, Any], conservative: bool = True) -> tuple[Decimal, Decimal, Decimal]:
+    """判斷用的數字：不四捨五入的毛利率，以及二分法少調一格（報價因子 −0.0001）時的毛利率與因子。
+
+    試算結果的毛利率取到小數 4 位，24.9998% 會顯示成 25.00%；報價單 Agent 的二分法
+    最後也可能停在比試算少一格的報價因子。改價前的判斷用比較不利的那一組數字；
+    改完之後核對實際的報價單時（conservative=False），因子已經確定，不再扣一格。
+    """
+    list_total = Decimal(result["list_total"])
+    cost_total = Decimal(result["cost_total"])
+    factor = Decimal(result["new_factor"])
+    low_factor = max(factor - FACTOR_STEP, FACTOR_STEP) if conservative else factor
+    total = list_total * low_factor
+    margin = (total - cost_total) / total if total else Decimal(-1)
+    return margin, low_factor, factor
+
+
+def evaluate_price_change(
+    bundle: Bundle, result: dict[str, Any], now: datetime | None = None, conservative: bool = True
+) -> PriceDecision:
     """result 是改價影響試算（已通過 attester）的結果。"""
     now = now or utc_now()
     decision = PriceDecision(approval="none")
-    margin = Decimal(result["new_margin"])
-    factor = Decimal(result["new_factor"])
+    shown_margin = Decimal(result["new_margin"])
+    margin, low_factor, factor = gate_numbers(result, conservative)
     level = str(result.get("customer_level") or "")
+    usable: set[str] = set()
 
     for concept in sorted(bundle.find(type_name="Policy", rule_kind="margin_tiers"), key=lambda c: c.id):
         reason = _usable(concept, now)
@@ -97,15 +133,22 @@ def evaluate_price_change(bundle: Bundle, result: dict[str, Any], now: datetime 
             decision.skipped.append((concept.id, reason))
             continue
         fm = concept.frontmatter
-        tiers = sorted(fm.get("margin_tiers") or [], key=lambda t: Decimal(str(t["min_margin"])), reverse=True)
-        approval = (fm.get("below_lowest") or {}).get("approval", "forbidden")
-        for tier in tiers:
-            if margin >= Decimal(str(tier["min_margin"])):
-                approval = tier["approval"]
-                break
-        decision.verdicts.append(
-            RuleVerdict(concept.id, concept.title, approval, f"改價後毛利率 {_percent(margin)}", concept.trust_note(now))
-        )
+        try:
+            tiers = sorted(fm.get("margin_tiers") or [], key=lambda t: Decimal(str(t["min_margin"])), reverse=True)
+            below = _approval((fm.get("below_lowest") or {}).get("approval", "forbidden"))
+            approval = _tier_of(margin, tiers, below)
+            shown = _tier_of(shown_margin, tiers, below)
+        except (KeyError, TypeError, ArithmeticError):
+            decision.verdicts.append(
+                RuleVerdict(concept.id, concept.title, "forbidden", "規則格式錯誤，修好之前不能用來放行", concept.trust_note(now))
+            )
+            continue
+        text = f"改價後毛利率 {_percent(shown_margin)}"
+        if approval != shown:
+            exact = f"{(margin * 100).quantize(Decimal('0.0001'))}%"
+            text += f"（二分法可能少調一格，以 {exact} 判斷）" if conservative else f"（不四捨五入是 {exact}）"
+        decision.verdicts.append(RuleVerdict(concept.id, concept.title, approval, text, concept.trust_note(now)))
+        usable.add("margin_tiers")
 
     overrides: dict[str, tuple[Decimal, Concept]] = {}
     for concept in sorted(bundle.find(type_name="Policy", rule_kind="factor_floor_override"), key=lambda c: c.id):
@@ -114,7 +157,10 @@ def evaluate_price_change(bundle: Bundle, result: dict[str, Any], now: datetime 
             decision.skipped.append((concept.id, reason))
             continue
         fm = concept.frontmatter
-        overrides[str(fm.get("applies_to_level"))] = (Decimal(str(fm["factor_floor"])), concept)
+        try:
+            overrides[str(fm.get("applies_to_level"))] = (Decimal(str(fm["factor_floor"])), concept)
+        except (KeyError, TypeError, ArithmeticError):
+            decision.skipped.append((concept.id, "規則格式錯誤"))
 
     for concept in sorted(bundle.find(type_name="Policy", rule_kind="factor_floor"), key=lambda c: c.id):
         reason = _usable(concept, now)
@@ -123,26 +169,44 @@ def evaluate_price_change(bundle: Bundle, result: dict[str, Any], now: datetime 
             continue
         fm = concept.frontmatter
         floors = fm.get("factor_floor") or {}
+        usable.add("factor_floor")
         if level not in floors:
+            decision.verdicts.append(
+                RuleVerdict(concept.id, concept.title, "sales_manager", f"客戶等級「{level}」不在下限表裡", concept.trust_note(now))
+            )
             continue
-        floor = Decimal(str(floors[level]))
+        try:
+            floor = Decimal(str(floors[level]))
+        except ArithmeticError:
+            decision.verdicts.append(
+                RuleVerdict(concept.id, concept.title, "forbidden", "規則格式錯誤，修好之前不能用來放行", concept.trust_note(now))
+            )
+            continue
         source = ""
         if level in overrides:
             floor, override = overrides[level]
             source = f"（依 {override.id} 暫時改為 {floor:.2f}）"
-        if factor < floor:
-            approval = (fm.get("below_floor") or {}).get("approval", "sales_manager")
+        if low_factor < floor:
+            approval = _approval((fm.get("below_floor") or {}).get("approval", "sales_manager"))
             text = f"報價因子 {factor} 低於 {level} 的下限 {floor:.2f}{source}"
+            if factor >= floor:
+                text = f"報價因子 {factor}，二分法可能少調一格到 {low_factor}，低於 {level} 的下限 {floor:.2f}{source}"
         else:
             approval = "none"
             text = f"報價因子 {factor} 沒有低於 {level} 的下限 {floor:.2f}{source}"
         decision.verdicts.append(RuleVerdict(concept.id, concept.title, approval, text, concept.trust_note(now)))
 
+    for kind, label in REQUIRED_RULES.items():
+        if kind not in usable:
+            decision.verdicts.append(
+                RuleVerdict(
+                    f"missing:{kind}", f"缺少{label}", "sales_manager",
+                    "知識庫沒有可用的這類規則（作廢、過期或不存在），保守起見要主管核准", "—",
+                )
+            )
+
     for verdict in decision.verdicts:
         decision.approval = stricter(decision.approval, verdict.approval)
-    if not decision.verdicts:
-        # 沒有任何可用的規則時不放行
-        decision.approval = "sales_manager"
     return decision
 
 

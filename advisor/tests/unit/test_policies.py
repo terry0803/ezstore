@@ -42,6 +42,55 @@ async def test_factor_floor_and_promo(bundle_path, fake_backend):
     assert august.approval == "none"
 
 
+@pytest.mark.asyncio
+async def test_threshold_is_not_passed_by_rounding(bundle_path, fake_backend):
+    # 191333：毛利率實際 24.9998%，四捨五入顯示 25.00%，不能因此放行
+    bundle = Bundle(bundle_path)
+    receipt = await run_price_change_impact(bundle, fake_backend, "QT-20260325-001", 191333)
+    assert receipt["result"]["new_margin"] == "0.2500"
+    decision = evaluate_price_change(bundle, receipt["result"])
+    assert decision.approval == "sales_manager"
+    assert "判斷" in decision.verdicts[0].reason
+
+
+@pytest.mark.asyncio
+async def test_after_write_check_uses_exact_factor(bundle_path, fake_backend):
+    bundle = Bundle(bundle_path)
+    receipt = await run_price_change_impact(bundle, fake_backend, "QT-20260325-001", 200000)
+    assert evaluate_price_change(bundle, receipt["result"], conservative=False).approval == "none"
+
+
+def _set_frontmatter(path, old, new):
+    text = path.read_text(encoding="utf-8")
+    assert old in text
+    path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+
+@pytest.mark.asyncio
+async def test_missing_margin_rule_does_not_open_the_gate(bundle_copy, fake_backend):
+    # 毛利率規則作廢後只剩報價因子下限；200000 原本可以直接改，現在要主管核准
+    _set_frontmatter(bundle_copy / "policies" / "discount-approval.md", "status: stable", "status: deprecated")
+    decision = await _decision(Bundle(bundle_copy), fake_backend, "QT-20260325-001", 200000)
+    assert decision.approval == "sales_manager"
+    assert any(v.concept_id == "missing:margin_tiers" for v in decision.verdicts)
+
+
+@pytest.mark.asyncio
+async def test_unknown_level_and_malformed_rule_fail_closed(bundle_copy, fake_backend):
+    bundle = Bundle(bundle_copy)
+    receipt = await run_price_change_impact(bundle, fake_backend, "QT-20260325-001", 200000)
+    result = {**receipt["result"], "customer_level": "partner"}
+    assert evaluate_price_change(bundle, result).approval == "sales_manager"
+
+    _set_frontmatter(
+        bundle_copy / "policies" / "discount-approval.md",
+        "{ min_margin: 0.25, approval: none,",
+        "{ min_margin: 0.25, approval: nobody,",
+    )
+    decision = await _decision(Bundle(bundle_copy), fake_backend, "QT-20260325-001", 200000)
+    assert decision.approval == "forbidden"
+
+
 def test_order_conversion_rules(bundle_path, snapshot):
     bundle = Bundle(bundle_path)
     quotations, orders = snapshot["quotations"], snapshot["orders_by_customer"]

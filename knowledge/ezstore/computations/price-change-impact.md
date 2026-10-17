@@ -13,6 +13,7 @@ data_source:
   request: GET /api/v1/quotations?quotation_number=<quotation_number>&page_size=1，再 GET /api/v1/quotations/<id>
 computation: /references/computations/price_change_impact.py
 computation_sha256: ae362ce9aa5f2a0449493c1fd00b0d879a9f017da966044268a3bef64d468391
+attester_sha256: dddfbdb01d8fbea533a6114b72fae9fe7ffcb0ef065b053b5bcc771051c05224
 executor:
   resource: /references/skills/run-python-computation.md
   receipt: [computation, computation_sha256, source_url, source_sha256, source, parameters, result, executed_at]
@@ -20,7 +21,7 @@ attester:
   resource: /references/attesters/recompute.py
 generated: { by: claude-code/claude-opus-5-5, at: 2026-10-16T17:30:00Z }
 verified:
-  - { by: process:okf-verify, at: 2026-10-17T03:58:50Z }
+  - { by: process:okf-verify, at: 2026-10-17T04:49:26Z }
 status: stable
 stale_after: 2027-04-01T00:00:00Z
 sources:
@@ -51,6 +52,8 @@ sources:
 # 收據與驗證
 
 executor 照 [執行說明](/references/skills/run-python-computation.md) 回傳收據，attester（`/references/attesters/recompute.py`）檢查五件事：計算程式的 sha256、參數、來源資料的 sha256、重算結果、要顯示的數字。任何一項不符，Agent 就不顯示數字。
+
+計算程式和 attester 的版本各自登記在 `computation_sha256`、`attester_sha256`。檔案被改過或沒有登記，Agent 都不執行；要由人看過程式後用 `okf sign … --repin` 重新登記。顯示數字之前，Agent 會從後端重讀一次報價單，和收據裡的資料來源比對。
 
 `adjust_total_price` 實際改出來的總價會因為二分法停在第 20 次，和試算差一點。試算是事前判斷規則用的，實際結果以報價單 Agent 的回覆為準。
 

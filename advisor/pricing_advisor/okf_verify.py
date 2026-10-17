@@ -210,6 +210,9 @@ async def check_price_change_impact(ctx: VerifyContext, concept) -> tuple[bool, 
     actual = hashlib.sha256(path.read_bytes()).hexdigest()
     if fm.get("computation_sha256") != actual:
         return False, ["計算程式和登記的 computation_sha256 不同 ✗（要先由人審核再重新登記）"]
+    attester = ctx.bundle.resolve_path(str((fm.get("attester") or {}).get("resource")), concept)
+    if fm.get("attester_sha256") != hashlib.sha256(attester.read_bytes()).hexdigest():
+        return False, ["驗證程式和登記的 attester_sha256 不同 ✗（要先由人審核再重新登記）"]
     compute = _load_function(path, "compute")
     bad = []
     for q in await ctx.quotations():

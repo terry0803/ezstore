@@ -81,8 +81,14 @@ def append_log(bundle: Bundle, lines: list[str]) -> None:
     log = bundle.root / "log.md"
     today = (utc_now().astimezone(timezone.utc) + timedelta(hours=8)).strftime("%Y-%m-%d")
     text = log.read_text(encoding="utf-8") if log.exists() else "# Directory Update Log\n"
-    entries = "\n".join(f"* {line}" for line in lines)
     heading = f"## {today}\n"
+    if heading in text:
+        # 同一天已經有一模一樣的紀錄（例如重跑 verify）就不再重複加
+        section = text.split(heading, 1)[1].split("\n## ", 1)[0]
+        lines = [line for line in lines if f"* {line}" not in section.splitlines()]
+        if not lines:
+            return
+    entries = "\n".join(f"* {line}" for line in lines)
     if heading in text:
         text = text.replace(heading, f"{heading}{entries}\n", 1)
     else:
@@ -173,14 +179,21 @@ def cmd_sign(bundle: Bundle, args) -> int:
         print(f"找不到條目 {args.concept}", file=sys.stderr)
         return 2
     if concept.type == "Attested Computation":
-        path = bundle.resolve_path(str(concept.frontmatter["computation"]), concept)
-        actual = hashlib.sha256(path.read_bytes()).hexdigest()
-        if concept.frontmatter.get("computation_sha256") != actual:
-            if not args.repin:
-                print("計算程式和登記的 computation_sha256 不同。看過程式後加 --repin 重新登記。", file=sys.stderr)
-                return 2
-            write_frontmatter_key(concept.path, "computation_sha256", [f"computation_sha256: {actual}"], after="computation")
-            print(f"重新登記 computation_sha256：{actual}")
+        fm = concept.frontmatter
+        for pin_key, path_value, after, label in (
+            ("computation_sha256", fm.get("computation"), "computation", "計算程式"),
+            ("attester_sha256", (fm.get("attester") or {}).get("resource"), "computation_sha256", "驗證程式"),
+        ):
+            if not path_value:
+                continue
+            path = bundle.resolve_path(str(path_value), concept)
+            actual = hashlib.sha256(path.read_bytes()).hexdigest()
+            if fm.get(pin_key) != actual:
+                if not args.repin:
+                    print(f"{label}和登記的 {pin_key} 不同（或沒有登記）。看過程式後加 --repin 重新登記。", file=sys.stderr)
+                    return 2
+                write_frontmatter_key(concept.path, pin_key, [f"{pin_key}: {actual}"], after=after)
+                print(f"重新登記 {pin_key}：{actual}")
         concept = load_bundle(bundle.root).get(concept.id)
     entries = [e for e in concept.verified() if e.get("by") != args.by] + [{"by": args.by, "at": utc_now()}]
     set_verified(concept, entries)

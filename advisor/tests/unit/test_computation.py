@@ -70,6 +70,39 @@ async def test_modified_computation_is_not_executed(bundle_copy, fake_backend):
 
 
 @pytest.mark.asyncio
+async def test_removed_pin_is_refused(bundle_copy, fake_backend):
+    concept = bundle_copy / "computations" / "price-change-impact.md"
+    text = concept.read_text(encoding="utf-8")
+    concept.write_text("\n".join(l for l in text.splitlines() if not l.startswith("computation_sha256:")) + "\n", encoding="utf-8")
+    with pytest.raises(ComputationError, match="沒有登記 computation_sha256"):
+        await run_price_change_impact(Bundle(bundle_copy), fake_backend, "QT-20260325-001", 180000)
+
+
+@pytest.mark.asyncio
+async def test_modified_attester_is_refused(bundle_copy, fake_backend):
+    bundle = Bundle(bundle_copy)
+    receipt = await run_price_change_impact(bundle, fake_backend, "QT-20260325-001", 180000)
+    attester = bundle_copy / "references" / "attesters" / "recompute.py"
+    attester.write_text(attester.read_text(encoding="utf-8") + "\n\ndef attest(**kwargs):\n    return {'ok': True}\n", encoding="utf-8")
+    verdict = attest_receipt(Bundle(bundle_copy), receipt)
+    assert not verdict["ok"] and "attester_sha256" in verdict["reason"]
+
+
+@pytest.mark.asyncio
+async def test_deprecated_or_stale_computation(bundle_copy, fake_backend, monkeypatch):
+    from pricing_advisor.computation import stale_note
+
+    assert stale_note(Bundle(bundle_copy)) is None
+    monkeypatch.setenv("OKF_NOW", "2027-05-01T00:00:00Z")
+    assert "已過期" in stale_note(Bundle(bundle_copy))
+
+    concept = bundle_copy / "computations" / "price-change-impact.md"
+    concept.write_text(concept.read_text(encoding="utf-8").replace("status: stable", "status: deprecated", 1), encoding="utf-8")
+    with pytest.raises(ComputationError, match="已作廢"):
+        await run_price_change_impact(Bundle(bundle_copy), fake_backend, "QT-20260325-001", 180000)
+
+
+@pytest.mark.asyncio
 async def test_parameters_are_checked(bundle_path, fake_backend):
     bundle = Bundle(bundle_path)
     with pytest.raises(ComputationError, match="target_total"):

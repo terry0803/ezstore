@@ -5,7 +5,7 @@ description: 利潤除以總價；利潤是總價減掉品項成本。改價核�
 tags: [glossary, margin, profit]
 generated: { by: claude-code/claude-opus-5-5, at: 2026-10-16T17:30:00Z }
 verified:
-  - { by: process:okf-verify, at: 2026-10-17T03:58:50Z }
+  - { by: process:okf-verify, at: 2026-10-17T04:49:26Z }
 status: stable
 stale_after: 2027-04-01T00:00:00Z
 sources:

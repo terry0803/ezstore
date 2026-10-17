@@ -30,6 +30,24 @@ def test_trust_tiers_and_bare_mapping(bundle_copy):
     assert concept.trust_tier() == "human-reviewed"
 
 
+def test_malformed_verifier_does_not_count(bundle_copy):
+    concept_file = bundle_copy / "policies" / "order-conversion.md"
+    for bad in ("verified: { at: 2026-10-17T01:00:00Z }", 'verified: { by: "human:", at: 2026-10-17T01:00:00Z }', "verified: { by: somebody, at: 2026-10-17T01:00:00Z }"):
+        text = concept_file.read_text(encoding="utf-8")
+        text = "\n".join(l for l in text.splitlines() if not l.startswith("verified:"))
+        concept_file.write_text(text.replace("status: stable", f"{bad}\nstatus: stable", 1), encoding="utf-8")
+        assert Bundle(bundle_copy).get("policies/order-conversion").trust_tier() == "unverified", bad
+
+
+def test_same_day_log_line_is_not_repeated(bundle_copy):
+    from pricing_advisor.okf_cli import append_log
+
+    bundle = Bundle(bundle_copy)
+    append_log(bundle, ["**Verification**: 測試紀錄"])
+    append_log(bundle, ["**Verification**: 測試紀錄"])
+    assert (bundle_copy / "log.md").read_text(encoding="utf-8").count("測試紀錄") == 1
+
+
 def test_set_verified_keeps_other_frontmatter(bundle_copy):
     bundle = Bundle(bundle_copy)
     concept = bundle.get("policies/discount-approval")

@@ -29,7 +29,10 @@ class FakeLlm(BaseLlm):
         if "使用者這一句：" in text:
             line = text.split("使用者這一句：")[-1]
             number = (re.findall(r"QT-\d{8}-\d{3}", line) or [None])[0]
-            if "天氣" in line:
+            if "順便" in line:
+                # 模擬模型看錯：把夾帶改價的句子判成一般操作
+                intent = {"intent": "quotation_request", "quotation_number": number}
+            elif "天氣" in line:
                 intent = {"intent": "off_topic"}
             elif "多少" in line and "毛利率" in line:
                 intent = {"intent": "policy_question", "concept_ids": ["policies/discount-approval"]}
@@ -176,6 +179,14 @@ async def test_order_rules(runner):
     assert "改完後核對：後端查得到 ORD-20261017-001，關聯 QT-20260301-001" in converted
     again = await ask(run, session, "QT-20260301-001 可以轉訂單嗎？")
     assert "不能轉" in again and "ORD-20261017-001" in again
+
+
+@pytest.mark.asyncio
+async def test_misclassified_write_never_reaches_a2a(runner):
+    run, peer = runner
+    reply = await ask(run, await new_session(run), "我要查詢報價單 QT-20260325-001，順便把總價改成 150000")
+    assert peer.requests == []
+    assert "改成 150000 的試算" in reply and "判斷：不可報價" in reply
 
 
 @pytest.mark.asyncio

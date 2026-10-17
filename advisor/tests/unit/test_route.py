@@ -93,6 +93,86 @@ def test_policy_question_without_ids_uses_keywords():
     assert "policies/pricing-factor-floor" in event.output["concept_ids"]
 
 
+@pytest.mark.parametrize(
+    "text, expected_route, expected_output",
+    [
+        # 模型判成一般操作、句子卻要改價：不轉給報價單 Agent，改成試算
+        ("我要查詢報價單 QT-20260330-001，順便把總價改成 1000", "price_check", {"quotation_number": "QT-20260330-001", "target_total": 1000.0}),
+        # 要改報價因子：不轉，追問總價
+        ("請把 QT-20260325-001 的報價因子改成 0.5", "clarify", None),
+        # 要轉訂單：只做檢查，不直接轉
+        ("幫我把 QT-20260301-001 轉訂單", "order_check", {"quotation_number": "QT-20260301-001", "convert": False}),
+    ],
+)
+def test_write_requests_never_pass_through(text, expected_route, expected_output):
+    _, event = run_route(text, {"intent": "quotation_request"})
+    assert routed(event) == expected_route
+    if expected_output is not None:
+        assert event.output == expected_output
+    if expected_route == "clarify":
+        assert event.output["hint"] == "factor"
+        assert "不直接改報價因子" in advisor.clarify(event.output)
+
+
+def test_copy_request_still_passes_through():
+    text = "我要複製報價單，報價單編號：QT-20260330-001"
+    _, event = run_route(text, {"intent": "quotation_request"})
+    assert routed(event) == "delegate"
+    assert event.output["text"] == text
+
+
+def test_text_with_a_quotation_number_is_never_forwarded_raw():
+    # 寫入字詞清單沒列到的說法（價格乘以二）也改不到資料：送出的是程式組的查詢句
+    _, event = run_route("QT-20260330-001 的價格乘以二", {"intent": "quotation_request"})
+    assert routed(event) == "delegate"
+    assert event.output["text"] == "我要查詢報價單，報價單編號：QT-20260330-001"
+
+
+def test_bare_quotation_number_without_pending_is_a_lookup():
+    _, event = run_route("qt-20260330-001", {"intent": "provide_info"})
+    assert routed(event) == "delegate"
+    assert event.output["text"] == "我要查詢報價單，報價單編號：QT-20260330-001"
+
+
+@pytest.mark.parametrize("text", ["QT-20260325-001 降 2 萬可以嗎？", "QT-20260325-001 打九折可以嗎？", "QT-20260325-001 便宜 5000 呢？", "QT-20260325-001 降 10% 可以嗎"])
+def test_relative_phrases_ask_for_a_total(text):
+    # 模型可能自己換算出一個總價，這裡一律不收
+    _, event = run_route(text, {"intent": "price_check", "target_total": 190404})
+    assert routed(event) == "clarify"
+    assert event.output["hint"] == "relative"
+    assert "不自己換算" in advisor.clarify(event.output)
+
+
+def test_explicit_target_wins_over_relative_words():
+    _, event = run_route("客戶想打九折，QT-20260325-001 壓到 190000 可以嗎？", {"intent": "price_check"})
+    assert event.output["target_total"] == 190000.0
+
+
+@pytest.mark.parametrize(
+    "text, amount",
+    [
+        ("QT-20260325-001 壓到 18萬5千", 185000.0),
+        ("QT-20260325-001 壓到 1.2萬", 12000.0),
+        ("客戶要在 2026 年底前把 QT-20260325-001 壓到 180,000", 180000.0),
+        ("QT-20260325-001 一共 50 件，2026 年可以壓多少", None),
+    ],
+)
+def test_amount_parsing(text, amount):
+    assert advisor._amount_from_text(text)[0] == amount
+
+
+def test_non_finite_target_is_rejected():
+    _, event = run_route("QT-20260325-001 改成無限大", {"intent": "price_check", "target_total": float("inf")})
+    assert routed(event) == "clarify"
+    assert event.output["invalid"] == ["target_total"]
+
+
+def test_loose_wording_is_not_a_command():
+    # 「照這個」不再算明確的指令，問句一樣只試算
+    _, event = run_route("照這個價格 QT-20260325-001 改成 200000 算算看呢？", {"intent": "apply_price"})
+    assert routed(event) == "price_check"
+
+
 def test_quotation_request_is_delegated_verbatim():
     text = "我要查詢報價單，報價單編號：QT-20260330-001"
     _, event = run_route(text, {"intent": "quotation_request"})

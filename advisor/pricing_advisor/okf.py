@@ -34,6 +34,7 @@ _LINK_RE = re.compile(r"\]\(([^)\s]+?\.md)(?:#[^)]*)?\)")
 _FOOTNOTE_USE_RE = re.compile(r"\[\^([^\]\s]+)\](?!:)")
 _FOOTNOTE_DEF_RE = re.compile(r"^\[\^([^\]\s]+)\]:", re.M)
 _ACTOR_RE = re.compile(r"^(human:\S+|process:\S+|team:\S+|[^\s:/]+/\S+)$")
+_HUMAN_ACTOR_RE = re.compile(r"^human:\S+$")
 _LOG_DATE_RE = re.compile(r"^## (.+?)\s*$", re.M)
 _INDEX_ENTRY_RE = re.compile(r"^\* \[([^\]]+)\]\(([^)]+)\)(?: - (.*))?$")
 
@@ -131,16 +132,20 @@ class Concept:
             return [v for v in value if isinstance(v, dict)]
         return []
 
+    def valid_verified(self) -> list[dict]:
+        """by 符合 actor 寫法（§7）的驗證紀錄；缺 by 或寫錯的不算數。"""
+        return [v for v in self.verified() if _ACTOR_RE.match(str(v.get("by") or "").strip())]
+
     def trust_tier(self) -> str:
-        actors = [str(v.get("by", "")) for v in self.verified()]
+        actors = [str(v["by"]).strip() for v in self.valid_verified()]
         if not actors:
             return "unverified"
-        if any(a.startswith("human:") for a in actors):
+        if any(_HUMAN_ACTOR_RE.match(a) for a in actors):
             return "human-reviewed"
         return "machine-confirmed"
 
     def last_verified(self) -> dict | None:
-        events = [v for v in self.verified() if parse_time(v.get("at"))]
+        events = [v for v in self.valid_verified() if parse_time(v.get("at"))]
         return max(events, key=lambda v: parse_time(v["at"])) if events else None
 
     def stale_after(self) -> datetime | None:
@@ -405,14 +410,22 @@ def _check_computation(bundle: Bundle, concept: Concept, issues: list[Issue]) ->
             continue
         if not target.exists():
             issues.append(Issue("warning", where, f"{key} 指的檔案不存在：{value}"))
-    pinned = fm.get("computation_sha256")
-    if pinned and fm.get("computation"):
+    for pin_key, path_value, label in (
+        ("computation_sha256", fm.get("computation"), "計算程式"),
+        ("attester_sha256", (fm.get("attester") or {}).get("resource"), "驗證程式"),
+    ):
+        if not path_value:
+            continue
+        pinned = fm.get(pin_key)
+        if not pinned:
+            issues.append(Issue("warning", where, f"沒有登記 {pin_key}，使用的 Agent 會拒絕執行{label}"))
+            continue
         try:
-            target = bundle.resolve_path(str(fm["computation"]), concept)
+            target = bundle.resolve_path(str(path_value), concept)
         except OKFError:
-            return
+            continue
         if target.exists() and hashlib.sha256(target.read_bytes()).hexdigest() != pinned:
-            issues.append(Issue("warning", where, "計算程式和登記的 computation_sha256 不同，需要重新審核"))
+            issues.append(Issue("warning", where, f"{label}和登記的 {pin_key} 不同，需要重新審核"))
 
 
 # ---------------------------------------------------------------------------

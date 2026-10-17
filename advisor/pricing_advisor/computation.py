@@ -12,7 +12,7 @@ import types
 from typing import Any
 
 from .backend import Backend, BackendError
-from .okf import Bundle, Concept, format_time, utc_now
+from .okf import Bundle, Concept, OKFError, format_time, utc_now
 
 PRICE_CHANGE_IMPACT = "computations/price-change-impact"
 
@@ -46,7 +46,26 @@ def computation_concept(bundle: Bundle, concept_id: str = PRICE_CHANGE_IMPACT) -
         raise ComputationError(f"知識庫沒有 {concept_id} 這個 Attested Computation")
     if concept.frontmatter.get("runtime") != "python":
         raise ComputationError(f"{concept_id} 的 runtime 不是 python")
+    if concept.is_deprecated():
+        raise ComputationError(f"{concept_id} 已作廢，不執行")
     return concept
+
+
+def _pinned_file(bundle: Bundle, concept: Concept, path_value: Any, pin_key: str, label: str):
+    """知識庫裡的程式要和條目登記的 sha256 一樣才可以載入；沒登記也不載入。"""
+    if not path_value:
+        raise ComputationError(f"條目沒有寫{label}的位置，不執行")
+    pinned = concept.frontmatter.get(pin_key)
+    if not pinned:
+        raise ComputationError(f"{label}沒有登記 {pin_key}，不執行")
+    try:
+        path = bundle.resolve_path(str(path_value), concept)
+        actual = sha256_hex(path.read_bytes())
+    except (OSError, OKFError) as e:
+        raise ComputationError(f"讀不到{label}：{e}") from e
+    if actual != pinned:
+        raise ComputationError(f"{label}和知識庫登記的 {pin_key} 不同，不執行")
+    return path, actual
 
 
 def _check_parameters(concept: Concept, params: dict[str, Any]) -> None:
@@ -71,12 +90,8 @@ async def run_price_change_impact(
     params = {"quotation_number": quotation_number, "target_total": target_total}
     _check_parameters(concept, params)
 
-    computation_file = bundle.resolve_path(str(fm["computation"]), concept)
-    code_sha = sha256_hex(computation_file.read_bytes())
-    pinned = fm.get("computation_sha256")
-    if pinned and pinned != code_sha:
-        # 程式被改過就不執行：知識庫登記的是另一個版本
-        raise ComputationError("計算程式和知識庫登記的 computation_sha256 不同，不執行")
+    # 程式被改過、或沒有登記版本，就不執行
+    computation_file, code_sha = _pinned_file(bundle, concept, fm["computation"], "computation_sha256", "計算程式")
 
     try:
         source = await backend.find_quotation(quotation_number)
@@ -107,11 +122,24 @@ async def run_price_change_impact(
 
 
 def attest_receipt(bundle: Bundle, receipt: dict[str, Any], claimed: dict[str, Any] | None = None) -> dict[str, Any]:
-    """交給條目指定的 attester（確定性的程式，不用 LLM）。"""
-    concept = computation_concept(bundle)
-    attester_file = bundle.resolve_path(str(concept.frontmatter["attester"]["resource"]), concept)
-    attest = _load_function(attester_file, "attest")
+    """交給條目指定的 attester（確定性的程式，不用 LLM）。attester 一樣要符合登記的 sha256。"""
     try:
+        concept = computation_concept(bundle)
+        attester_file, _ = _pinned_file(
+            bundle, concept, (concept.frontmatter.get("attester") or {}).get("resource"), "attester_sha256", "驗證程式（attester）"
+        )
+    except ComputationError as e:
+        return {"ok": False, "reason": str(e), "details": {}}
+    try:
+        attest = _load_function(attester_file, "attest")
         return attest(bundle_root=bundle.root, concept=concept.frontmatter, receipt=receipt, claimed=claimed)
     except Exception as e:  # attester 本身出錯也當成驗證失敗
         return {"ok": False, "reason": f"attester 執行失敗：{e.__class__.__name__}", "details": {}}
+
+
+def stale_note(bundle: Bundle, now=None) -> str | None:
+    """試算條目過期時回傳提醒文字（規格 §10.5：過期要警告或拒絕）。"""
+    concept = computation_concept(bundle)
+    if concept.is_stale(now or utc_now()):
+        return f"試算條目 {concept.id} 已過期（stale_after {format_time(concept.stale_after())}），要人重新審核"
+    return None
