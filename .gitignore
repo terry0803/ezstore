@@ -71,3 +71,4 @@ playwright-report/
 !/artifacts/fix-20261017/
 !/artifacts/fix-20261017/**
 /artifacts/fix-20261017/compose.test.yml
+/artifacts/fix-20261017/compose.gemini-test.yml
