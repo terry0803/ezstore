@@ -246,3 +246,29 @@ async def test_invalid_amount_never_delegates_even_after_successful_check(runner
     confirmation = await ask(run, session, "那就幫我改")
     assert "請提供" in confirmation
     assert peer.requests == []
+
+
+@pytest.mark.asyncio
+async def test_concurrent_conversions_of_one_quotation_create_one_order(runner):
+    """兩個人同時要轉同一張單：第一次檢查都會通過，排隊後重新檢查，只有一個真的經 A2A 送出。"""
+    import asyncio
+
+    run, peer = runner
+    original_send = peer.send
+
+    async def slow_send(text):
+        await asyncio.sleep(0.2)  # 讓第二個請求在訂單建好之前就通過 order_check
+        return await original_send(text)
+
+    peer.send = slow_send
+    sessions = [await new_session(run), await new_session(run)]
+    replies = await asyncio.gather(*(ask(run, s, "幫我把 QT-20260301-001 轉成訂單") for s in sessions))
+
+    assert sum("轉訂單" in r for r in peer.requests) == 1
+    done = [r for r in replies if "改完後核對：後端查得到 ORD-20261017-001" in r]
+    blocked = [r for r in replies if "送出前重新檢查" in r]
+    assert len(done) == 1 and len(blocked) == 1
+    assert "這次沒有轉訂單" in blocked[0] and "已經有訂單" in blocked[0]
+    quotation = peer.backend.quotations["QT-20260301-001"]
+    linked = [o for o in peer.backend.orders[str(quotation["customer_id"])] if o["quotation_id"] == quotation["id"]]
+    assert len(linked) == 1

@@ -88,8 +88,8 @@
     "sha256": "2c7d434c7a1ae0403da4ceeb5660e31dd7fa1b16eb217a6eae7d9b285a24600b"
   },
   "README.md": {
-    "bytes": 6718,
-    "sha256": "54809fba5316d42d19aa006a84348872a98bebf9f0efb474993c5c02dba6677c"
+    "bytes": 6948,
+    "sha256": "3367ab5b38753dc5500edc01eb80516fb75121908a997640820bbac1ba906fe4"
   },
   "repair-go-tests.log": {
     "bytes": 1905,
@@ -122,5 +122,9 @@
   "disconnect-result.json": {
     "bytes": 2548,
     "sha256": "65725f8ef7b99f51cf23d59e0758e8cff3c209694cf5e1ec53df8e806e4a98c2"
+  },
+  "concurrency-advisor-result.json": {
+    "bytes": 1040,
+    "sha256": "3fa3968da169955954ff1bb367a9550f4bf1fe6ab5896a5fc9776a1843c105e0"
   }
 }

@@ -17,6 +17,7 @@ LLM 只做兩件事：聽懂這一句（意圖、欄位、要讀哪些知識條�
 
 from __future__ import annotations
 
+import asyncio
 import math
 import os
 import re
@@ -1023,8 +1024,44 @@ async def order_check(ctx: Context, node_input: dict):
     return Event(output=text, route="done", state=state)
 
 
+# 同一張報價單的轉訂單一次只做一個。order_check 到真的送出之間有空檔，兩個請求同時進來
+# 會都看到「還沒有訂單」；排隊後重新檢查，第二個就會看到第一個建好的訂單。只在單一程序內有效。
+_CONVERT_LOCKS: dict[str, asyncio.Lock] = {}
+
+
+async def _recheck_order_conversion(node_input: dict) -> str | None:
+    """排到隊之後重讀報價單與訂單，再判斷一次；不能轉就回說明文字，能轉就更新核對用的基準。"""
+    number = node_input["quotation_number"]
+    try:
+        quotation = await backend.find_quotation(number)
+        orders = await backend.customer_orders(quotation["customer_id"]) if quotation else []
+    except BackendError as e:
+        return f"送出前重新檢查時讀不到報價單或訂單：{e}。這次沒有轉訂單。"
+    if quotation is None:
+        return f"送出前重新檢查時找不到報價單 {number}。這次沒有轉訂單。"
+    decision = evaluate_order_conversion(_bundle(), quotation, orders)
+    if not decision.allowed:
+        reasons = "；".join(decision.reasons) or "不符合轉訂單規則"
+        return f"送出前重新檢查：{reasons}。可能是剛才另一個請求已經轉了，所以這次沒有轉訂單。"
+    node_input["original_source_sha256"] = sha256_hex(canonical_json(quotation))
+    node_input["original_order_ids"] = [order["id"] for order in orders]
+    return None
+
+
 async def delegate_a2a(ctx: Context, node_input: dict):
-    """經 A2A 把要求交給報價單 Agent，回覆附上 task 資訊。"""
+    """經 A2A 把要求交給報價單 Agent，回覆附上 task 資訊。轉訂單時同一張單排隊、送出前再檢查一次。"""
+    if node_input.get("purpose") == "convert_order":
+        lock = _CONVERT_LOCKS.setdefault(node_input["quotation_number"], asyncio.Lock())
+        async with lock:
+            blocked = await _recheck_order_conversion(node_input)
+            if blocked:
+                head = node_input.get("preface") or ""
+                return Event(output="\n".join(part for part in (head, blocked) if part))
+            return await _send_a2a(node_input)
+    return await _send_a2a(node_input)
+
+
+async def _send_a2a(node_input: dict) -> Event:
     request = node_input["text"]
     try:
         result = await quotation_agent.send(request)

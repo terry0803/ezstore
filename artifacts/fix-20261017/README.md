@@ -15,6 +15,7 @@
 | [repair-mcp-tests.log](repair-mcp-tests.log) | MCP 16／16（當時的版本，含「複製前拒絕」那題；改回原流程後是 15 個）。 |
 | [gemini31-full-acceptance.json](gemini31-full-acceptance.json) | 新版程式用 `gemini-3.1-flash-lite` 重跑 30 題功能實測：30／30，37 輪對話。 |
 | [concurrency-result.json](concurrency-result.json) | 同時對同一張報價單複製、改因子、改總價、轉訂單（`scripts/verify_concurrency.py`）。 |
+| [concurrency-advisor-result.json](concurrency-advisor-result.json) | 兩個人同時請議價顧問轉同一張單：只建立一張訂單，第二個排隊後重新檢查而沒有轉（`verify_concurrency.py --advisor`）。 |
 | [disconnect-result.json](disconnect-result.json) | 真的停掉後端、MCP、A2A 對方，以及改總價途中暫停後端（`scripts/verify_disconnect.py`）。 |
 | [scripts-offline-tests.log](scripts-offline-tests.log) | scripts 28／28，另 28 子測試通過。 |
 | [repair-go-tests.log](repair-go-tests.log) | Go 14 個測試函式通過；隔離網路、唯讀來源。 |

@@ -1,8 +1,9 @@
 """同時對同一張報價單下多個寫入操作（隔離環境 ezstore-fix-test，直接呼叫 MCP，不經模型）。
 
 隔離環境的埠：後端 58080、MCP 58010。跑之前先替隔離資料庫灌 seed，不要指到主環境。
-    cd mcp_server && uv run python ../scripts/verify_concurrency.py
-結果寫到 artifacts/fix-20261017/concurrency-result.json。
+    cd mcp_server && uv run python ../scripts/verify_concurrency.py            # 只打 MCP，不用模型
+    cd mcp_server && uv run python ../scripts/verify_concurrency.py --advisor  # 另外同時請議價顧問轉同一張單（會呼叫模型）
+結果寫到 artifacts/fix-20261017/concurrency-result.json（--advisor 寫到 concurrency-advisor-result.json）。
 """
 import asyncio
 import json
@@ -18,6 +19,8 @@ API = "http://127.0.0.1:58080/api/v1"
 QUOTE = "QT-20260330-001"
 CONVERT = "QT-20260328-001"
 OUT = Path(__file__).resolve().parents[1] / "artifacts" / "fix-20261017" / "concurrency-result.json"
+ADVISOR = "http://127.0.0.1:58502"
+ADVISOR_CONVERT = "QT-20260301-001"
 
 
 async def call(tool, args):
@@ -103,4 +106,36 @@ async def main():
     sys.exit(0 if ok_all else 1)
 
 
-asyncio.run(main())
+async def advisor_race():
+    """兩個人同時請議價顧問轉同一張已發佈、還沒有訂單的報價單：應該只建立一張訂單。"""
+    async with httpx.AsyncClient(timeout=300) as http:
+        _, orders = await snapshot(http)
+        max_o = max(o["id"] for o in orders)
+
+        async def ask():
+            session = (await http.post(f"{ADVISOR}/apps/pricing_advisor/users/race/sessions", json={})).json()["id"]
+            events = (await http.post(f"{ADVISOR}/run", json={
+                "app_name": "pricing_advisor", "user_id": "race", "session_id": session,
+                "new_message": {"role": "user", "parts": [{"text": f"幫我把 {ADVISOR_CONVERT} 轉成訂單"}]}})).json()
+            texts = [p.get("text") for e in events for p in (e.get("content") or {}).get("parts", [])
+                     if p.get("text") and e.get("author") != "user"]
+            return texts[-1] if texts else ""
+
+        replies = await asyncio.gather(ask(), ask())
+        _, orders2 = await snapshot(http)
+        quotes, _ = await snapshot(http)
+        qid = next(q["id"] for q in quotes if q["quotation_number"] == ADVISOR_CONVERT)
+        new_o = [o for o in orders2 if o["id"] > max_o and o.get("quotation_id") == qid]
+        done = sum("改完後核對：後端查得到" in r for r in replies)
+        blocked = sum("沒有轉訂單" in r for r in replies)
+        ok = len(new_o) == 1 and done == 1 and blocked == 1
+        print(("通過" if ok else "失敗"), "議價顧問同時轉同一張單：", {"新訂單數": len(new_o), "轉成功": done, "沒有轉": blocked})
+        for r in replies:
+            print("   ", r.replace("\n", " / ")[:300])
+        out = OUT.with_name("concurrency-advisor-result.json")
+        out.write_text(json.dumps({"ok": ok, "new_orders": [o["order_number"] for o in new_o], "replies": replies},
+                                  ensure_ascii=False, indent=1), encoding="utf-8")
+        sys.exit(0 if ok else 1)
+
+
+asyncio.run(advisor_race() if "--advisor" in sys.argv else main())
