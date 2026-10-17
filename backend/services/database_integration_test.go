@@ -205,3 +205,25 @@ func TestDatabaseRepeatedConversionRemainsAllowed(t *testing.T) {
 		require.True(t, strings.HasPrefix(order.OrderNumber, "ORD-"))
 	}
 }
+
+func TestDatabaseStoredFactorMatchesItemPrices(t *testing.T) {
+	q, _ := integrationServices(integrationDB(t))
+	input := quotationInput(1, 3)
+	input.PricingFactor = decimal.RequireFromString("0.77515")
+	created, err := q.Create(input)
+	require.NoError(t, err)
+	stored, err := q.GetByID(created.ID)
+	require.NoError(t, err)
+	require.Equal(t, "0.7752", stored.PricingFactor.StringFixed(4))
+	require.Len(t, stored.Items, 1)
+	// 單價 = 定價 100 x 存進去的因子 0.7752，總價 = 單價 x 3
+	require.Equal(t, "77.52", stored.Items[0].UnitPrice.StringFixed(2))
+	require.Equal(t, "232.56", stored.TotalPrice.StringFixed(2))
+
+	input.PricingFactor = decimal.RequireFromString("10")
+	_, err = q.Update(created.ID, input)
+	require.EqualError(t, err, "報價因子不可超過 9.9999")
+	input.PricingFactor = decimal.RequireFromString("0.01")
+	_, err = q.Update(created.ID, input)
+	require.EqualError(t, err, "報價因子太低，利潤率超出可儲存的範圍（-9.9999 到 9.9999）")
+}

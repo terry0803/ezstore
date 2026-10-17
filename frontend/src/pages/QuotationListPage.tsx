@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { quotationApi } from '../api/quotationApi';
 import DataTable from '../components/shared/DataTable';
+import ErrorMessage from '../components/shared/ErrorMessage';
 import Pagination from '../components/shared/Pagination';
 import ConfirmDialog from '../components/shared/ConfirmDialog';
 import StatusBadge from '../components/shared/StatusBadge';
@@ -16,7 +17,7 @@ export default function QuotationListPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['quotations', page, statusFilter],
     queryFn: () => quotationApi.list(page, 20, statusFilter),
   });
@@ -27,6 +28,8 @@ export default function QuotationListPage() {
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
       setDeleteId(null);
     },
+    // 失敗也關掉確認框，讓下面的錯誤訊息看得到
+    onError: () => setDeleteId(null),
   });
 
   const duplicateMutation = useMutation({
@@ -102,6 +105,9 @@ export default function QuotationListPage() {
         </select>
       </div>
 
+      <ErrorMessage error={error} action="讀取報價單清單" />
+      <ErrorMessage error={deleteMutation.error} action="刪除報價單" />
+      <ErrorMessage error={duplicateMutation.error} action="複製報價單" />
       <DataTable columns={columns} data={data?.data ?? []} loading={isLoading} />
       <Pagination page={page} pageSize={20} total={data?.total ?? 0} onPageChange={setPage} />
 

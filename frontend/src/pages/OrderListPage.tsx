@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { orderApi } from '../api/orderApi';
 import DataTable from '../components/shared/DataTable';
+import ErrorMessage from '../components/shared/ErrorMessage';
 import Pagination from '../components/shared/Pagination';
 import StatusBadge from '../components/shared/StatusBadge';
 import type { Order } from '../types';
@@ -13,7 +14,7 @@ export default function OrderListPage() {
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['orders', page, statusFilter],
     queryFn: () => orderApi.list(page, 20, statusFilter),
   });
@@ -60,6 +61,7 @@ export default function OrderListPage() {
         </select>
       </div>
 
+      <ErrorMessage error={error} action="讀取訂單清單" />
       <DataTable columns={columns} data={data?.data ?? []} loading={isLoading} />
       <Pagination page={page} pageSize={20} total={data?.total ?? 0} onPageChange={setPage} />
     </div>

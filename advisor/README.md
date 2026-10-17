@@ -89,7 +89,7 @@ uv run okf viz               # 產生 knowledge/ezstore/viz.html 關聯圖
 
 ## A2A
 
-- 用戶端（`a2a_client.py`）：a2a-sdk 1.2 抓報價單 Agent 的 agent card，確認名稱是 `quotation_agent`、有需要的 skill，再送 message、等 task completed、取 artifact 文字。JSON-RPC 一律送回取得 card 的同一個位址：經前端 nginx 連的時候，card 裡寫的 `http://agent:8080` 是 Compose 內部位址。
+- 用戶端（`a2a_client.py`）：a2a-sdk 1.2 抓報價單 Agent 的 agent card，確認名稱是 `quotation_agent`、有需要的 skill，再送 message（`return_immediately`，對方先回 task 編號）、用 `tasks/get` 查到 task 結束、取 artifact 文字。JSON-RPC 一律送回取得 card 的同一個位址：經前端 nginx 連的時候，card 裡寫的 `http://agent:8080` 是 Compose 內部位址。
 - 沒有用 ADK 的 `RemoteA2aAgent`：ADK 2.11 會拒絕不是 https、也不是 loopback 的 card 位址（`_validate_card_rpc_targets`），Docker 內部網路的 `http://agent:8080` 用不了。
 - 伺服端：`fast_api_app.py` 也開 `/a2a/pricing_advisor`，agent card 列四個 skill。A2A 回覆只帶 `respond` 節點的文字。
 
@@ -108,12 +108,12 @@ uv run python scripts/a2a_demo.py   # 外部 client → 報價單 Agent；外部
 - **計算與驗證程式要登記**：`computation_sha256`、`attester_sha256` 對不上或沒登記，就不執行；試算條目作廢就不跑，過期就不自動改價。顯示數字前會從後端重讀報價單，和收據裡的資料來源比對。
 - **改完再核對**：報價單 Agent 改完後，從後端重新讀新報價單算一次，確認原單沒動。
 - **轉訂單排隊**：同一張報價單的轉訂單一次只做一個，輪到時重讀報價單和訂單再判斷一次。兩個人同時要轉同一張單，只會轉一次。
-- **結果不明先擋**：經 A2A 轉訂單遇到逾時、取消，或報價單 Agent 回「操作中斷」「可能已經建立」這類回覆時，那張單先擋住不讓人重送，因為遠端可能還在建立訂單。確認沒送出、核對成功、重讀時已有訂單（照樣依規則不轉），或過了 `CONVERT_UNCERTAIN_SECONDS`（預設 600 秒）重讀仍沒有訂單，才會解除。排隊和這個紀錄都在程序裡，重啟後就不記得，議價顧問只能跑一個容器。
+- **結果不明先擋**：經 A2A 轉訂單遇到逾時、取消，或報價單 Agent 回「操作中斷」「可能已經建立」這類回覆時，那張單先擋住不讓人重送，因為遠端可能還在建立訂單。要有證據才放行：送出時先拿到 task 編號（沒拿到就用這邊產生的對話編號），下一次要轉時問報價單 Agent 那個 task 的狀態，還在跑就繼續擋；task 停了（或對方已經沒有這個 task），再等 MCP 呼叫後端的逾時（2 分鐘）過去，重讀訂單仍沒有才送。查不到 task 狀態也繼續擋。確認沒送出、核對成功、明確回報失敗，或重讀時已有訂單（照樣依規則不轉），會直接解除。排隊和這個紀錄都在程序裡，重啟後就不記得，議價顧問只能跑一個容器。
 - **只開給本機**：Compose 把 8502 綁在 `127.0.0.1`，網頁介面和 A2A 端點沒有登入機制。
 
 還沒處理的：
 
-- 轉單排隊和「結果不明」紀錄只在議價顧問程序的記憶體裡，不能跑多個容器。重啟會忘記紀錄，如果剛好在遠端還沒做完時重啟，重啟後可能重送；遇到結果不明時，等滿等待時間讓程式重新檢查，或先到系統確認，不要用重啟來解除。沒有做持久化的冪等鍵。
+- 轉單排隊和「結果不明」紀錄只在議價顧問程序的記憶體裡，不能跑多個容器。重啟會忘記紀錄，如果剛好在遠端還沒做完時重啟，重啟後可能重送；遇到結果不明時，照提示等一下再試讓程式重新檢查，或先到系統確認，不要用重啟來解除。沒有做持久化的冪等鍵。
 - 規則條目還沒有人簽核時一樣會套用，回覆會標「未驗證」；要嚴格的話，簽核前不要拿來給業務用。
 - OKF v0.2 的 `verified` 只是文字，`human:` 誰都寫得出來；登記的 sha256 也放在同一個知識庫裡。知識庫的可信度靠 git 的審查紀錄，以及 `okf verify` 對照系統。
 - 報價單 Agent 的 A2A 和 Chat UI 經前端 nginx（3000 埠）開放，沒有登入，這是課程提供的架構。
@@ -152,7 +152,6 @@ uv run python scripts/run_dialog.py
 | `MODEL_MAX_ATTEMPTS` | `6` | 每次呼叫 Gemini 最多試幾次；額度少的時候設成 1 |
 | `LOCAL_LLM_BASE` | `http://127.0.0.1:18081/v1` | `openai/` 模型的位址 |
 | `GEMINI_API_KEY`、Vertex AI 三個變數 | 無 | 模型憑證，和報價單 Agent 相同 |
-| `CONVERT_UNCERTAIN_SECONDS` | `600` | 轉訂單結果不明時擋多久才重新允許（期間查到訂單就直接擋下） |
 | `BACKEND_API` | `http://localhost:8080/api/v1` | 後端（只用 GET） |
 | `QUOTATION_AGENT_URL` | `http://localhost:3000/agent-api/a2a/quotation_agent` | 報價單 Agent 的 A2A 位址 |
 | `OKF_BUNDLE` | `../knowledge/ezstore` | 知識庫 |

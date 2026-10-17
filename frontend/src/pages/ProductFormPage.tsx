@@ -3,6 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { productApi } from '../api/productApi';
+import ErrorMessage from '../components/shared/ErrorMessage';
+import { apiErrorMessage } from '../api/errors';
 
 interface FormData {
   product_number: string;
@@ -24,7 +26,7 @@ export default function ProductFormPage() {
     defaultValues: { inventory: 0 },
   });
 
-  const { data: product } = useQuery({
+  const { data: product, error: loadError } = useQuery({
     queryKey: ['product', id],
     queryFn: () => productApi.get(Number(id)),
     enabled: isEdit,
@@ -53,6 +55,7 @@ export default function ProductFormPage() {
   return (
     <div className="max-w-2xl">
       <h2 className="text-2xl font-bold mb-6">{isEdit ? '編輯產品' : '新增產品'}</h2>
+      <ErrorMessage error={loadError} action="讀取產品資料" />
 
       <form onSubmit={handleSubmit(data => mutation.mutate(data))} className="space-y-4 bg-white p-6 rounded-lg shadow">
         <div className="grid grid-cols-2 gap-4">
@@ -96,11 +99,11 @@ export default function ProductFormPage() {
         </div>
 
         {mutation.error && (
-          <p className="text-red-500 text-sm">{(mutation.error as Error).message}</p>
+          <p className="text-red-500 text-sm">{apiErrorMessage(mutation.error)}</p>
         )}
 
         <div className="flex gap-2 pt-4">
-          <button type="submit" disabled={mutation.isPending} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+          <button type="submit" disabled={mutation.isPending || (isEdit && !product)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
             {mutation.isPending ? '儲存中...' : '儲存'}
           </button>
           <button type="button" onClick={() => navigate('/products')} className="px-4 py-2 border rounded-lg hover:bg-gray-50">

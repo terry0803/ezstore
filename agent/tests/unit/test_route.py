@@ -234,3 +234,19 @@ def test_keyword_fallback_does_not_open_unsupported_requests(text):
     r, out, _ = run_route(text, Intent(intent="off_topic"))
     assert r == "off_topic"
     assert out == REFUSAL_TEXT
+
+
+def test_factor_too_large_for_the_backend_is_asked_again():
+    """後端報價因子欄位最大 9.9999；四捨五入後超過就追問，不送到 MCP。"""
+    for factor in (10, 12.5, 9.99995):
+        r, out, _ = run_route(
+            f"報價單 QT-20260330-001 報價因子改為 {factor}",
+            Intent(intent="update_pricing_factor", quotation_number="QT-20260330-001", new_pricing_factor=factor),
+        )
+        assert r == "clarify" and out["invalid"] == ["new_pricing_factor"]
+        assert "不能超過 9.9999" in clarify(out)
+    r, out, _ = run_route(
+        "報價單 QT-20260330-001 報價因子改為 9.9999",
+        Intent(intent="update_pricing_factor", quotation_number="QT-20260330-001", new_pricing_factor=9.9999),
+    )
+    assert r == "update_pricing_factor" and out["new_pricing_factor"] == 9.9999

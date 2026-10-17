@@ -75,8 +75,10 @@ class FakeQuotationAgent:
         self.requests = []
         self.backend = backend
 
-    async def send(self, text):
+    async def send(self, text, on_dispatch=None):
         self.requests.append(text)
+        if on_dispatch:
+            on_dispatch(f"task-{len(self.requests)}", f"ctx-{len(self.requests)}")
         if "轉訂單" in text:
             number = re.search(r"QT-\d{8}-\d{3}", text).group(0)
             quotation = self.backend.quotations[number]
@@ -259,9 +261,9 @@ async def test_concurrent_conversions_of_one_quotation_create_one_order(runner):
     run, peer = runner
     original_send = peer.send
 
-    async def slow_send(text):
+    async def slow_send(text, on_dispatch=None):
         await asyncio.sleep(0.2)  # 讓第二個請求在訂單建好之前就通過 order_check
-        return await original_send(text)
+        return await original_send(text, on_dispatch=on_dispatch)
 
     peer.send = slow_send
     sessions = [await new_session(run), await new_session(run)]

@@ -70,6 +70,9 @@ func (s *QuotationService) Create(input *QuotationCreateInput) (*models.Quotatio
 	quotation.Items = items
 
 	s.computeTotals(quotation)
+	if err := checkProfitRate(quotation); err != nil {
+		return nil, err
+	}
 
 	if err := createWithRetry(s.generateNumber, func(n string) { quotation.QuotationNumber = n }, func() error { return s.Repo.Create(quotation) }); err != nil {
 		return nil, err
@@ -108,6 +111,9 @@ func (s *QuotationService) Update(id uint, input *QuotationCreateInput) (*models
 	existing.Items = items
 
 	s.computeTotals(existing)
+	if err := checkProfitRate(existing); err != nil {
+		return nil, err
+	}
 
 	if err := s.Repo.Update(existing); err != nil {
 		return nil, err
@@ -116,10 +122,38 @@ func (s *QuotationService) Update(id uint, input *QuotationCreateInput) (*models
 	return s.Repo.GetByID(existing.ID)
 }
 
+// pricing_factor 和 profit_rate 欄位是 decimal(5,4)：只存到小數 4 位，最大 9.9999。
+var maxDecimal54 = decimal.RequireFromString("9.9999")
+
+// normalizePricingFactor 先把報價因子四捨五入到 4 位再拿去算單價，存進去的因子才對得上品項和總價。
+func normalizePricingFactor(factor decimal.Decimal) (decimal.Decimal, error) {
+	rounded := factor.Round(4)
+	if !rounded.GreaterThan(decimal.Zero) {
+		return decimal.Zero, errors.New("報價因子必須大於 0")
+	}
+	if rounded.GreaterThan(maxDecimal54) {
+		return decimal.Zero, errors.New("報價因子不可超過 9.9999")
+	}
+	return rounded, nil
+}
+
+// checkProfitRate 擋下存不進 profit_rate 欄位的報價單（報價因子太低時利潤率會小於 -9.9999）。
+func checkProfitRate(q *models.Quotation) error {
+	if q.ProfitRate.Round(4).Abs().GreaterThan(maxDecimal54) {
+		return errors.New("報價因子太低，利潤率超出可儲存的範圍（-9.9999 到 9.9999）")
+	}
+	return nil
+}
+
 func validateQuotationInput(input *QuotationCreateInput) error {
-	if input == nil || !input.PricingFactor.GreaterThan(decimal.Zero) {
+	if input == nil {
 		return errors.New("報價因子必須大於 0")
 	}
+	factor, err := normalizePricingFactor(input.PricingFactor)
+	if err != nil {
+		return err
+	}
+	input.PricingFactor = factor
 	if len(input.Items) == 0 {
 		return errors.New("報價單至少需要一個品項")
 	}
@@ -193,6 +227,9 @@ func (s *QuotationService) Duplicate(id uint) (*models.Quotation, error) {
 	}
 
 	s.computeTotals(newQuotation)
+	if err := checkProfitRate(newQuotation); err != nil {
+		return nil, err
+	}
 
 	if err := createWithRetry(s.generateNumber, func(n string) { newQuotation.QuotationNumber = n }, func() error { return s.Repo.Create(newQuotation) }); err != nil {
 		return nil, err

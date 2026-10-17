@@ -38,7 +38,8 @@ from google.adk.workflow import Workflow
 from google.genai import types
 from pydantic import BaseModel, Field
 
-from .a2a_client import A2AError, QuotationAgentClient
+from .a2a_client import STOPPED_STATES, A2AError, QuotationAgentClient
+from .amounts import _NUMERIC_CHARS, parse_number_token
 from .backend import Backend, BackendError
 from .computation import (
     ComputationError,
@@ -82,13 +83,14 @@ REFUSAL_TEXT = (
     "我可以幫你：回答報價規則、試算改價後的毛利率與核准層級、檢查能不能轉訂單，"
     "也可以把查詢、複製報價單交給報價單 Agent。"
 )
+CANCEL_TEXT = "好，已經取消，這次沒有修改任何資料。"
+EXPLAIN_TEXT = (
+    "這句是在問做法或假設的情況，我沒有操作任何資料。\n"
+    "要我實際做，請直接說，例如「幫我複製報價單 QT-20260330-001」。"
+)
 
 QUOTATION_NUMBER_RE = re.compile(r"(?<![A-Za-z0-9_-])QT-\d{8}-\d{3,}(?![A-Za-z0-9_-])", re.IGNORECASE)
 QUOTATION_TOKEN_RE = re.compile(r"[A-Za-z0-9_-]*QT-[A-Za-z0-9_-]*", re.IGNORECASE)
-# 一個完整的數字（前後不能接著數字），後面接著年、月、件、%、折這類單位的不算金額
-_AMOUNT_RE = re.compile(
-    r"(?<![\d.,+\-])([+\-]?\s*(?:\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?))(?![\d.,])(?!\s*[年月日號%％折件台個人天週周次箱張份])"
-)
 _TARGET_HINT_RE = re.compile(r"(壓到|降到|改成|改為|調到|變成|殺到|砍到|到)\s*$")
 # 「降 2 萬」「便宜 5000」「打九折」「降 10%」是相對的說法，不自己換算成總價
 _RELATIVE_RE = re.compile(r"\d\s*[%％]|[\d一二三四五六七八九]\s*折|(降|減|便宜|折讓|扣|少)[^\d到]{0,2}\d")
@@ -277,77 +279,110 @@ def _is_question(text: str) -> bool:
     return any(w in stripped for w in _QUESTION_WORDS) or stripped.endswith(_QUESTION_ENDINGS)
 
 
+_UNIFY_SIGNS = str.maketrans({"−": "-", "－": "-", "＋": "+"})
+# 一段數字：阿拉伯數字或中文數字，可以帶萬、千這類單位（「18萬5千」「十八萬」「200,000」）
+_AMOUNT_TOKEN_RE = re.compile(rf"(?<![A-Za-z0-9_.])(?:[-+負负]\s*)?(?:\d|[{_NUMERIC_CHARS}])[0-9{_NUMERIC_CHARS},.]*")
+# 後面接著年、月、件、%、折這類單位的不算金額
+_NON_AMOUNT_SUFFIX_RE = re.compile(r"\s*(?:年|月|日|號|%|％|折|件|台|個|人|天|週|周|次|箱|張|份|套|組|歲|點鐘|點半)")
+_DATE_TIME_RE = re.compile(
+    r"\d{4}\s*[-/.年]\s*\d{1,2}\s*[-/.月]\s*\d{1,2}\s*[日號]?|\d{1,2}\s*/\s*\d{1,2}|\d{1,2}\s*月\s*\d{1,2}\s*[日號]|\d{1,2}:\d{2}"
+)
+# 兩個金額中間是「或」「還是」「、」，或只隔著「到」「至」「~」，表示給了好幾個值或一個範圍
+_ALTERNATIVE_RE = re.compile(r"或|還是|、")
+_RANGE_RE = re.compile(r"^\s*(?:到|至|~|～|-)\s*$")
+
+
+def _join_number_units(text: str) -> str:
+    # 「18 萬」中間的空格去掉，不然會被讀成 18 和「萬」兩段
+    return re.sub(rf"(?<=[0-9{_NUMERIC_CHARS}])\s+(?=[百佰千仟萬万億亿])", "", text)
+
+
 def _normalize_amounts(text: str) -> str:
-    """「18萬5千」「1.2萬」「8千」換成一般數字。"""
-    text = text.translate(str.maketrans({"−": "-", "－": "-", "＋": "+"}))
-    chinese = r"[負负]?[零〇一壹二兩貳三參四肆五伍六陸七柒八捌九玖十拾][零〇一壹二兩貳三參四肆五伍六陸七柒八捌九玖十拾百佰千仟萬万億亿點点]*"
-    text = re.sub(chinese, lambda m: _chinese_amount(m.group(0)), text)
-    text = re.sub(
-        r"(\d+(?:\.\d+)?)\s*萬\s*(\d+)\s*千",
-        lambda m: str(round(float(m.group(1)) * 10000 + int(m.group(2)) * 1000)),
-        text,
-    )
-    text = re.sub(r"(\d+(?:\.\d+)?)\s*萬", lambda m: str(round(float(m.group(1)) * 10000)), text)
-    return re.sub(r"(\d+(?:\.\d+)?)\s*千", lambda m: str(round(float(m.group(1)) * 1000)), text)
+    """能確定的金額寫法換成一般數字（「降兩萬」→「降20000」），給相對說法的判斷用；讀不準的保留原樣。"""
+    def replace(match: re.Match) -> str:
+        value = parse_number_token(re.sub(r"\s+", "", match.group(0)))
+        return _plain(value) if value is not None else match.group(0)
+
+    return _AMOUNT_TOKEN_RE.sub(replace, _join_number_units(text.translate(_UNIFY_SIGNS)))
 
 
-def _chinese_amount(text: str) -> str:
-    """原文中文金額轉數字；無法完整解析就保留，交由追問處理。"""
-    original = text
-    sign = -1 if text.startswith(("負", "负")) else 1
-    text = text.lstrip("負负")
-    digits = {c: n for n, chars in enumerate(("零〇", "一壹", "二兩貳", "三參", "四肆", "五伍", "六陸", "七柒", "八捌", "九玖")) for c in chars}
-    units = {"十": 10, "拾": 10, "百": 100, "佰": 100, "千": 1000, "仟": 1000}
-    large = {"萬": 10000, "万": 10000, "億": 100000000, "亿": 100000000}
-    multiplier = 1
-    if any(dot in text for dot in ("點", "点")) and text[-1:] in large:
-        multiplier = large[text[-1]]
-        text = text[:-1]
-    integer, dot, fraction = text.replace("點", ".").replace("点", ".").partition(".")
-    if not integer or (dot and (not fraction or any(c not in digits for c in fraction))):
-        return original
-    if all(c in digits for c in integer):
-        value = float("".join(str(digits[c]) for c in integer))
-    else:
-        total = section = current = 0
-        for char in integer:
-            if char in digits:
-                current = digits[char]
-            elif char in units:
-                section += (current or 1) * units[char]
-                current = 0
-            elif char in large:
-                total += (section + current) * large[char]
-                section = current = 0
-            else:
-                return original
-        value = float(total + section + current)
-    if dot:
-        value += float("0." + "".join(str(digits[c]) for c in fraction))
-    return _plain(sign * value * multiplier)
+def _amount_from_text(text: str) -> tuple[float | None, bool, bool]:
+    """從原文抓目標總價，回傳（金額, 是否接在「壓到、改成…」後面, 是否有歧義）。
 
-
-def _amount_from_text(text: str) -> tuple[float | None, bool]:
-    """從原文抓目標總價，回傳（金額, 是否接在「壓到、改成…」後面）。
-
-    優先取「壓到、改成…」後面的數字，其次取最後一個 100 以上的數字；報價單編號、
-    年份、件數、百分比不算金額。
+    優先取「壓到、改成…」後面的數字，其次取最後一個 100 以上的數字；報價單編號、日期、
+    年份、件數、百分比不算金額。給了好幾個金額（「20 萬或 21 萬」「20 萬到 21 萬」），
+    或寫法有兩種讀法（「二百五」「18萬5」「一萬二」），就算有歧義，交給呼叫端追問。
     """
-    cleaned = _normalize_amounts(QUOTATION_NUMBER_RE.sub(" ", text))
-    candidates: list[tuple[bool, float]] = []
-    for match in _AMOUNT_RE.finditer(cleaned):
-        try:
-            value = float(re.sub(r"\s+", "", match.group(1)).replace(",", ""))
-        except ValueError:
+    cleaned = QUOTATION_NUMBER_RE.sub(" ", text).translate(_UNIFY_SIGNS)
+    cleaned = _join_number_units(_DATE_TIME_RE.sub(" ", cleaned))
+    candidates: list[tuple[bool, float, int, int]] = []
+    ambiguous = False
+    for match in _AMOUNT_TOKEN_RE.finditer(cleaned):
+        token = re.sub(r"\s+", "", match.group(0)).rstrip(",.")  # 「- 200000」負號和數字中間的空格
+        if _NON_AMOUNT_SUFFIX_RE.match(cleaned[match.end():]):
             continue
+        if token.endswith(("點", "点")) and len(token) <= 2:
+            continue  # 「便宜一點」的一點不是金額
+        value = parse_number_token(token)
         hinted = bool(_TARGET_HINT_RE.search(cleaned[: match.start()]))
-        if 0 < value < 100 and not hinted:
+        if value is None:
+            # 單一個中文數字（「一下」的一）不算；帶單位、像金額的寫法讀不準就要追問
+            if len(token.lstrip("+-負负")) > 1 or hinted:
+                ambiguous = True
             continue
-        candidates.append((hinted, value))
+        if 0 < abs(value) < 100 and not hinted:
+            continue
+        candidates.append((hinted, value, match.start(), match.end()))
+    for left, right in zip(candidates, candidates[1:]):
+        between = cleaned[left[3]:right[2]]
+        if _ALTERNATIVE_RE.search(between) or _RANGE_RE.match(between):
+            ambiguous = True
+    hinted_values = [value for is_hinted, value, *_ in candidates if is_hinted]
+    if len(set(hinted_values)) > 1:
+        ambiguous = True
     if not candidates:
-        return None, False
-    hinted = [v for h, v in candidates if h]
-    return (hinted[-1], True) if hinted else (candidates[-1][1], False)
+        return None, False, ambiguous
+    if hinted_values:
+        return hinted_values[-1], True, ambiguous
+    return candidates[-1][1], False, ambiguous
+
+
+# 否定、取消、問做法：這些句子不能變成寫入。規則和報價單 Agent 一樣（agent/quotation_agent/agent.py）。
+_NEGATED_ACTION_RE = re.compile(
+    r"(?:不要|請勿|不必|不用|(?<![分特個區識類告離差性級辨派])別|不想|不需要|先不|暫時不)(?![用以])[^，。；;,\n]{0,60}"
+    r"(?:複製|轉(?:成|為)?訂單|修改|變更|調整|動|改|壓|降)"
+    r"|\b(?:do\s+not|don't|never)\b",
+    re.IGNORECASE,
+)
+_CANCEL_RE = re.compile(
+    r"^\s*(?:算了|取消|不用了|不要了|免了|作罷|先這樣)(?=\s*(?:[，,。.!！]|QT-|$))"
+    r"|(?:不要|不用|別|不必|不想)[^，。；;,\n]{0,4}(?:改|轉|動|複製|做|處理|壓|降)了"
+    r"|不(?:改|轉|複製|做|壓|降)了"
+    r"|取消(?:修改|操作|這次|剛剛|剛才|前面|上一個|改價|轉單)"
+)
+_EXPLANATION_REQUEST_RE = re.compile(
+    r"^\s*(?:請|麻煩|我想|想要)?\s*(?:如何|怎麼|教我|說明|解釋|如果|假設)"
+    r"|^\s*(?:please\s+)?(?:how\s+to|explain|what\s+if)\b",
+    re.IGNORECASE,
+)
+_PRESERVE_ORIGINAL_RE = re.compile(
+    r"(?:請)?(?:不要|請勿|別|不用)(?:修改|更動|變更|調整|改|動)(?:原單|原報價單|原始報價單)(?:內容|資料)?"
+    r"|(?:原單|原報價單|原始報價單)(?:內容|資料)?(?:不要|請勿|別|不用)(?:修改|更動|變更|調整|改|動)"
+)
+_POLITE_PREFIX_RE = re.compile(r"^\s*如果(?:可以|方便|能夠?|可能)(?:的話)?\s*[，,]?\s*(?=請|麻煩|幫我|幫忙)")
+_NOT_A_REQUEST_RE = re.compile(r"說明|流程|如何|怎麼|會怎樣|會發生|會不會|[?？嗎呢]\s*[。.]?\s*$")
+_COPY_RE = re.compile(r"複製|\b(?:copy|duplicate|clone)\b", re.IGNORECASE)
+
+
+def _guard_text(text: str) -> str:
+    """拿掉「不要改原單」這種保留原單的子句、「如果可以，請…」的禮貌開頭，剩下的才判斷否定和改價字詞。"""
+    parts = re.split(r"([，。；;,\n])", text)
+    text = "".join("" if _PRESERVE_ORIGINAL_RE.fullmatch(part.strip()) else part for part in parts)
+    text = text.strip(" \t\r\n，。；;,")
+    polite = _POLITE_PREFIX_RE.match(text)
+    if polite and not _NOT_A_REQUEST_RE.search(text[polite.end():]):
+        text = text[polite.end():]
+    return text
 
 
 def _number(value: Any) -> float | None:
@@ -541,6 +576,9 @@ def route(ctx: Context, node_input: Any):
     # 1. 程式拒答
     if _is_rule_refusal(text):
         return Event(output=REFUSAL_TEXT, route="off_topic", state={"pending": None, "last_check": None})
+    # 使用者說不要做了（「算了」「先不要改了」）：清掉待補的要求和上一次試算，不沿用舊的值
+    if _CANCEL_RE.search(text):
+        return Event(output=CANCEL_TEXT, route="off_topic", state={"pending": None, "last_check": None})
 
     operation = intent.intent
     if operation == "provide_info":
@@ -589,13 +627,20 @@ def route(ctx: Context, node_input: Any):
     # 3. 一般報價單操作：只有查詢、清單、複製可以把原句經 A2A 交給報價單 Agent。
     #    句子帶有改價、報價因子、轉訂單這類字，就算模型判成一般操作，也改走要檢查的路，
     #    不讓原句繞過規則直接去改資料
+    guard_text = _guard_text(text)
     if operation == "quotation_request":
-        if not _WRITE_RE.search(text):
+        if not _WRITE_RE.search(guard_text):
+            copy = bool(_COPY_RE.search(guard_text))
+            # 「不要複製」「教我如何複製」不能組成複製的指令送出去
+            if copy and _NEGATED_ACTION_RE.search(guard_text):
+                return Event(output=CANCEL_TEXT, route="off_topic", state={"pending": None, "last_check": None})
+            if copy and _EXPLANATION_REQUEST_RE.search(guard_text):
+                return Event(output=EXPLAIN_TEXT, route="off_topic", state={"pending": None})
             # 有報價單編號時不轉原句，由程式組出查詢或複製的句子；報價單 Agent 的寫入動作
             # 都要報價單編號，所以沒有編號的原句最多讓它追問或列客戶清單，改不到任何一張單
             found = QUOTATION_NUMBER_RE.search(text)
             if found:
-                verb = "複製" if "複製" in text else "查詢"
+                verb = "複製" if copy else "查詢"
                 request = f"我要{verb}報價單，報價單編號：{found.group(0).upper()}"
             else:
                 request = text
@@ -606,8 +651,10 @@ def route(ctx: Context, node_input: Any):
             )
         operation = "order_check" if "訂單" in text else "price_check"
 
-    # 4. 試算、改價、轉訂單：問句降級成只檢查，不改資料
-    if _is_question(text):
+    # 4. 試算、改價、轉訂單：否定句不做；問句和問做法的句子降級成只檢查，不改資料
+    if operation in ("apply_price", "convert_order") and _NEGATED_ACTION_RE.search(guard_text):
+        return Event(output=CANCEL_TEXT, route="off_topic", state={"pending": None, "last_check": None})
+    if _is_question(text) or _EXPLANATION_REQUEST_RE.search(guard_text):
         operation = {"apply_price": "price_check", "convert_order": "order_check"}.get(operation, operation)
 
     # 合併欄位（原文 → 理解結果 → 待補 → 上一次試算）
@@ -616,10 +663,12 @@ def route(ctx: Context, node_input: Any):
     number = numbers[0] if numbers else carry.get("quotation_number")
     # 金額以使用者原文為準（程式抽取），抓不到只可用有效待補欄位。
     # 「降 2 萬」「打九折」是相對的說法，模型可能自己換算，所以不收，改問總價
-    target, hinted = _amount_from_text(text)
+    target, hinted, ambiguous_amount = _amount_from_text(text)
     relative = not hinted and bool(_RELATIVE_RE.search(_normalize_amounts(text)))
     factor_only = "因子" in text and "總價" not in text
-    if relative or factor_only:
+    # 「20 萬或 21 萬」「二百五」這種有兩種意思的金額要追問，也不能退回去用上一次試算的金額
+    unclear = relative or factor_only or ambiguous_amount
+    if unclear:
         target = None
     elif target is None:
         # 模型不能替使用者發明價格；中文金額也由原文解析，只有待補狀態可沿用。
@@ -630,9 +679,9 @@ def route(ctx: Context, node_input: Any):
     current_number = ctx.state.get("last_quotation")
     if current_number and current_number != last_check.get("quotation_number"):
         last_check = {}
-    if operation == "apply_price" and not number and target is None and not relative and not factor_only and last_check.get("quotation_number"):
+    if operation == "apply_price" and not number and target is None and not unclear and last_check.get("quotation_number"):
         number, target = last_check["quotation_number"], last_check["target_total"]
-    if operation == "apply_price" and number and target is None and not relative and not factor_only and last_check.get("quotation_number") == number:
+    if operation == "apply_price" and number and target is None and not unclear and last_check.get("quotation_number") == number:
         target = last_check["target_total"]
     if not number:
         # 「那 200000 呢？」這種接著問的句子，沿用上一張報價單
@@ -644,7 +693,7 @@ def route(ctx: Context, node_input: Any):
     if invalid:
         fields["target_total"] = None
     if missing or invalid:
-        hint = "relative" if relative else ("factor" if "因子" in text and "target_total" in missing else "")
+        hint = "amount" if ambiguous_amount else ("relative" if relative else ("factor" if "因子" in text and "target_total" in missing else ""))
         return Event(
             output={"operation": operation, "missing": missing, "invalid": invalid, "fields": fields, "hint": hint},
             route="clarify",
@@ -1072,18 +1121,35 @@ async def order_check(ctx: Context, node_input: dict):
 # 同一張報價單的轉訂單一次只做一個。order_check 到真的送出之間有空檔，兩個請求同時進來
 # 會都看到「還沒有訂單」；排隊後重新檢查，第二個就會看到第一個建好的訂單。只在單一程序內有效。
 _CONVERT_LOCKS: dict[str, asyncio.Lock] = {}
-# 僅排隊不足以涵蓋逾時：遠端可能在本機放開鎖後才完成。送出結果不明時先擋住，記下時間。
-# 解除條件：證明尚未送出、核對到成功、重讀時已有訂單，或超過 CONVERT_UNCERTAIN_SECONDS
-# （預設 10 分鐘，報價單 Agent 的模型重試與 MCP 逾時加起來遠小於這個時間）仍沒有訂單。
-# 此狀態限同一程序；重啟後就不記得，議價顧問只能跑一個容器。
-_CONVERT_UNCERTAIN: dict[str, float] = {}
+# 只排隊不夠：送出後這邊逾時或被取消，遠端可能還在建訂單。結果不明時先擋住，要有證據才放行：
+# - 送出時就記下 task 編號（拿不到就記這邊產生的對話編號），之後問報價單 Agent 那個 task
+#   結束了沒。還在跑就繼續擋。
+# - task 停了（做完、失敗、取消，或對方已經沒有這個 task：沒收到或重啟過），就不會再發新的呼叫；
+#   但最後一個 MCP 呼叫可能還在後端處理。MCP 呼叫後端有逾時上限（連線 5 秒、讀取 30 秒、
+#   寫入 10 秒），從確定停了開始再等這段時間才放行。報價單 Agent 回「操作中斷」也一樣。
+# 放行之後還要再重讀一次訂單，確認那次真的沒有轉成。這份紀錄只在單一程序內，議價顧問只能跑一個容器。
+_CONVERT_UNCERTAIN: dict[str, dict[str, Any]] = {}
+_MCP_INTERRUPT_SECONDS = 120
 
 
-def _uncertain_seconds() -> float:
-    try:
-        return max(0.0, float(os.getenv("CONVERT_UNCERTAIN_SECONDS", "600")))
-    except ValueError:
-        return 600.0
+async def _uncertain_still_open(number: str, entry: dict[str, Any]) -> str | None:
+    """上一次轉訂單還沒有確定結束就回說明文字；確定結束了回 None。"""
+    if entry.get("kind") == "dispatched":
+        if not entry.get("task_id") and not entry.get("context_id"):
+            # 送出前一定會先記下對話編號；兩個都沒有，表示還沒送出就停了
+            return None
+        try:
+            state = await quotation_agent.task_state(entry.get("task_id"), entry.get("context_id"))
+        except A2AError as e:
+            return f"{number} 上一次轉訂單的結果還沒辦法確認（{e}）。這次沒有再次送出，請稍後再試。"
+        if state != "not_found" and state not in STOPPED_STATES:
+            return f"{number} 上一次轉訂單還在處理（報價單 Agent 的 task 狀態是 {state}）。這次沒有再次送出，請等它完成再試。"
+        entry.update(kind="interrupted", since=time.monotonic())
+    left = _MCP_INTERRUPT_SECONDS - (time.monotonic() - entry.get("since", 0.0))
+    if left > 0:
+        return (f"{number} 上一次轉訂單沒有正常結束，後端可能還在處理。這次沒有再次送出；"
+                f"請約 {max(1, math.ceil(left / 60))} 分鐘後再試，我會重新檢查，還是沒有訂單才轉。")
+    return None
 
 
 async def _recheck_order_conversion(node_input: dict) -> str | None:
@@ -1113,26 +1179,32 @@ async def _recheck_order_conversion(node_input: dict) -> str | None:
 async def delegate_a2a(ctx: Context, node_input: dict):
     """經 A2A 把要求交給報價單 Agent，回覆附上 task 資訊。轉訂單時同一張單排隊、送出前再檢查一次。"""
     if node_input.get("purpose") == "convert_order":
-        lock = _CONVERT_LOCKS.setdefault(node_input["quotation_number"], asyncio.Lock())
+        number = node_input["quotation_number"]
+        head = node_input.get("preface") or ""
+        lock = _CONVERT_LOCKS.setdefault(number, asyncio.Lock())
         async with lock:
             blocked = await _recheck_order_conversion(node_input)
             if blocked:
-                head = node_input.get("preface") or ""
                 return Event(output="\n".join(part for part in (head, blocked) if part))
-            number = node_input["quotation_number"]
-            marked = _CONVERT_UNCERTAIN.get(number)
-            if marked is not None:
-                waited = time.monotonic() - marked
-                if waited < _uncertain_seconds():
-                    minutes = max(1, math.ceil((_uncertain_seconds() - waited) / 60))
-                    return Event(output=(f"{number} 上一次轉訂單尚未確認結果，遠端可能仍在處理。"
-                                         f"這次沒有再次送出；請先到系統確認有沒有訂單，約 {minutes} 分鐘後再試，"
-                                         "到時候我會重新檢查，還是沒有訂單才會轉。"))
-                # 等得夠久而且剛才重讀仍沒有訂單：那次沒有寫入，可以再轉
+            entry = _CONVERT_UNCERTAIN.get(number)
+            if entry is not None:
+                still_open = await _uncertain_still_open(number, entry)
+                if still_open:
+                    return Event(output="\n".join(part for part in (head, still_open) if part))
                 _CONVERT_UNCERTAIN.pop(number, None)
-            # Set before awaiting the peer, so cancellation also keeps the guard.
-            _CONVERT_UNCERTAIN[number] = time.monotonic()
-            return await _send_a2a(node_input)
+                # 確定上一次已經結束，再讀一次訂單：它可能剛好在這段時間做完
+                blocked = await _recheck_order_conversion(node_input)
+                if blocked:
+                    return Event(output="\n".join(part for part in (head, blocked) if part))
+            # 送出前就先記下，這個 coroutine 被取消也還擋得住；拿到編號後補進去
+            entry = {"kind": "dispatched", "task_id": None, "context_id": None, "since": time.monotonic()}
+            _CONVERT_UNCERTAIN[number] = entry
+
+            def remember(task_id: str | None, context_id: str) -> None:
+                entry["task_id"] = task_id or entry.get("task_id")
+                entry["context_id"] = context_id
+
+            return await _send_a2a(node_input, remember)
     return await _send_a2a(node_input)
 
 
@@ -1144,21 +1216,40 @@ def _definitely_not_written(reply: str) -> bool:
             and not any(word in text for word in ("操作中斷", "可能已經建立", "逾時", "無法連線")))
 
 
-async def _send_a2a(node_input: dict) -> Event:
+async def _send_a2a(node_input: dict, on_dispatch=None) -> Event:
     request = node_input["text"]
+    converting = node_input.get("purpose") == "convert_order"
+    number = node_input.get("quotation_number")
     try:
-        result = await quotation_agent.send(request)
+        result = await (quotation_agent.send(request, on_dispatch=on_dispatch) if on_dispatch
+                        else quotation_agent.send(request))
     except A2AError as e:
-        if node_input.get("purpose") == "convert_order" and not e.may_have_written:
-            _CONVERT_UNCERTAIN.pop(node_input["quotation_number"], None)
+        if converting:
+            entry = _CONVERT_UNCERTAIN.get(number)
+            if not e.may_have_written:
+                # 沒送出去：不會有寫入
+                _CONVERT_UNCERTAIN.pop(number, None)
+            elif e.stopped:
+                # 對方的 task 停在失敗或取消，最後一個 MCP 呼叫可能還在後端處理
+                _CONVERT_UNCERTAIN[number] = {"kind": "interrupted", "since": time.monotonic()}
+            elif entry is not None:
+                entry["task_id"] = e.task_id or entry.get("task_id")
+                entry["context_id"] = e.context_id or entry.get("context_id")
         warning = ("可能已送出操作，尚未確認結果；請先至系統核對，勿直接重試。"
                    if e.may_have_written and node_input.get("purpose") in ("convert_order", "apply_price") else "")
         return Event(output=f"{node_input.get('preface') or ''}\n沒辦法連到報價單 Agent：{e}\n{warning}".strip())
     head = node_input.get("preface") or ""
     trace = f"（經 A2A 交給報價單 Agent，task {result.task_id[:8]}，狀態 {result.state}）"
     verification = await _verify_write_result(node_input.get("purpose", ""), node_input, result.text)
-    if node_input.get("purpose") == "convert_order" and (verification.verified or _definitely_not_written(result.text)):
-        _CONVERT_UNCERTAIN.pop(node_input["quotation_number"], None)
+    if converting:
+        if verification.verified or _definitely_not_written(result.text):
+            _CONVERT_UNCERTAIN.pop(number, None)
+        elif "操作中斷" in result.text or "可能已經建立" in result.text:
+            # task 已經結束，但它呼叫 MCP 到一半斷掉，後端那邊要等 MCP 的逾時過了才確定
+            _CONVERT_UNCERTAIN[number] = {"kind": "interrupted", "since": time.monotonic()}
+        else:
+            # task 已經結束、回覆核對不過：不會再寫入，下次重讀訂單就知道有沒有轉成
+            _CONVERT_UNCERTAIN.pop(number, None)
     text = "\n".join(part for part in (head, trace, result.text, verification.text) if part).strip()
     return Event(output=text, state={"last_a2a": {**result.trace(), "request": request}})
 
@@ -1170,7 +1261,9 @@ def clarify(node_input: dict) -> str:
     operation = node_input.get("operation")
     asks = [FIELD_LABELS[name] for name in node_input.get("missing", []) + node_input.get("invalid", [])]
     lines = [f"請提供{'、'.join(asks)}，我才能幫你{INTENT_LABELS.get(operation, '處理')}。"]
-    if node_input.get("hint") == "relative":
+    if node_input.get("hint") == "amount":
+        lines.append("你給的金額不只一個，或寫法有兩種意思（例如「二百五」「18萬5」），我不自己挑。請只說一個總價，例如 250000。")
+    elif node_input.get("hint") == "relative":
         lines.append("折數、降多少錢這類說法我不自己換算成總價，請直接告訴我客戶想要的總價。")
     elif node_input.get("hint") == "factor":
         lines.append("我用總價來判斷公司的規則，不直接改報價因子。請告訴我客戶想要的總價。")
@@ -1187,7 +1280,8 @@ def clarify(node_input: dict) -> str:
 
 
 def off_topic(node_input: Any) -> str:
-    return REFUSAL_TEXT
+    """不改資料的固定回覆：預設是拒答，路由也可以帶「已取消」「這是在問做法」這類說明。"""
+    return node_input if isinstance(node_input, str) and node_input.strip() else REFUSAL_TEXT
 
 
 def respond(node_input: Any):

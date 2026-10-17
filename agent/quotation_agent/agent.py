@@ -17,6 +17,7 @@ import math
 import os
 import re
 import unicodedata
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Any, Literal
 
 from dotenv import load_dotenv
@@ -61,7 +62,7 @@ REQUIRED_FIELDS: dict[str, tuple[str, ...]] = {
 FIELD_LABELS = {
     "quotation_number": "報價單編號（例如 QT-20260330-001）",
     "customer_name": "客戶名稱",
-    "new_pricing_factor": "新的報價因子（大於 0 的數字，例如 1.5）",
+    "new_pricing_factor": "新的報價因子（大於 0、最多 9.9999 的數字，例如 1.5）",
     "target_total_price": "目標總價（大於 0 的數字，例如 8000）",
 }
 
@@ -97,6 +98,11 @@ REFUSAL_TEXT = (
     "抱歉，我只能協助報價單相關的操作，沒辦法處理這個需求。\n"
     "我可以幫你：查詢報價單、查詢客戶的報價單清單、複製報價單、"
     "修改報價因子、修改報價單總價、報價單轉訂單。"
+)
+CANCEL_TEXT = "好，已經取消，這次沒有修改任何資料。要做別的操作再跟我說。"
+EXPLAIN_TEXT = (
+    "這句是在問做法或假設的情況，我沒有執行任何操作。\n"
+    "要我實際操作，請直接說，例如「我要複製報價單，報價單編號：QT-20260330-001」。"
 )
 
 QUOTATION_NUMBER_RE = re.compile(r"(?<![A-Za-z0-9_-])QT-\d{8}-\d{3,}(?![A-Za-z0-9_-])", re.IGNORECASE)
@@ -290,7 +296,7 @@ _UNSUPPORTED_ACTION_RE = re.compile(r"刪除|移除|新增|建立|發佈|作廢|
 # 「分別」「特別」裡的別不是否定；「不要用 Markdown 顯示」否定的是做法，不是操作本身。
 _NEGATED_ACTION_RE = re.compile(
     r"(?:不要|請勿|不必|不用|(?<![分特個區識類告離差性級辨派])別|不想|不需要|先不|暫時不)(?![用以])[^，。；;,\n]{0,60}"
-    r"(?:複製|轉(?:成|為)?訂單|修改|變更|調整|動|改(?:成|為|到)|查詢|查看|顯示)"
+    r"(?:複製|轉(?:成|為)?訂單|修改|變更|調整|動|改|查詢|查看|顯示)"
     r"|\b(?:do\s+not|don't|never)\b",
     re.IGNORECASE,
 )
@@ -300,8 +306,15 @@ _EXPLANATION_REQUEST_RE = re.compile(
     re.IGNORECASE,
 )
 _PRESERVE_ORIGINAL_RE = re.compile(
-    r"(?:請)?(?:不要|請勿|別|不用)(?:修改|更動|變更|調整|動)(?:原單|原報價單|原始報價單)(?:內容|資料)?"
-    r"|(?:原單|原報價單|原始報價單)(?:內容|資料)?(?:不要|請勿|別|不用)(?:修改|更動|變更|調整|動)"
+    r"(?:請)?(?:不要|請勿|別|不用)(?:修改|更動|變更|調整|改|動)(?:原單|原報價單|原始報價單)(?:內容|資料)?"
+    r"|(?:原單|原報價單|原始報價單)(?:內容|資料)?(?:不要|請勿|別|不用)(?:修改|更動|變更|調整|改|動)"
+)
+# 取消剛才的要求：「先不要改了」「不用轉了」「算了」「取消，QT-…」。待補的操作要清掉，不能再沿用上一輪的值。
+_CANCEL_RE = re.compile(
+    r"^\s*(?:算了|取消|不用了|不要了|免了|作罷|先這樣)(?=\s*(?:[，,。.!！]|QT-|$))"
+    r"|(?:不要|不用|別|不必|不想)[^，。；;,\n]{0,4}(?:改|轉|動|複製|做|處理)了"
+    r"|不(?:改|轉|複製|做)了"
+    r"|取消(?:修改|操作|這次|剛剛|剛才|前面|上一個)"
 )
 # 「如果可以／如果方便的話，請…」是禮貌的請求；後面接說明、流程或問句的才是假設或發問。
 _POLITE_PREFIX_RE = re.compile(r"^\s*如果(?:可以|方便|能夠?|可能)(?:的話)?\s*[，,]?\s*(?=請|麻煩|幫我|幫忙)")
@@ -708,6 +721,10 @@ def route(ctx: Context, node_input: Any):
     if _is_rule_refusal(text):
         return Event(output=REFUSAL_TEXT, route="off_topic", state={"pending_intent": None})
 
+    # 使用者說不要做了：不管分類器怎麼判，都清掉待補的操作，不沿用上一輪記住的值
+    if _CANCEL_RE.search(text) or _NEGATED_ACTION_RE.search(_request_guard_text(text)):
+        return Event(output=CANCEL_TEXT, route="off_topic", state={"pending_intent": None, "clarify_source_text": ""})
+
     operation = intent.intent
     clarify_source = ctx.state.get("clarify_source_text", "") or ""
     if operation == "provide_info":
@@ -732,10 +749,8 @@ def route(ctx: Context, node_input: Any):
     # or an explanation-only request. Clear pending state so a later bare
     # confirmation cannot revive the operation that was just cancelled.
     guard_text = _request_guard_text(text)
-    if _NEGATED_ACTION_RE.search(guard_text) or (
-        operation in _WRITE_TOOLS and _EXPLANATION_REQUEST_RE.search(guard_text)
-    ):
-        return Event(output=REFUSAL_TEXT, route="off_topic", state={"pending_intent": None})
+    if operation in _WRITE_TOOLS and _EXPLANATION_REQUEST_RE.search(guard_text):
+        return Event(output=EXPLAIN_TEXT, route="off_topic", state={"pending_intent": None})
 
     if "quotation_number" in REQUIRED_FIELDS[operation] and any(
         not QUOTATION_NUMBER_RE.fullmatch(token) for token in QUOTATION_TOKEN_RE.findall(text)
@@ -772,14 +787,16 @@ def route(ctx: Context, node_input: Any):
     if fields["customer_name"]:
         fields["customer_name"] = str(fields["customer_name"]).strip()
 
-    # 3. 檢查必要欄位，數字必須大於 0
+    # 3. 檢查必要欄位，數字必須大於 0；報價因子後端只存到小數 4 位、最大 9.9999
     missing: list[str] = []
     invalid: list[str] = []
     for name in REQUIRED_FIELDS[operation]:
         value = fields.get(name)
         if value in (None, ""):
             missing.append(name)
-        elif name in ("new_pricing_factor", "target_total_price") and (not math.isfinite(value) or value <= 0):
+        elif name in ("new_pricing_factor", "target_total_price") and (
+            not math.isfinite(value) or value <= 0 or (name == "new_pricing_factor" and not _factor_storable(value))
+        ):
             invalid.append(name)
             fields[name] = None
 
@@ -793,6 +810,15 @@ def route(ctx: Context, node_input: Any):
 
     args = {name: fields[name] for name in REQUIRED_FIELDS[operation]}
     return Event(output=args, route=operation, state={"pending_intent": None})
+
+
+MAX_PRICING_FACTOR = Decimal("9.9999")
+
+
+def _factor_storable(value: float) -> bool:
+    """四捨五入到小數 4 位後要在 0.0001 到 9.9999 之間，後端的 decimal(5,4) 欄位才存得下。"""
+    factor = Decimal(str(value)).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+    return Decimal(0) < factor <= MAX_PRICING_FACTOR
 
 
 async def get_quotation(ctx: Context, node_input: dict) -> str:
@@ -832,7 +858,8 @@ def clarify(node_input: dict) -> str:
     lines = [f"請提供{'、'.join(asks)}，我才能幫你{OPERATION_LABELS[operation]}。"]
     for name in node_input.get("invalid", []):
         label = FIELD_LABELS[name].split("（")[0]
-        lines.append(f"{label}必須大於 0，你給的數字不符合。")
+        limit = "，而且不能超過 9.9999（只存到小數 4 位）" if name == "new_pricing_factor" else ""
+        lines.append(f"{label}必須大於 0{limit}，你給的數字不符合。")
     known = node_input.get("fields", {})
     given = [
         f"{FIELD_LABELS[k].split('（')[0]}：{_format_number(v) if isinstance(v, float) else v}"
@@ -845,7 +872,8 @@ def clarify(node_input: dict) -> str:
 
 
 def off_topic(node_input: Any) -> str:
-    return REFUSAL_TEXT
+    """不執行任何工具的回覆：預設是拒答，路由也可以帶「已取消」「這是在問做法」這類說明。"""
+    return node_input if isinstance(node_input, str) and node_input.strip() else REFUSAL_TEXT
 
 
 def respond(node_input: Any):

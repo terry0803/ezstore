@@ -4,6 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { customerApi } from '../api/customerApi';
 import type { Customer } from '../types';
+import ErrorMessage from '../components/shared/ErrorMessage';
+import { apiErrorMessage } from '../api/errors';
 
 type FormData = Omit<Customer, 'id' | 'created_at' | 'updated_at'>;
 
@@ -17,7 +19,7 @@ export default function CustomerFormPage() {
     defaultValues: { level: 'standard', credit_score: 0 },
   });
 
-  const { data: customer } = useQuery({
+  const { data: customer, error: loadError } = useQuery({
     queryKey: ['customer', id],
     queryFn: () => customerApi.get(Number(id)),
     enabled: isEdit,
@@ -40,6 +42,7 @@ export default function CustomerFormPage() {
   return (
     <div className="max-w-2xl">
       <h2 className="text-2xl font-bold mb-6">{isEdit ? '編輯客戶' : '新增客戶'}</h2>
+      <ErrorMessage error={loadError} action="讀取客戶資料" />
 
       <form onSubmit={handleSubmit(data => mutation.mutate(data))} className="space-y-4 bg-white p-6 rounded-lg shadow">
         <div>
@@ -91,11 +94,11 @@ export default function CustomerFormPage() {
         </div>
 
         {mutation.error && (
-          <p className="text-red-500 text-sm">{(mutation.error as Error).message}</p>
+          <p className="text-red-500 text-sm">{apiErrorMessage(mutation.error)}</p>
         )}
 
         <div className="flex gap-2 pt-4">
-          <button type="submit" disabled={mutation.isPending} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+          <button type="submit" disabled={mutation.isPending || (isEdit && !customer)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
             {mutation.isPending ? '儲存中...' : '儲存'}
           </button>
           <button type="button" onClick={() => navigate('/customers')} className="px-4 py-2 border rounded-lg hover:bg-gray-50">

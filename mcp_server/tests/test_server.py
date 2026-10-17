@@ -155,3 +155,43 @@ async def test_factor_change_only_writes_the_duplicate(monkeypatch):
     assert writes[0][1]["pricing_factor"] == 0.85
     assert source["pricing_factor"] == "0.9"
     assert "（未修改）" in reply and "QT-TEST-002" in reply
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("factor", [10.0, 12.5, 9.99995, 0.00004])
+async def test_out_of_range_factor_is_rejected_before_duplicating(monkeypatch, factor):
+    """後端存不下的報價因子在複製之前就擋下，不會留下多出來的草稿。"""
+    calls = []
+
+    async def record(*args, **kwargs):
+        calls.append(args)
+        return {}
+
+    monkeypatch.setattr(server, "_require_quotation", record)
+    monkeypatch.setattr(server, "_duplicate", record)
+    monkeypatch.setattr(server, "_put", record)
+    with pytest.raises(server.ToolError, match="9.9999"):
+        await server.update_pricing_factor("QT-TEST-001", factor)
+    assert calls == []
+
+
+@pytest.mark.asyncio
+async def test_factor_is_sent_at_stored_precision(monkeypatch):
+    writes = []
+
+    async def require(_number):
+        return {"id": 12, "pricing_factor": "0.9", "total_price": "90"}
+
+    async def duplicate_q(q):
+        return {"id": 13, "customer_id": 7, "notes": "", "items": [{"product_id": 3, "quantity": 1}]}
+
+    async def put(path, body):
+        writes.append(body)
+        return {"id": 13, "quotation_number": "QT-TEST-002", "pricing_factor": "0.7752", "total_price": "77.52"}
+
+    monkeypatch.setattr(server, "_require_quotation", require)
+    monkeypatch.setattr(server, "_duplicate", duplicate_q)
+    monkeypatch.setattr(server, "_put", put)
+    await server.update_pricing_factor("QT-TEST-001", 0.77515)
+    await server.update_pricing_factor("QT-TEST-001", 9.9999)
+    assert [w["pricing_factor"] for w in writes] == [0.7752, 9.9999]

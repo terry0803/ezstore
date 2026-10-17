@@ -6,6 +6,7 @@ resource: http://localhost:8010/mcp
 tags: [mcp, quotation, tool]
 mcp_tools: [get_quotation, list_customer_quotations, duplicate_quotation, update_pricing_factor, adjust_total_price, convert_to_order]
 bisect: { low: 0.01, high: 5.0, max_iterations: 20, tolerance: 0.01 }
+max_pricing_factor: 9.9999
 generated: { by: claude-code/claude-opus-5-5, at: 2026-10-16T17:10:00Z }
 verified:
   - { by: process:okf-verify, at: 2026-10-17T12:32:06Z }
@@ -36,7 +37,8 @@ Streamable HTTP，Compose 內部 `http://mcp-server:8000/mcp`，對本機開 `ht
 
 - 會改資料的工具都先複製，改的是副本，原單不動，回覆會寫「原始報價單：…（未修改）」。[^mcp-server]
 - 每則回覆附純文字連結，例如 `http://localhost:3000/quotations/12`、`http://localhost:3000/orders/11`。[^mcp-server]
-- 報價因子與目標總價要大於 0，否則回「報價因子必須大於 0」「目標總價必須大於 0」。找不到報價單回「找不到報價單編號 …」。[^mcp-server]
+- 報價因子與目標總價要是大於 0 的有限數字，否則回「報價因子必須是大於 0 的有限數字」「目標總價必須是大於 0 的有限數字」。找不到報價單回「找不到報價單編號 …」。[^mcp-server]
+- 後端的報價因子欄位是 decimal(5,4)。`update_pricing_factor` 把因子四捨五入到小數 4 位，超過 9.9999 在複製之前就回錯誤，不會留下多的草稿；後端也會擋。
 
 # 改總價的二分法
 

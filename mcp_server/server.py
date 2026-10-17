@@ -12,6 +12,7 @@
 
 import math
 import os
+from decimal import ROUND_HALF_UP, Decimal
 
 import httpx
 from mcp.server import MCPServer
@@ -27,6 +28,8 @@ API_BASE = f"{BACKEND_URL}/api/v1"
 BISECT_MAX_ITERATIONS = 20
 BISECT_LOW, BISECT_HIGH = 0.01, 5.0
 BISECT_TOLERANCE = 0.01
+# 後端 pricing_factor 欄位是 decimal(5,4)：只存到小數 4 位，最大 9.9999
+MAX_PRICING_FACTOR = Decimal("9.9999")
 
 mcp = MCPServer("ezstore-quotation")
 
@@ -248,10 +251,14 @@ async def update_pricing_factor(quotation_number: str, new_pricing_factor: float
 
     Args:
         quotation_number: 要修改的報價單編號，例如 QT-20260330-001
-        new_pricing_factor: 新的報價因子數值，例如 0.85
+        new_pricing_factor: 新的報價因子數值，例如 0.85；範圍 0.0001 到 9.9999，後端只存到小數 4 位
     """
     if not math.isfinite(new_pricing_factor) or new_pricing_factor <= 0:
         raise ToolError("報價因子必須是大於 0 的有限數字")
+    # 複製之前先檢查範圍：後端存不下的值，複製完才失敗會留下一張沒用的草稿
+    factor = Decimal(str(new_pricing_factor)).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+    if factor <= 0 or factor > MAX_PRICING_FACTOR:
+        raise ToolError("報價因子必須在 0.0001 到 9.9999 之間（後端只存到小數 4 位）")
 
     q = await _require_quotation(quotation_number)
     new_q = await _duplicate(q)
@@ -260,7 +267,7 @@ async def update_pricing_factor(quotation_number: str, new_pricing_factor: float
         f"/quotations/{new_q['id']}",
         {
             "customer_id": new_q["customer_id"],
-            "pricing_factor": new_pricing_factor,
+            "pricing_factor": float(factor),
             "notes": new_q.get("notes", ""),
             "items": _items_input(new_q),
         },

@@ -44,7 +44,7 @@
             "turn_index": 0,
             "events": [
               {"author": "user", "content": {"role": "user", "parts": [{"text": "我要修改報價因子，報價單編號：QT-20260330-001"}]}},
-              {"author": "quotation_agent", "content": {"role": "model", "parts": [{"text": "請提供新的報價因子（大於 0 的數字，例如 1.5），我才能幫你修改報價單報價因子。\n目前已知：報價單編號：QT-20260330-001"}]}}
+              {"author": "quotation_agent", "content": {"role": "model", "parts": [{"text": "請提供新的報價因子（大於 0、最多 9.9999 的數字，例如 1.5），我才能幫你修改報價單報價因子。\n目前已知：報價單編號：QT-20260330-001"}]}}
             ]
           },
           {

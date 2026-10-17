@@ -2,15 +2,27 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { orderApi } from '../api/orderApi';
 import StatusBadge from '../components/shared/StatusBadge';
+import ErrorMessage from '../components/shared/ErrorMessage';
 
 export default function OrderDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const { data: order, isLoading } = useQuery({
+  const { data: order, isLoading, error } = useQuery({
     queryKey: ['order', id],
     queryFn: () => orderApi.get(Number(id)),
   });
+
+  if (error) {
+    return (
+      <div>
+        <ErrorMessage error={error} action="讀取訂單" />
+        <button onClick={() => navigate('/orders')} className="px-4 py-2 border rounded-lg hover:bg-gray-50">
+          返回列表
+        </button>
+      </div>
+    );
+  }
 
   if (isLoading || !order) {
     return <div className="text-center py-8 text-gray-500">載入中...</div>;

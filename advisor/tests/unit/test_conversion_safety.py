@@ -18,8 +18,7 @@ def conversion(monkeypatch):
                           orders=copy.deepcopy(SNAPSHOT["orders_by_customer"]))
     monkeypatch.setattr(agent, "backend", backend)
     monkeypatch.setattr(agent, "_CONVERT_LOCKS", {})
-    if hasattr(agent, "_CONVERT_UNCERTAIN"):
-        monkeypatch.setattr(agent, "_CONVERT_UNCERTAIN", {})
+    monkeypatch.setattr(agent, "_CONVERT_UNCERTAIN", {})
     quote = backend.quotations[NUMBER]
 
     def commit(number=999):
@@ -38,29 +37,58 @@ def conversion(monkeypatch):
     return backend, quote, commit, request
 
 
+class Peer:
+    """假的報價單 Agent：send 照真的 client 一樣先回報對話編號和 task 編號，task_state 回目前狀態。"""
+
+    def __init__(self, reply):
+        self.reply = reply
+        self.calls = []
+        self.state = "working"
+        self.state_queries = []
+
+    async def send(self, text, on_dispatch=None):
+        self.calls.append(text)
+        if on_dispatch:
+            on_dispatch(None, f"ctx-{len(self.calls)}")
+            on_dispatch(f"task-{len(self.calls)}", f"ctx-{len(self.calls)}")
+        return await self.reply(len(self.calls))
+
+    async def task_state(self, task_id, context_id):
+        self.state_queries.append((task_id, context_id))
+        if isinstance(self.state, Exception):
+            raise self.state
+        return self.state
+
+
+def use_clock(monkeypatch):
+    clock = [1000.0]
+    monkeypatch.setattr(agent.time, "monotonic", lambda: clock[0])
+    return clock
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize("failure", ["timeout", "cancel", "unverified_completed_reply"])
 async def test_uncertain_dispatch_does_not_send_a_second_conversion(conversion, monkeypatch, failure):
     backend, quote, commit, request = conversion
     inputs = [await request(), await request()]
     release, dispatched = asyncio.Event(), asyncio.Event()
-    remote_tasks, calls = [], []
+    remote_tasks = []
 
     async def later_commit(number):
         await release.wait()
         commit(number)
 
-    async def send(text):
-        calls.append(text)
-        remote_tasks.append(asyncio.create_task(later_commit(998 + len(calls))))
+    async def reply(n):
+        remote_tasks.append(asyncio.create_task(later_commit(998 + n)))
         dispatched.set()
         if failure == "cancel":
             await asyncio.Event().wait()
         if failure == "unverified_completed_reply":
             return A2AResult("操作中斷，尚無法確認是否完成", "task", "context", "completed", "quotation_agent")
-        raise A2AError("timed out after request dispatch")
+        raise A2AError("timed out after request dispatch", task_id=f"task-{n}", context_id=f"ctx-{n}")
 
-    monkeypatch.setattr(agent, "quotation_agent", SimpleNamespace(send=send))
+    peer = Peer(reply)
+    monkeypatch.setattr(agent, "quotation_agent", peer)
     first = asyncio.create_task(agent.delegate_a2a(None, inputs[0]))
     try:
         await dispatched.wait()
@@ -72,8 +100,11 @@ async def test_uncertain_dispatch_does_not_send_a_second_conversion(conversion, 
             await first
         # Remote work has not committed yet, so rereading orders alone sees none.
         second = await asyncio.wait_for(agent.delegate_a2a(None, inputs[1]), 1)
-        assert len(calls) == 1
-        assert "尚未確認" in second.output and "沒有再次送出" in second.output
+        assert len(peer.calls) == 1
+        assert "沒有再次送出" in second.output
+        if failure != "unverified_completed_reply":
+            assert peer.state_queries == [("task-1", "ctx-1")]
+            assert "還在處理" in second.output
     finally:
         release.set()
         if not first.done():
@@ -84,7 +115,7 @@ async def test_uncertain_dispatch_does_not_send_a_second_conversion(conversion, 
     # 遠端稍後完成時，重讀會找到訂單並解除未明標記，但仍拒絕重複轉單。
     third = await agent.delegate_a2a(None, inputs[1])
     assert "已經有訂單" in third.output and "這次沒有轉訂單" in third.output
-    assert len(calls) == 1
+    assert len(peer.calls) == 1
     assert NUMBER not in agent._CONVERT_UNCERTAIN
 
 
@@ -92,19 +123,18 @@ async def test_uncertain_dispatch_does_not_send_a_second_conversion(conversion, 
 async def test_known_preflight_failure_allows_safe_retry(conversion, monkeypatch):
     _, _, commit, request = conversion
     inputs = [await request(), await request()]
-    calls = []
 
-    async def send(text):
-        calls.append(text)
-        if len(calls) == 1:
+    async def reply(n):
+        if n == 1:
             raise A2AError("agent card unavailable", may_have_written=False)
         order = commit()
         return A2AResult(f"訂單編號: {order['order_number']}", "task", "context", "completed", "quotation_agent")
 
-    monkeypatch.setattr(agent, "quotation_agent", SimpleNamespace(send=send))
+    peer = Peer(reply)
+    monkeypatch.setattr(agent, "quotation_agent", peer)
     await agent.delegate_a2a(None, inputs[0])
     result = await agent.delegate_a2a(None, inputs[1])
-    assert len(calls) == 2
+    assert len(peer.calls) == 2
     assert "改完後核對：後端查得到" in result.output
     assert NUMBER not in agent._CONVERT_UNCERTAIN
 
@@ -113,93 +143,169 @@ async def test_known_preflight_failure_allows_safe_retry(conversion, monkeypatch
 async def test_rule_reload_failure_does_not_escape_or_send(conversion, monkeypatch):
     _, _, _, request = conversion
     body = await request()
-    calls = []
 
     def broken():
         raise agent.OKFError("knowledge file unavailable")
 
-    async def send(text):
-        calls.append(text)
+    async def reply(n):
+        raise AssertionError("should not send")
 
+    peer = Peer(reply)
     monkeypatch.setattr(agent, "_bundle", broken)
-    monkeypatch.setattr(agent, "quotation_agent", SimpleNamespace(send=send))
+    monkeypatch.setattr(agent, "quotation_agent", peer)
     result = await agent.delegate_a2a(None, body)
     assert "這次沒有轉訂單" in result.output
-    assert calls == []
+    assert peer.calls == []
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("reply,still_blocked", [
+@pytest.mark.parametrize("text,still_blocked", [
     ("操作失敗：後端回應 400：關聯報價單與訂單必須屬於同一客戶", False),
     ("操作失敗：找不到資料", False),
     ("操作失敗：後端服務逾時，請稍後再試\n這次操作可能已經建立了新的報價單或訂單，請先查詢確認，再決定要不要重試，免得重複建立。", True),
     ("操作中斷，尚無法確認是否已完成。請先查詢報價單或訂單確認結果，再決定是否重試，避免重複建立資料。", True),
 ])
-async def test_completed_definite_failure_releases_guard(conversion, monkeypatch, reply, still_blocked):
-    """對方已完成且明確回報沒寫入的失敗，不必等重啟；中斷或逾時才繼續擋。"""
+async def test_completed_definite_failure_releases_guard(conversion, monkeypatch, text, still_blocked):
+    """對方已完成且明確回報沒寫入的失敗，馬上可以再轉；中斷或逾時要等後端的逾時過了。"""
     _, _, _, request = conversion
-    calls = []
 
-    async def send(text):
-        calls.append(text)
-        return A2AResult(reply, "task", "context", "completed", "quotation_agent")
+    async def reply(n):
+        return A2AResult(text, "task", "context", "completed", "quotation_agent")
 
-    monkeypatch.setattr(agent, "quotation_agent", SimpleNamespace(send=send))
+    peer = Peer(reply)
+    monkeypatch.setattr(agent, "quotation_agent", peer)
     await agent.delegate_a2a(None, await request())
     assert (NUMBER in agent._CONVERT_UNCERTAIN) is still_blocked
     second = await agent.delegate_a2a(None, await request())
-    assert len(calls) == (1 if still_blocked else 2)
+    assert len(peer.calls) == (1 if still_blocked else 2)
     if still_blocked:
-        assert "沒有再次送出" in second.output
+        assert "沒有再次送出" in second.output and "約 2 分鐘後再試" in second.output
 
 
 @pytest.mark.asyncio
-async def test_uncertain_mark_expires_only_without_an_order(conversion, monkeypatch):
-    """結果不明時先擋；超過等待時間、重讀仍沒有訂單，表示那次沒寫入，才可以再轉。"""
+@pytest.mark.parametrize("final_state", ["completed", "failed", "canceled", "not_found"])
+async def test_guard_waits_for_the_task_then_the_mcp_window(conversion, monkeypatch, final_state):
+    """逾時後先問 task 狀態：還在跑就擋；停了（或對方沒有這個 task）再等 MCP 的逾時，重讀仍沒有訂單才轉。"""
     _, _, commit, request = conversion
-    calls = []
+    clock = use_clock(monkeypatch)
 
-    async def send(text):
-        calls.append(text)
-        if len(calls) == 1:
-            raise A2AError("timed out after request dispatch")
+    async def reply(n):
+        if n == 1:
+            raise A2AError("timed out after request dispatch", task_id="task-1", context_id="ctx-1")
         order = commit()
         return A2AResult(f"訂單編號: {order['order_number']}", "task", "context", "completed", "quotation_agent")
 
-    clock = [1000.0]
-    monkeypatch.setattr(agent.time, "monotonic", lambda: clock[0])
-    monkeypatch.setenv("CONVERT_UNCERTAIN_SECONDS", "600")
-    monkeypatch.setattr(agent, "quotation_agent", SimpleNamespace(send=send))
+    peer = Peer(reply)
+    monkeypatch.setattr(agent, "quotation_agent", peer)
     first = await agent.delegate_a2a(None, await request())
     assert "可能已送出操作" in first.output
+    assert agent._CONVERT_UNCERTAIN[NUMBER]["task_id"] == "task-1"
 
-    clock[0] += 300  # 還在等待時間內：不送
+    clock[0] += 3600  # 時間過多久都一樣：task 還在跑就不送
+    working = await agent.delegate_a2a(None, await request())
+    assert len(peer.calls) == 1 and "還在處理" in working.output
+
+    peer.state = final_state
+    stopped = await agent.delegate_a2a(None, await request())
+    assert len(peer.calls) == 1 and "約 2 分鐘後再試" in stopped.output
+
+    clock[0] += 60
     early = await agent.delegate_a2a(None, await request())
-    assert len(calls) == 1 and "約 5 分鐘後再試" in early.output
+    assert len(peer.calls) == 1 and "約 1 分鐘後再試" in early.output
 
-    clock[0] += 301  # 超過 10 分鐘、仍沒有訂單：送出，核對成功後解除
+    clock[0] += 61
     late = await agent.delegate_a2a(None, await request())
-    assert len(calls) == 2 and "改完後核對：後端查得到" in late.output
+    assert len(peer.calls) == 2 and "改完後核對：後端查得到" in late.output
     assert NUMBER not in agent._CONVERT_UNCERTAIN
 
 
 @pytest.mark.asyncio
-async def test_late_remote_commit_is_found_after_the_window(conversion, monkeypatch):
-    """等待期間遠端其實完成了：超過等待時間也不會再送，重讀看到訂單就擋下。"""
+async def test_unreachable_peer_keeps_blocking(conversion, monkeypatch):
+    """查不到 task 狀態就不能當作已經結束。"""
+    _, _, _, request = conversion
+    clock = use_clock(monkeypatch)
+
+    async def reply(n):
+        raise A2AError("timed out after request dispatch", task_id="task-1", context_id="ctx-1")
+
+    peer = Peer(reply)
+    peer.state = A2AError("connection refused")
+    monkeypatch.setattr(agent, "quotation_agent", peer)
+    await agent.delegate_a2a(None, await request())
+    clock[0] += 3600
+    second = await agent.delegate_a2a(None, await request())
+    assert len(peer.calls) == 1
+    assert "還沒辦法確認" in second.output and "沒有再次送出" in second.output
+    assert NUMBER in agent._CONVERT_UNCERTAIN
+
+
+@pytest.mark.asyncio
+async def test_stopped_remote_task_waits_for_the_mcp_window(conversion, monkeypatch):
+    """對方 task 停在 failed：不會再發新的呼叫，但最後一個 MCP 呼叫可能還沒結束，先等。"""
     _, _, commit, request = conversion
+    clock = use_clock(monkeypatch)
+
+    async def reply(n):
+        if n == 1:
+            raise A2AError("報價單 Agent 的 task 狀態是 failed", task_id="task-1", context_id="ctx-1", stopped=True)
+        order = commit()
+        return A2AResult(f"訂單編號: {order['order_number']}", "task", "context", "completed", "quotation_agent")
+
+    peer = Peer(reply)
+    monkeypatch.setattr(agent, "quotation_agent", peer)
+    await agent.delegate_a2a(None, await request())
+    early = await agent.delegate_a2a(None, await request())
+    assert len(peer.calls) == 1 and "沒有再次送出" in early.output
+    assert peer.state_queries == []
+    clock[0] += 121
+    late = await agent.delegate_a2a(None, await request())
+    assert len(peer.calls) == 2 and "改完後核對：後端查得到" in late.output
+
+
+@pytest.mark.asyncio
+async def test_cancel_before_dispatch_does_not_block(conversion, monkeypatch):
+    """還沒送出就被取消（連對話編號都沒記下），表示對方沒有收到，下一次可以直接轉。"""
+    _, _, commit, request = conversion
+    started = asyncio.Event()
     calls = []
 
-    async def send(text):
+    async def send(text, on_dispatch=None):
         calls.append(text)
-        raise A2AError("timed out after request dispatch")
+        if len(calls) == 1:
+            started.set()
+            await asyncio.Event().wait()  # 卡在抓 agent card，還沒呼叫 on_dispatch
+        on_dispatch(None, "ctx-2")
+        order = commit()
+        return A2AResult(f"訂單編號: {order['order_number']}", "task", "context", "completed", "quotation_agent")
 
-    clock = [1000.0]
-    monkeypatch.setattr(agent.time, "monotonic", lambda: clock[0])
     monkeypatch.setattr(agent, "quotation_agent", SimpleNamespace(send=send))
+    inputs = [await request(), await request()]
+    first = asyncio.create_task(agent.delegate_a2a(None, inputs[0]))
+    await started.wait()
+    first.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await first
+    second = await agent.delegate_a2a(None, inputs[1])
+    assert len(calls) == 2 and "改完後核對：後端查得到" in second.output
+
+
+@pytest.mark.asyncio
+async def test_late_remote_commit_is_found_after_the_task_ends(conversion, monkeypatch):
+    """等待期間遠端其實完成了：task 結束、等過 MCP 的逾時也不會再送，重讀看到訂單就擋下。"""
+    _, _, commit, request = conversion
+    clock = use_clock(monkeypatch)
+
+    async def reply(n):
+        raise A2AError("timed out after request dispatch", task_id="task-1", context_id="ctx-1")
+
+    peer = Peer(reply)
+    monkeypatch.setattr(agent, "quotation_agent", peer)
     await agent.delegate_a2a(None, await request())
     body = await request()  # 先通過 order_check，再讓遠端晚一步完成
     commit()
+    peer.state = "completed"
     clock[0] += 3600
     result = await agent.delegate_a2a(None, body)
-    assert len(calls) == 1
+    assert len(peer.calls) == 1
     assert "已經有訂單" in result.output and "這次沒有轉訂單" in result.output
+    assert NUMBER not in agent._CONVERT_UNCERTAIN
