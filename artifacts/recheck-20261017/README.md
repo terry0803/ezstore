@@ -55,5 +55,4 @@ Advisor 防重狀態仍僅在單一程序記憶體中，不持久、不能跨副
 
 ## 再檢查一次（second-check/）
 
-使用者要求再檢查一次時的紀錄：報價單 Agent 181、議價顧問 171 個離線測試（[agent](second-check/agent-offline.log)、[advisor](second-check/advisor-offline.log)），後端 21 個（[臨時 PostgreSQL](second-check/backend-postgres.log)），學生自我驗收 96.8（[報告](second-check/grading-student/report.md)），變化題 98.7（[報告](second-check/grading-variants/report.md)）。找到的兩個問題和修法見[本輪完整檢查紀錄](../../reports/本輪完整檢查紀錄.md)第 7 節。
-
+助理後來兩次檢查的紀錄。最後一版：報價單 Agent 200、議價顧問 183 個離線測試（[agent](second-check/agent-offline.log)、[advisor](second-check/advisor-offline.log)），後端 21 個（[臨時 PostgreSQL](second-check/backend-postgres.log)）。學生自我驗收 97.1（[報告](second-check/final-student/report.md)）；19 題變化題程式判定和後端核對全過，評審撞到每日額度、13 個分數沒評到（[報告](second-check/final-variants/report.md)）。前一次的 96.8、98.7 在 `grading-student/`、`grading-variants/`。找到的問題和修法見[本輪完整檢查紀錄](../../reports/本輪完整檢查紀錄.md)第 2 節。

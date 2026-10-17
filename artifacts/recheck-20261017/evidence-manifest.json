@@ -1,7 +1,7 @@
 {
   "README.md": {
-    "bytes": 6818,
-    "sha256": "e2b952cd5c0d85a7a22930db4b6840de87f3ff6a410389b7a421767cdfe4cf5c"
+    "bytes": 6969,
+    "sha256": "dd0f9ea6ed890841e51c16a90727b9d8fbb156db2004bf980ddb57c3ea7cd167"
   },
   "advisor-baseline-tests.log": {
     "bytes": 264,
@@ -221,11 +221,11 @@
   },
   "second-check/agent-offline.log": {
     "bytes": 731,
-    "sha256": "9c2d0543a7f5d16003402c47718adebd67a09297f7bd7b402445a71667a56e93"
+    "sha256": "17c8979be9a1d435051d15b68aa4278da705c44f17bbf3750edb9fd1de1cc7a6"
   },
   "second-check/advisor-offline.log": {
     "bytes": 264,
-    "sha256": "d9a1b15b976b5ff8fbaeee9185cfcd18c83f12fbd05d0c42697d7cbd10516fc8"
+    "sha256": "b3137c6ff18f642875720d5c8785d828833a767227c441efd2d074a08cb49f64"
   },
   "second-check/grading-student/report.md": {
     "bytes": 9749,
@@ -242,5 +242,21 @@
   "second-check/grading-variants/report.json": {
     "bytes": 24241,
     "sha256": "b646e6822352a2d05ae137011000ae02b80331f10345ed76cb540430d8160998"
+  },
+  "second-check/final-student/report.md": {
+    "bytes": 9590,
+    "sha256": "8b443e9abafd8feb411fc71784730bcfcf1746554f54368c6c8317517cc1955a"
+  },
+  "second-check/final-student/report.json": {
+    "bytes": 17043,
+    "sha256": "b81f89cc43ad12a7fe84d100ebc14f2e3251ef461847473636a777b31b38843d"
+  },
+  "second-check/final-variants/report.md": {
+    "bytes": 16122,
+    "sha256": "5bf46c17ebbe7b8b660ddcddb83a35b566b5198453fc7a10edeb4ed389b55d8d"
+  },
+  "second-check/final-variants/report.json": {
+    "bytes": 27465,
+    "sha256": "9cb658f581fd9d700dfe9913c3c3ca2849dd6e7f31059a65a61e014df8623343"
   }
 }

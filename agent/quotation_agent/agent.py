@@ -16,6 +16,7 @@ from __future__ import annotations
 import math
 import os
 import re
+import unicodedata
 from typing import Any, Literal
 
 from dotenv import load_dotenv
@@ -101,19 +102,50 @@ REFUSAL_TEXT = (
 QUOTATION_NUMBER_RE = re.compile(r"(?<![A-Za-z0-9_-])QT-\d{8}-\d{3,}(?![A-Za-z0-9_-])", re.IGNORECASE)
 QUOTATION_TOKEN_RE = re.compile(r"[A-Za-z0-9_-]*QT-[A-Za-z0-9_-]*", re.IGNORECASE)
 
-# 程式層的拒答規則：分類器說是報價單操作也一樣擋下
+# 程式層的拒答規則：分類器判成報價操作也一樣擋下。比對前先統一全形半形、大小寫，
+# 再拿掉空白與標點，「Ｉｇｎｏｒｅ」「i g n o r e」「忽 略」都會比對到。
 _INJECTION_PATTERNS = (
     "忽略",
     "無視",
-    "ignore previous",
-    "ignore all",
-    "ignore the above",
-    "system prompt",
-    "系統提示",
-    "你現在是",
+    "不理會",
+    "不要理會",
+    "假裝",
     "扮演",
+    "你現在是",
+    "現在你是",
+    "系統提示",
+    "開發者模式",
+    "最高權限",
+    "新的指令",
     "jailbreak",
+    "systemprompt",
+    "developermode",
+    "youarenow",
+    "pretendtobe",
+    "pretendyou",
+    "ignoreprevious",
+    "ignoreall",
+    "ignoretheabove",
+    "ignoreyour",
+    "disregardyour",
+    "disregardall",
+    "disregardprevious",
+    "forgetyour",
+    "forgetall",
+    "forgetprevious",
 )
+_INJECTION_RE = re.compile(
+    r"(?:別管|不用管|不必管|跳過|繞過|解除)[^，。；;,\n]{0,6}(?:規則|指示|限制|設定)"
+    r"|\b(?:ignore|disregard|forget|override|bypass)\b[^.\n]{0,30}\b(?:instructions?|rules?|previous|above|prompts?|guidelines?|restrictions?)\b"
+    r"|\bact\s+as\b|\brole[\s-]?play\b",
+    re.IGNORECASE,
+)
+
+
+def _looks_like_injection(text: str) -> bool:
+    normalized = unicodedata.normalize("NFKC", text).lower()
+    compact = re.sub(r"[\W_]+", "", normalized)
+    return any(p in compact for p in _INJECTION_PATTERNS) or bool(_INJECTION_RE.search(normalized))
 _OUT_OF_SCOPE_PATTERNS = re.compile(
     r"(新增|建立|修改|更新|刪除|移除|編輯|改)[^，。；;,\n]{0,6}(客戶|產品|商品)"
     r"|(客戶|產品|商品)[^，。；;,\n]{0,6}(新增|建立|修改|更新|刪除|移除|編輯)"
@@ -239,8 +271,7 @@ def _has_credentials() -> bool:
 
 
 def _is_rule_refusal(text: str) -> bool:
-    lowered = text.lower()
-    if any(p in lowered for p in _INJECTION_PATTERNS):
+    if _looks_like_injection(text):
         return True
     # 「修改客戶的報價單」修改的是報價單，不能當成客戶 CRUD。
     # 只移除緊鄰的所有格；別把同一句真正的「刪除客戶」一起放行。

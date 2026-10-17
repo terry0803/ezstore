@@ -19,7 +19,7 @@ def conversion(monkeypatch):
     monkeypatch.setattr(agent, "backend", backend)
     monkeypatch.setattr(agent, "_CONVERT_LOCKS", {})
     if hasattr(agent, "_CONVERT_UNCERTAIN"):
-        monkeypatch.setattr(agent, "_CONVERT_UNCERTAIN", set())
+        monkeypatch.setattr(agent, "_CONVERT_UNCERTAIN", {})
     quote = backend.quotations[NUMBER]
 
     def commit(number=999):
@@ -151,3 +151,55 @@ async def test_completed_definite_failure_releases_guard(conversion, monkeypatch
     assert len(calls) == (1 if still_blocked else 2)
     if still_blocked:
         assert "沒有再次送出" in second.output
+
+
+@pytest.mark.asyncio
+async def test_uncertain_mark_expires_only_without_an_order(conversion, monkeypatch):
+    """結果不明時先擋；超過等待時間、重讀仍沒有訂單，表示那次沒寫入，才可以再轉。"""
+    _, _, commit, request = conversion
+    calls = []
+
+    async def send(text):
+        calls.append(text)
+        if len(calls) == 1:
+            raise A2AError("timed out after request dispatch")
+        order = commit()
+        return A2AResult(f"訂單編號: {order['order_number']}", "task", "context", "completed", "quotation_agent")
+
+    clock = [1000.0]
+    monkeypatch.setattr(agent.time, "monotonic", lambda: clock[0])
+    monkeypatch.setenv("CONVERT_UNCERTAIN_SECONDS", "600")
+    monkeypatch.setattr(agent, "quotation_agent", SimpleNamespace(send=send))
+    first = await agent.delegate_a2a(None, await request())
+    assert "可能已送出操作" in first.output
+
+    clock[0] += 300  # 還在等待時間內：不送
+    early = await agent.delegate_a2a(None, await request())
+    assert len(calls) == 1 and "約 5 分鐘後再試" in early.output
+
+    clock[0] += 301  # 超過 10 分鐘、仍沒有訂單：送出，核對成功後解除
+    late = await agent.delegate_a2a(None, await request())
+    assert len(calls) == 2 and "改完後核對：後端查得到" in late.output
+    assert NUMBER not in agent._CONVERT_UNCERTAIN
+
+
+@pytest.mark.asyncio
+async def test_late_remote_commit_is_found_after_the_window(conversion, monkeypatch):
+    """等待期間遠端其實完成了：超過等待時間也不會再送，重讀看到訂單就擋下。"""
+    _, _, commit, request = conversion
+    calls = []
+
+    async def send(text):
+        calls.append(text)
+        raise A2AError("timed out after request dispatch")
+
+    clock = [1000.0]
+    monkeypatch.setattr(agent.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(agent, "quotation_agent", SimpleNamespace(send=send))
+    await agent.delegate_a2a(None, await request())
+    body = await request()  # 先通過 order_check，再讓遠端晚一步完成
+    commit()
+    clock[0] += 3600
+    result = await agent.delegate_a2a(None, body)
+    assert len(calls) == 1
+    assert "已經有訂單" in result.output and "這次沒有轉訂單" in result.output

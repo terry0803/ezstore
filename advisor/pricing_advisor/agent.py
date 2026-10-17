@@ -21,6 +21,8 @@ import asyncio
 import math
 import os
 import re
+import time
+import unicodedata
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -93,19 +95,50 @@ _RELATIVE_RE = re.compile(r"\d\s*[%％]|[\d一二三四五六七八九]\s*折|(�
 # 一般報價單操作（原句交給報價單 Agent）只能是查詢、清單、複製；帶有這些字就要先經過檢查
 _WRITE_RE = re.compile(r"改|調|降|壓|殺|砍|總價|因子|折|訂單|刪除|移除|發佈|核准")
 
-# 程式層的拒答規則：分類器判成報價操作也一樣擋下
+# 程式層的拒答規則：分類器判成報價操作也一樣擋下。比對前先統一全形半形、大小寫，
+# 再拿掉空白與標點，「Ｉｇｎｏｒｅ」「i g n o r e」「忽 略」都會比對到。
 _INJECTION_PATTERNS = (
     "忽略",
     "無視",
-    "ignore previous",
-    "ignore all",
-    "ignore the above",
-    "system prompt",
-    "系統提示",
-    "你現在是",
+    "不理會",
+    "不要理會",
+    "假裝",
     "扮演",
+    "你現在是",
+    "現在你是",
+    "系統提示",
+    "開發者模式",
+    "最高權限",
+    "新的指令",
     "jailbreak",
+    "systemprompt",
+    "developermode",
+    "youarenow",
+    "pretendtobe",
+    "pretendyou",
+    "ignoreprevious",
+    "ignoreall",
+    "ignoretheabove",
+    "ignoreyour",
+    "disregardyour",
+    "disregardall",
+    "disregardprevious",
+    "forgetyour",
+    "forgetall",
+    "forgetprevious",
 )
+_INJECTION_RE = re.compile(
+    r"(?:別管|不用管|不必管|跳過|繞過|解除)[^，。；;,\n]{0,6}(?:規則|指示|限制|設定)"
+    r"|\b(?:ignore|disregard|forget|override|bypass)\b[^.\n]{0,30}\b(?:instructions?|rules?|previous|above|prompts?|guidelines?|restrictions?)\b"
+    r"|\bact\s+as\b|\brole[\s-]?play\b",
+    re.IGNORECASE,
+)
+
+
+def _looks_like_injection(text: str) -> bool:
+    normalized = unicodedata.normalize("NFKC", text).lower()
+    compact = re.sub(r"[\W_]+", "", normalized)
+    return any(p in compact for p in _INJECTION_PATTERNS) or bool(_INJECTION_RE.search(normalized))
 _OUT_OF_SCOPE_PATTERNS = re.compile(
     r"(新增|建立|刪除|移除)(一個|一筆|一位|新的)?(客戶|產品|商品)"
     r"|(修改|更新|編輯|改)(客戶|產品|商品)的?(資料|名稱|電話|地址|定價|成本|庫存|等級)"
@@ -235,8 +268,7 @@ def _has_credentials() -> bool:
 
 
 def _is_rule_refusal(text: str) -> bool:
-    lowered = text.lower()
-    return any(p in lowered for p in _INJECTION_PATTERNS) or bool(_OUT_OF_SCOPE_PATTERNS.search(text))
+    return _looks_like_injection(text) or bool(_OUT_OF_SCOPE_PATTERNS.search(text))
 
 
 def _is_question(text: str) -> bool:
@@ -1040,9 +1072,18 @@ async def order_check(ctx: Context, node_input: dict):
 # 同一張報價單的轉訂單一次只做一個。order_check 到真的送出之間有空檔，兩個請求同時進來
 # 會都看到「還沒有訂單」；排隊後重新檢查，第二個就會看到第一個建好的訂單。只在單一程序內有效。
 _CONVERT_LOCKS: dict[str, asyncio.Lock] = {}
-# 僅排隊不足以涵蓋逾時：遠端可能在本機放開鎖後才完成。送出結果不明時保留阻擋，
-# 直到能證明尚未送出、核對到成功，或重讀已存在的訂單。此狀態仍限同一程序生命週期。
-_CONVERT_UNCERTAIN: set[str] = set()
+# 僅排隊不足以涵蓋逾時：遠端可能在本機放開鎖後才完成。送出結果不明時先擋住，記下時間。
+# 解除條件：證明尚未送出、核對到成功、重讀時已有訂單，或超過 CONVERT_UNCERTAIN_SECONDS
+# （預設 10 分鐘，報價單 Agent 的模型重試與 MCP 逾時加起來遠小於這個時間）仍沒有訂單。
+# 此狀態限同一程序；重啟後就不記得，議價顧問只能跑一個容器。
+_CONVERT_UNCERTAIN: dict[str, float] = {}
+
+
+def _uncertain_seconds() -> float:
+    try:
+        return max(0.0, float(os.getenv("CONVERT_UNCERTAIN_SECONDS", "600")))
+    except ValueError:
+        return 600.0
 
 
 async def _recheck_order_conversion(node_input: dict) -> str | None:
@@ -1061,7 +1102,7 @@ async def _recheck_order_conversion(node_input: dict) -> str | None:
         return f"送出前重新檢查時讀不到轉單規則：{e}。這次沒有轉訂單。"
     if not decision.allowed:
         if decision.existing_orders:
-            _CONVERT_UNCERTAIN.discard(number)
+            _CONVERT_UNCERTAIN.pop(number, None)
         reasons = "；".join(decision.reasons) or "不符合轉訂單規則"
         return f"送出前重新檢查：{reasons}。可能是剛才另一個請求已經轉了，所以這次沒有轉訂單。"
     node_input["original_source_sha256"] = sha256_hex(canonical_json(quotation))
@@ -1079,11 +1120,18 @@ async def delegate_a2a(ctx: Context, node_input: dict):
                 head = node_input.get("preface") or ""
                 return Event(output="\n".join(part for part in (head, blocked) if part))
             number = node_input["quotation_number"]
-            if number in _CONVERT_UNCERTAIN:
-                return Event(output=(f"{number} 上一次轉訂單尚未確認結果，遠端可能仍在處理。"
-                                     "這次沒有再次送出；請先至系統確認並由管理員核對未完成工作，勿直接重試。"))
+            marked = _CONVERT_UNCERTAIN.get(number)
+            if marked is not None:
+                waited = time.monotonic() - marked
+                if waited < _uncertain_seconds():
+                    minutes = max(1, math.ceil((_uncertain_seconds() - waited) / 60))
+                    return Event(output=(f"{number} 上一次轉訂單尚未確認結果，遠端可能仍在處理。"
+                                         f"這次沒有再次送出；請先到系統確認有沒有訂單，約 {minutes} 分鐘後再試，"
+                                         "到時候我會重新檢查，還是沒有訂單才會轉。"))
+                # 等得夠久而且剛才重讀仍沒有訂單：那次沒有寫入，可以再轉
+                _CONVERT_UNCERTAIN.pop(number, None)
             # Set before awaiting the peer, so cancellation also keeps the guard.
-            _CONVERT_UNCERTAIN.add(number)
+            _CONVERT_UNCERTAIN[number] = time.monotonic()
             return await _send_a2a(node_input)
     return await _send_a2a(node_input)
 
@@ -1102,7 +1150,7 @@ async def _send_a2a(node_input: dict) -> Event:
         result = await quotation_agent.send(request)
     except A2AError as e:
         if node_input.get("purpose") == "convert_order" and not e.may_have_written:
-            _CONVERT_UNCERTAIN.discard(node_input["quotation_number"])
+            _CONVERT_UNCERTAIN.pop(node_input["quotation_number"], None)
         warning = ("可能已送出操作，尚未確認結果；請先至系統核對，勿直接重試。"
                    if e.may_have_written and node_input.get("purpose") in ("convert_order", "apply_price") else "")
         return Event(output=f"{node_input.get('preface') or ''}\n沒辦法連到報價單 Agent：{e}\n{warning}".strip())
@@ -1110,7 +1158,7 @@ async def _send_a2a(node_input: dict) -> Event:
     trace = f"（經 A2A 交給報價單 Agent，task {result.task_id[:8]}，狀態 {result.state}）"
     verification = await _verify_write_result(node_input.get("purpose", ""), node_input, result.text)
     if node_input.get("purpose") == "convert_order" and (verification.verified or _definitely_not_written(result.text)):
-        _CONVERT_UNCERTAIN.discard(node_input["quotation_number"])
+        _CONVERT_UNCERTAIN.pop(node_input["quotation_number"], None)
     text = "\n".join(part for part in (head, trace, result.text, verification.text) if part).strip()
     return Event(output=text, state={"last_a2a": {**result.trace(), "request": request}})
 

@@ -102,7 +102,7 @@ class FakeQuotationAgent:
 def runner(monkeypatch):
     # 每個測試使用獨立的程序內轉單保護，避免鎖綁定前一個 event loop 或殘留未明狀態。
     monkeypatch.setattr(advisor, "_CONVERT_LOCKS", {})
-    monkeypatch.setattr(advisor, "_CONVERT_UNCERTAIN", set())
+    monkeypatch.setattr(advisor, "_CONVERT_UNCERTAIN", {})
     monkeypatch.setattr(advisor, "MODEL", "gemini-3.8-flash")
     monkeypatch.setenv("GEMINI_API_KEY", "offline-test")
     fake_llm = FakeLlm()
