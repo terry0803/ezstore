@@ -23,6 +23,7 @@ class FakeLlm(BaseLlm):
     """understand 依使用者這一句回固定的 JSON；answer_with_knowledge 回一段照條目寫的話。"""
 
     model: str = "fake-llm"
+    answer_calls: int = 0
 
     async def generate_content_async(self, llm_request, stream: bool = False) -> AsyncGenerator[LlmResponse, None]:
         text = "".join(p.text or "" for c in llm_request.contents for p in (c.parts or []))
@@ -48,6 +49,7 @@ class FakeLlm(BaseLlm):
                 intent = {"intent": "provide_info"}
             reply = json.dumps(intent, ensure_ascii=False)
         else:
+            self.answer_calls += 1
             reply = "毛利率 25% 以上業務可以直接調整，15% 到 25% 要業務主管核准，未滿 5% 不可報價。"
         yield LlmResponse(content=types.Content(role="model", parts=[types.Part(text=reply)]))
 
@@ -62,6 +64,9 @@ def _copy_with_factor(quotation, number, factor):
         item["unit_price"], item["subtotal"] = str(unit), str(unit * item["quantity"])
         total += unit * item["quantity"]
     new["total_price"] = str(total)
+    cost = sum(Decimal(item["product_cost"]) * item["quantity"] for item in new["items"])
+    new["profit_amount"] = str(total - cost)
+    new["profit_rate"] = str((total - cost) / total)
     return new
 
 
@@ -76,7 +81,9 @@ class FakeQuotationAgent:
             number = re.search(r"QT-\d{8}-\d{3}", text).group(0)
             quotation = self.backend.quotations[number]
             self.backend.orders.setdefault(str(quotation["customer_id"]), []).append(
-                {"order_number": "ORD-20261017-001", "quotation_id": quotation["id"], "status": "pending"}
+                {"id": 11, "order_number": "ORD-20261017-001", "quotation_id": quotation["id"],
+                 "customer_id": quotation["customer_id"], "status": "pending",
+                 "total_price": quotation["total_price"], "items": json.loads(json.dumps(quotation["items"]))}
             )
             reply = f"已成功將報價單轉換為訂單。\n報價單: {number}（未修改）\n訂單編號: ORD-20261017-001\n訂單連結: http://localhost:3000/orders/11"
         else:
@@ -96,9 +103,10 @@ def runner(monkeypatch):
     monkeypatch.setattr(advisor, "MODEL", "gemini-3.8-flash")
     monkeypatch.setenv("GEMINI_API_KEY", "offline-test")
     fake_llm = FakeLlm()
-    originals = (advisor.understand.model, advisor.answer_with_knowledge.model)
-    advisor.understand.model = fake_llm
-    advisor.answer_with_knowledge.model = fake_llm
+    # Workflow 建立時已 clone LlmAgent；必須替換真正執行的圖節點。
+    for node in advisor.root_agent.graph.nodes:
+        if node.name in ("understand", "answer_with_knowledge"):
+            monkeypatch.setattr(node, "model", fake_llm)
     fake_backend = FakeBackend(
         quotations=json.loads(json.dumps(SNAPSHOT["quotations"])),
         orders=json.loads(json.dumps(SNAPSHOT["orders_by_customer"])),
@@ -106,8 +114,8 @@ def runner(monkeypatch):
     monkeypatch.setattr(advisor, "backend", fake_backend)
     peer = FakeQuotationAgent(fake_backend)
     monkeypatch.setattr(advisor, "quotation_agent", peer)
+    peer.fake_llm = fake_llm
     yield InMemoryRunner(app=advisor.app), peer
-    advisor.understand.model, advisor.answer_with_knowledge.model = originals
 
 
 async def ask(runner, session_id, text):
@@ -135,6 +143,13 @@ async def test_policy_question_cites_knowledge(runner):
     assert "依據（OKF 知識庫）" in reply
     assert "policies/discount-approval" in reply
     assert "作業示範用的虛構規則" in reply
+    # 規則條目有結構化的 frontmatter，答案由程式產生，不再多花一次模型呼叫
+    assert "15% 以上、未滿 25%，需業務主管核准" in reply
+    assert run_peer_llm(runner).answer_calls == 0
+
+
+def run_peer_llm(runner):
+    return runner[1].fake_llm
 
 
 @pytest.mark.asyncio
@@ -206,4 +221,28 @@ async def test_off_topic_and_clarify(runner):
     assert first.startswith("請提供客戶想要的總價")
     second = await ask(run, session, "200000")
     assert "判斷：業務可直接調整" in second
+    assert peer.requests == []
+
+
+@pytest.mark.asyncio
+async def test_failed_second_check_cannot_confirm_the_first_quote(runner):
+    run, peer = runner
+    session = await new_session(run)
+    assert "業務可直接調整" in await ask(run, session, "QT-20260325-001 壓到 200000 可以嗎？")
+    failed = await ask(run, session, "QT-20990101-001 壓到 250000 可以嗎？")
+    assert "找不到" in failed
+    confirmation = await ask(run, session, "那就幫我改")
+    assert "請提供" in confirmation
+    assert peer.requests == []
+
+
+@pytest.mark.asyncio
+async def test_invalid_amount_never_delegates_even_after_successful_check(runner):
+    run, peer = runner
+    session = await new_session(run)
+    await ask(run, session, "QT-20260325-001 壓到 200000 可以嗎？")
+    invalid = await ask(run, session, "幫我把 QT-20260325-001 總價改成 -200000")
+    assert "大於 0" in invalid
+    confirmation = await ask(run, session, "那就幫我改")
+    assert "請提供" in confirmation
     assert peer.requests == []

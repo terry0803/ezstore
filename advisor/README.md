@@ -33,6 +33,7 @@ START → load_context ──（no_credentials）──────────�
           └─（classify）→ understand → route                               │
                             ├─ policy_question → retrieve_knowledge        │
                             │     ├─（answer）→ answer_with_knowledge → cite_sources
+                            │     ├─（rules）→ cite_sources（條目有結構化規則，不呼叫模型）
                             │     └─（direct）─────────────────────────────┤
                             ├─ price_check                                 │
                             ├─ apply_price ──（delegate）→ delegate_a2a    │
@@ -48,9 +49,9 @@ START → load_context ──（no_credentials）──────────�
 | `load_context` | 函式 | 取出這一句，附上知識庫目錄（每個條目一行 id、標題、描述，作廢與過期會標出來）與前一輪狀態。沒有模型憑證就直接回設定說明 |
 | `understand` | `LlmAgent` | 輸出 `AdvisorIntent`：八種意圖之一、報價單編號、目標總價、要讀的條目 id |
 | `route` | 函式 | 程式拒答（提示注入、客戶產品增修刪）；報價單編號與金額從原文抓；問句降級成只檢查；缺欄位追問；條目 id 由程式核對，再加一個關鍵字找到的條目 |
-| `retrieve_knowledge` | 函式 | 讀最多兩個條目（每個 1000 字）組成回答的輸入。已作廢的條目只有問到舊規定才讀 |
-| `answer_with_knowledge` | `LlmAgent` | 只依條目內容回答 |
-| `cite_sources` | 函式 | 檢查回答：數字都要出自條目（有據），規則條目的每一級都要講到（完整）。不符合就改列程式依 frontmatter 產生的規則摘要。最後附依據與信任等級 |
+| `retrieve_knowledge` | 函式 | 讀最多兩個條目（每個 1000 字）組成回答的輸入。已作廢的條目只有問到舊規定才讀。條目有結構化規則（`rule_kind`）就跳過模型，直接到 `cite_sources` |
+| `answer_with_knowledge` | `LlmAgent` | 只依條目內容回答（只用在沒有結構化規則的條目，例如報價公式、名詞） |
+| `cite_sources` | 函式 | 規則條目由程式照 frontmatter 寫出每一級門檻和核准者。其他條目檢查回答的數字都出自條目，不符合就改列條目描述。最後附依據與信任等級 |
 | `price_check` | 函式 | 執行改價影響試算 → attester 驗證 → 依規則判斷 |
 | `apply_price` | 函式 | 重新試算；業務可直接調整才走 `delegate`，否則寫核准申請，不改資料 |
 | `order_check` | 函式 | 讀報價單與同客戶的訂單，依轉訂單規則判斷；要轉而且通過才走 `delegate` |
@@ -93,7 +94,7 @@ uv run okf viz               # 產生 knowledge/ezstore/viz.html 關聯圖
 - 伺服端：`fast_api_app.py` 也開 `/a2a/pricing_advisor`，agent card 列四個 skill。A2A 回覆只帶 `respond` 節點的文字。
 
 ```bash
-uv run python scripts/a2a_demo.py   # 外部 client → 報價單 Agent；外部 client → 議價顧問 → 報價單 Agent
+uv run python scripts/a2a_demo.py   # 外部 client → 報價單 Agent；外部 client → 議價顧問 → 報價單 Agent（會改資料）
 ```
 
 ## 安全與信任
@@ -120,8 +121,8 @@ uv run python scripts/a2a_demo.py   # 外部 client → 報價單 Agent；外部
 整套系統加上議價顧問（模型設定讀根目錄 `.env`）：
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.advisor.yml up -d --build
-docker compose exec db psql -U ezstore -f /scripts/seed-test-data.sql
+docker compose -p ezstore -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.advisor.yml up -d --build
+docker compose -p ezstore exec db psql -U ezstore -f /scripts/seed-test-data.sql   # 重灌測試資料
 ```
 
 網頁介面 http://localhost:8502/dev-ui/ ，agent card http://localhost:8502/a2a/pricing_advisor/.well-known/agent-card.json 。
@@ -132,12 +133,20 @@ docker compose exec db psql -U ezstore -f /scripts/seed-test-data.sql
 cd advisor && cp .env.example .env
 uv sync --group dev --extra eval
 agents-cli playground --port 8502       # 和 Docker 的 advisor 擇一，不能同時佔 8502
-uv run python scripts/run_dialog.py     # 示範對話（會改資料，先重灌 seed）
 ```
+
+`run_dialog.py`（示範對話）和 `a2a_demo.py` 會新增複製單和訂單，跑之前先重灌 seed。seed 會先 `TRUNCATE` 再寫入，資料會回到初始的 12 張報價單、10 筆訂單。要在另一套資料庫上跑，就建一份 `.env.test.local`（Git 已忽略），把 `BACKEND_API`、`QUOTATION_AGENT_URL`、`ADVISOR_URL`、`FRONTEND_URL` 改成那套環境的位址，再用 `uv run --env-file .env.test.local python scripts/run_dialog.py`。
+
+```bash
+uv run python scripts/run_dialog.py
+```
+
+預設模型是 `gemini-3.8-flash`。測試時 `.env` 設 `AGENT_MODEL=gemini-3.1-flash-lite` 省額度。Compose 讀根目錄的 `.env`，在這個資料夾直接跑讀 `advisor/.env`。
 
 | 變數 | 預設 | 用途 |
 |---|---|---|
-| `AGENT_MODEL` | `gemini-3.8-flash` | `understand` 與 `answer_with_knowledge` 的模型；`openai/` 開頭改走 OpenAI 相容 API |
+| `AGENT_MODEL` | `gemini-3.8-flash` | `understand` 與 `answer_with_knowledge` 的模型（政策問答遇到有結構化規則的條目不呼叫）；`openai/` 開頭改走 OpenAI 相容 API |
+| `MODEL_MAX_ATTEMPTS` | `6` | 每次呼叫 Gemini 最多試幾次；額度少的時候設成 1 |
 | `LOCAL_LLM_BASE` | `http://127.0.0.1:18081/v1` | `openai/` 模型的位址 |
 | `GEMINI_API_KEY`、Vertex AI 三個變數 | 無 | 模型憑證，和報價單 Agent 相同 |
 | `BACKEND_API` | `http://localhost:8080/api/v1` | 後端（只用 GET） |

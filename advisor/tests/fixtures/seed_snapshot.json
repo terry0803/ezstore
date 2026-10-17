@@ -24,8 +24,8 @@
    "customer_level": "vip",
    "pricing_factor": "0.82",
    "total_price": "211560",
-   "profit_amount": "66060",
-   "profit_rate": "0.3123",
+   "profit_amount": "68060",
+   "profit_rate": "0.3217",
    "status": "draft",
    "notes": "待客戶確認的設備報價",
    "items": [
@@ -97,8 +97,8 @@
    "customer_level": "new",
    "pricing_factor": "1",
    "total_price": "88000",
-   "profit_amount": "33000",
-   "profit_rate": "0.375",
+   "profit_amount": "38500",
+   "profit_rate": "0.4375",
    "status": "draft",
    "notes": "IoT開發環境建置",
    "items": [
@@ -287,9 +287,9 @@
    },
    "customer_level": "vip",
    "pricing_factor": "0.75",
-   "total_price": "253500",
-   "profit_amount": "72000",
-   "profit_rate": "0.284",
+   "total_price": "253350",
+   "profit_amount": "66150",
+   "profit_rate": "0.2611",
    "status": "published",
    "notes": "VIP年度辦公設備採購案，含安裝與教育訓練",
    "items": [
@@ -601,4 +601,4 @@
    }
   ]
  }
-}
+}

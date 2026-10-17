@@ -1,10 +1,16 @@
 """共用的測試資料：知識庫路徑、測試資料快照（重灌 seed 後從後端 API 取的）、假的後端。"""
 
 import json
+import os
 import shutil
+import socket
+import sys
 from pathlib import Path
 
 import pytest
+
+os.environ["PYTHON_DOTENV_DISABLED"] = "1"
+os.environ.setdefault("AGENT_MODEL", "gemini-3.8-flash")
 
 ROOT = Path(__file__).resolve().parents[2]
 BUNDLE = ROOT / "knowledge" / "ezstore"
@@ -52,6 +58,28 @@ def fake_backend():
 @pytest.fixture
 def snapshot():
     return SNAPSHOT
+
+
+@pytest.fixture(autouse=True)
+def no_network(monkeypatch):
+    """所有既有測試皆使用假後端／模型，意外外連立即失敗而非消耗 API 額度。"""
+    def blocked(*args, **kwargs):
+        raise AssertionError("Offline tests must not open network connections")
+
+    original_connect = socket.socket.connect
+
+    def guarded_connect(sock, address):
+        # Windows asyncio 用標準庫 socketpair 的 loopback 連線建立內部喚醒管道。
+        # 僅放行該函式自身的 connect；模型、HTTP 與測試程式的連線仍一律拒絕。
+        pair_code = getattr(socket.socketpair, "__code__", None)
+        if pair_code is not None and sys._getframe(1).f_code is pair_code:
+            return original_connect(sock, address)
+        return blocked()
+
+    monkeypatch.setattr(socket.socket, "connect", guarded_connect)
+    monkeypatch.setattr(socket.socket, "connect_ex", blocked)
+    monkeypatch.setattr(socket, "create_connection", blocked)
+    monkeypatch.setattr(socket, "getaddrinfo", blocked)
 
 
 @pytest.fixture(autouse=True)

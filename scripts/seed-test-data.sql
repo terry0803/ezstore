@@ -97,7 +97,7 @@ SELECT setval('products_id_seq', 20);
 
 -- Q1: VIP 客戶大量採購辦公設備 (客戶1, 因子0.75)
 INSERT INTO quotations (id, created_at, updated_at, quotation_number, customer_id, customer_level, pricing_factor, total_price, profit_amount, profit_rate, status, notes) VALUES
-(1, '2026-01-15 10:00:00+08', '2026-01-16 09:00:00+08', 'QT-20260115-001', 1, 'vip', 0.7500, 253500.00, 72000.00, 0.2840, 'published', 'VIP年度辦公設備採購案，含安裝與教育訓練');
+(1, '2026-01-15 10:00:00+08', '2026-01-16 09:00:00+08', 'QT-20260115-001', 1, 'vip', 0.7500, 253350.00, 66150.00, 0.2611, 'published', 'VIP年度辦公設備採購案，含安裝與教育訓練');
 INSERT INTO quotation_items (id, created_at, updated_at, quotation_id, product_id, product_name, product_cost, list_price, unit_price, quantity, subtotal) VALUES
 (1, '2026-01-15 10:00:00+08', '2026-01-15 10:00:00+08', 1, 1,  '商用雷射印表機 LJ-5200',   12000.00, 22000.00, 16500.00, 5,  82500.00),
 (2, '2026-01-15 10:00:00+08', '2026-01-15 10:00:00+08', 1, 2,  '27吋商用液晶螢幕 M27-Pro', 5500.00,  9800.00,  7350.00,  20, 147000.00),
@@ -119,7 +119,7 @@ INSERT INTO quotation_items (id, created_at, updated_at, quotation_id, product_i
 (11, '2026-01-20 14:30:00+08', '2026-01-20 14:30:00+08', 2, 15, '伺服器機櫃 42U',             18000.00, 32000.00, 24960.00, 1,  24960.00);
 -- 重算: total=123240+52650+50700+26520+24960=278070, profit=(12324-8500)*10+(17550-12000)*3+(50700-35000)*1+(530.40-350)*50+(24960-18000)*1
 -- 修正 totals
-UPDATE quotations SET total_price = 278070.00, profit_amount = 82120.00, profit_rate = 0.2953 WHERE id = 2;
+UPDATE quotations SET total_price = 278070.00, profit_amount = 86570.00, profit_rate = 0.3113 WHERE id = 2;
 
 -- Q3: Standard 客戶軟體採購 (客戶6, 因子0.88)
 INSERT INTO quotations (id, created_at, updated_at, quotation_number, customer_id, customer_level, pricing_factor, total_price, profit_amount, profit_rate, status, notes) VALUES
@@ -129,7 +129,7 @@ INSERT INTO quotation_items (id, created_at, updated_at, quotation_id, product_i
 (13, '2026-02-05 09:30:00+08', '2026-02-05 09:30:00+08', 3, 17, '防毒軟體企業版 (年約/台)',       800.00,   1500.00,  1320.00,  30, 39600.00),
 (14, '2026-02-05 09:30:00+08', '2026-02-05 09:30:00+08', 3, 18, 'ERP系統授權 (年約/5人)',         45000.00, 85000.00, 74800.00, 1,  74800.00);
 -- total=142560+39600+74800=256960, profit=(4752-3200)*30+(1320-800)*30+(74800-45000)*1=46560+15600+29800=91960
-UPDATE quotations SET total_price = 256960.00, profit_amount = 91960.00, profit_rate = 0.3578 WHERE id = 3;
+UPDATE quotations SET total_price = 256960.00, profit_amount = 91960.00, profit_rate = 0.3579 WHERE id = 3;
 
 -- Q4: VIP 客戶耗材定期採購 (客戶3, 因子0.80)
 INSERT INTO quotations (id, created_at, updated_at, quotation_number, customer_id, customer_level, pricing_factor, total_price, profit_amount, profit_rate, status, notes) VALUES
@@ -141,7 +141,7 @@ INSERT INTO quotation_items (id, created_at, updated_at, quotation_id, product_i
 (18, '2026-02-10 11:00:00+08', '2026-02-10 11:00:00+08', 4, 9,  'A3繪圖紙 100磅 (100張/包)',   450.00,  850.00,  680.00,   10,  6800.00),
 (19, '2026-02-10 11:00:00+08', '2026-02-10 11:00:00+08', 4, 10, '裝訂膠圈 10mm (100入)',        120.00,  250.00,  200.00,   5,   1000.00);
 -- total=26000+19200+16320+6800+1000=69320
-UPDATE quotations SET total_price = 69320.00, profit_amount = 21320.00, profit_rate = 0.3076 WHERE id = 4;
+UPDATE quotations SET total_price = 69320.00, profit_amount = 22720.00, profit_rate = 0.3278 WHERE id = 4;
 
 -- Q5: Standard 客戶辦公設備 (客戶7, 因子0.90)
 INSERT INTO quotations (id, created_at, updated_at, quotation_number, customer_id, customer_level, pricing_factor, total_price, profit_amount, profit_rate, status, notes) VALUES
@@ -151,7 +151,7 @@ INSERT INTO quotation_items (id, created_at, updated_at, quotation_id, product_i
 (21, '2026-02-18 15:00:00+08', '2026-02-18 15:00:00+08', 5, 2,  '27吋商用液晶螢幕 M27-Pro', 5500.00,  9800.00,  8820.00,  10, 88200.00),
 (22, '2026-02-18 15:00:00+08', '2026-02-18 15:00:00+08', 5, 3,  '桌上型碎紙機 SH-200C',     1800.00,  3500.00,  3150.00,  2,  6300.00),
 (23, '2026-02-18 15:00:00+08', '2026-02-18 15:00:00+08', 5, 10, '裝訂膠圈 10mm (100入)',     120.00,   250.00,   225.00,   6,  1350.00);
-UPDATE quotations SET total_price = 135450.00, profit_amount = 39450.00, profit_rate = 0.2913 WHERE id = 5;
+UPDATE quotations SET total_price = 135450.00, profit_amount = 52130.00, profit_rate = 0.3849 WHERE id = 5;
 
 -- Q6: New 客戶首次採購 (客戶12, 因子1.00)
 INSERT INTO quotations (id, created_at, updated_at, quotation_number, customer_id, customer_level, pricing_factor, total_price, profit_amount, profit_rate, status, notes) VALUES
@@ -171,7 +171,7 @@ INSERT INTO quotation_items (id, created_at, updated_at, quotation_id, product_i
 (28, '2026-03-05 14:00:00+08', '2026-03-05 14:00:00+08', 7, 4,  '商用投影機 PJ-4500',           15000.00, 28000.00, 21280.00, 3,  63840.00),
 (29, '2026-03-05 14:00:00+08', '2026-03-05 14:30:00+08', 7, 11, '企業級無線AP WA-6200',         8500.00,  15800.00, 12008.00, 2,  24016.00);
 -- total=106400+63840+24016=194256, profit=(21280-15000)*5+(21280-15000)*3+(12008-8500)*2=31400+18840+7016=57256
-UPDATE quotations SET total_price = 194256.00, profit_amount = 57256.00, profit_rate = 0.2948 WHERE id = 7;
+UPDATE quotations SET total_price = 194256.00, profit_amount = 57256.00, profit_rate = 0.2947 WHERE id = 7;
 
 -- Q8: Standard 客戶雲端服務 (客戶9, 因子0.92)
 INSERT INTO quotations (id, created_at, updated_at, quotation_number, customer_id, customer_level, pricing_factor, total_price, profit_amount, profit_rate, status, notes) VALUES
@@ -192,7 +192,7 @@ INSERT INTO quotation_items (id, created_at, updated_at, quotation_id, product_i
 (33, '2026-03-25 10:00:00+08', '2026-03-25 10:00:00+08', 9, 1,  '商用雷射印表機 LJ-5200',       12000.00, 22000.00, 18040.00, 3, 54120.00),
 (34, '2026-03-25 10:00:00+08', '2026-03-25 10:00:00+08', 9, 5,  '多功能事務機 MF-3800',          25000.00, 45000.00, 36900.00, 1, 36900.00),
 (35, '2026-03-25 10:00:00+08', '2026-03-25 10:00:00+08', 9, 2,  '27吋商用液晶螢幕 M27-Pro',     5500.00,  9800.00,  8036.00,  15, 120540.00);
-UPDATE quotations SET total_price = 211560.00, profit_amount = 66060.00, profit_rate = 0.3123 WHERE id = 9;
+UPDATE quotations SET total_price = 211560.00, profit_amount = 68060.00, profit_rate = 0.3217 WHERE id = 9;
 
 -- Q10: 草稿 - Standard客戶網路採購 (客戶8, 因子0.90)
 INSERT INTO quotations (id, created_at, updated_at, quotation_number, customer_id, customer_level, pricing_factor, total_price, profit_amount, profit_rate, status, notes) VALUES
@@ -201,7 +201,7 @@ INSERT INTO quotation_items (id, created_at, updated_at, quotation_id, product_i
 (36, '2026-03-26 14:00:00+08', '2026-03-26 14:00:00+08', 10, 11, '企業級無線AP WA-6200',       8500.00,  15800.00, 14220.00, 5,  71100.00),
 (37, '2026-03-26 14:00:00+08', '2026-03-26 14:00:00+08', 10, 12, '24埠 PoE 交換器 SW-2400P',   12000.00, 22500.00, 20250.00, 2,  40500.00),
 (38, '2026-03-26 14:00:00+08', '2026-03-26 14:30:00+08', 10, 14, 'Cat.6A 網路線 3米 (10條/包)', 350.00,   680.00,   612.00,   30, 18360.00);
-UPDATE quotations SET total_price = 129960.00, profit_amount = 39960.00, profit_rate = 0.3075 WHERE id = 10;
+UPDATE quotations SET total_price = 129960.00, profit_amount = 52960.00, profit_rate = 0.4075 WHERE id = 10;
 
 -- Q11: 草稿 - New客戶小型採購 (客戶13, 因子1.00)
 INSERT INTO quotations (id, created_at, updated_at, quotation_number, customer_id, customer_level, pricing_factor, total_price, profit_amount, profit_rate, status, notes) VALUES
@@ -210,7 +210,7 @@ INSERT INTO quotation_items (id, created_at, updated_at, quotation_id, product_i
 (39, '2026-03-28 09:30:00+08', '2026-03-28 09:30:00+08', 11, 2,  '27吋商用液晶螢幕 M27-Pro',  5500.00, 9800.00,  9800.00,  5,  49000.00),
 (40, '2026-03-28 09:30:00+08', '2026-03-28 09:30:00+08', 11, 16, 'Office 365 商務版 (年約/人)', 3200.00, 5400.00,  5400.00,  5,  27000.00),
 (41, '2026-03-28 09:30:00+08', '2026-03-28 09:30:00+08', 11, 19, '雲端備份服務 1TB (年約)',     6000.00, 12000.00, 12000.00, 1,  12000.00);
-UPDATE quotations SET total_price = 88000.00, profit_amount = 33000.00, profit_rate = 0.3750 WHERE id = 11;
+UPDATE quotations SET total_price = 88000.00, profit_amount = 38500.00, profit_rate = 0.4375 WHERE id = 11;
 
 -- Q12: 草稿 - 即將刪除用 (客戶14, 因子0.95)
 INSERT INTO quotations (id, created_at, updated_at, quotation_number, customer_id, customer_level, pricing_factor, total_price, profit_amount, profit_rate, status, notes) VALUES

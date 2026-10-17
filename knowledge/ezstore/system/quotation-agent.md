@@ -7,7 +7,7 @@ tags: [a2a, agent, quotation]
 a2a_skills: [get_quotation, list_customer_quotations, duplicate_quotation, update_pricing_factor, adjust_total_price, convert_to_order]
 generated: { by: claude-code/claude-opus-5-5, at: 2026-10-16T17:10:00Z }
 verified:
-  - { by: process:okf-verify, at: 2026-10-17T04:49:26Z }
+  - { by: process:okf-verify, at: 2026-10-17T08:00:26Z }
 status: stable
 stale_after: 2027-04-01T00:00:00Z
 sources:

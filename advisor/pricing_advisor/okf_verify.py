@@ -11,7 +11,7 @@ import asyncio
 import hashlib
 import re
 from collections.abc import Awaitable, Callable
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +20,12 @@ import httpx
 from .okf import Bundle
 
 VERIFIER = "process:okf-verify"
+
+DEMO_QUOTATIONS = frozenset({
+    "QT-20260115-001", "QT-20260120-001", "QT-20260205-001", "QT-20260210-001",
+    "QT-20260218-001", "QT-20260301-001", "QT-20260305-001", "QT-20260310-001",
+    "QT-20260325-001", "QT-20260326-001", "QT-20260328-001", "QT-20260330-001",
+})
 
 Check = Callable[["VerifyContext", Any], Awaitable[tuple[bool, list[str]]]]
 
@@ -44,8 +50,32 @@ class VerifyContext:
 
     async def quotations(self) -> list[dict]:
         if "quotations" not in self._cache:
-            data = await self.get("/quotations", page_size=100)
-            self._cache["quotations"] = data.get("data") or []
+            rows, seen = [], set()
+            page, expected_total = 1, None
+            while True:
+                data = await self.get("/quotations", page=page, page_size=100)
+                if not isinstance(data, dict) or not isinstance(data.get("data"), list):
+                    raise ValueError("報價單分頁格式不完整")
+                total = data.get("total")
+                if type(total) is not int or total < 0 or data.get("page", page) != page:
+                    raise ValueError("報價單分頁總筆數或頁碼不合法")
+                if expected_total is None:
+                    expected_total = total
+                elif total != expected_total:
+                    raise ValueError("分頁讀取時報價單總筆數改變，請重新驗證")
+                batch = data["data"]
+                for row in batch:
+                    if not isinstance(row, dict) or type(row.get("id")) is not int or row["id"] in seen:
+                        raise ValueError("報價單分頁缺少唯一 ID 或出現重複資料")
+                    seen.add(row["id"])
+                rows.extend(batch)
+                if len(rows) == expected_total:
+                    break
+                if not batch or len(rows) > expected_total:
+                    raise ValueError("報價單分頁未取得宣告的完整資料")
+                page += 1
+            # Do not cache a partial result if any page failed validation.
+            self._cache["quotations"] = rows
         return self._cache["quotations"]
 
     async def quotation(self, number: str) -> dict:
@@ -115,26 +145,46 @@ async def check_quotations_table(ctx: VerifyContext, concept) -> tuple[bool, lis
     missing = [c for c in columns if f'json:"{c}"' not in code]
     notes = [f"models/quotation.go 欄位 {len(columns) - len(missing)}/{len(columns)}"]
     ok = not missing and "decimal(5,4)" in code and "default:'draft'" in code
-    total_bad, profit_bad = set(), set()
+    if concept.frontmatter.get("derived_amounts_consistent") is not True:
+        return False, notes + ["條目未明確要求 derived_amounts_consistent: true ✗"]
+    total_bad, profit_bad, rate_bad, invalid = set(), set(), set(), set()
+    seen, duplicate = set(), set()
     for q in await ctx.quotations():
-        if q["quotation_number"] < "QT-2026" or q["quotation_number"] > "QT-20260331-999":
-            continue  # 只比對測試資料的 12 張
-        total, _, _, profit = _recompute(q)
-        if total != _d(q["total_price"]):
-            total_bad.add(q["quotation_number"])
-        if profit != _d(q["profit_amount"]):
-            profit_bad.add(q["quotation_number"])
-    stated_total = {"QT-20260115-001"}
-    stated_profit = {
-        "QT-20260115-001", "QT-20260120-001", "QT-20260210-001", "QT-20260218-001",
-        "QT-20260325-001", "QT-20260326-001", "QT-20260328-001",
-    }
+        number = q.get("quotation_number")
+        if number not in DEMO_QUOTATIONS:
+            continue
+        if number in seen:
+            duplicate.add(number)
+        seen.add(number)
+        try:
+            items = q.get("items")
+            if not isinstance(items, list) or not items:
+                raise ValueError("缺少完整品項")
+            numeric = [_d(q[field]) for field in ("pricing_factor", "total_price", "profit_amount", "profit_rate")]
+            numeric += [_d(item[field]) for item in items for field in ("list_price", "product_cost", "unit_price", "quantity", "subtotal")]
+            if not all(value.is_finite() for value in numeric):
+                raise ValueError("數值不是有限數")
+            total, _, _, profit = _recompute(q)
+            total = total.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            profit = profit.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            rate = (profit / total).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP) if total else Decimal("0.0000")
+            if total != _d(q["total_price"]):
+                total_bad.add(number)
+            if profit != _d(q["profit_amount"]):
+                profit_bad.add(number)
+            if rate != _d(q["profit_rate"]):
+                rate_bad.add(number)
+        except (ArithmeticError, ValueError, TypeError, KeyError):
+            invalid.add(number)
+    missing_quotes = DEMO_QUOTATIONS - seen
+    notes.append(f"種子報價單完整覆蓋：{len(seen)}/{len(DEMO_QUOTATIONS)}")
     notes.append(f"總價不一致：{sorted(total_bad)}")
-    notes.append(f"利潤不一致：{len(profit_bad)} 張")
-    same = total_bad == stated_total and profit_bad == stated_profit
-    if not same:
-        notes.append("和條目寫的不一致清單不同 ✗（測試資料可能沒有重灌）")
-    return ok and same, notes
+    notes.append(f"利潤不一致：{sorted(profit_bad)}")
+    notes.append(f"利潤率不一致（ROUND_HALF_UP，小數 4 位）：{sorted(rate_bad)}")
+    if missing_quotes or duplicate or invalid:
+        notes.append(f"缺少：{sorted(missing_quotes)}；重複：{sorted(duplicate)}；無法重算：{sorted(invalid)} ✗")
+    # Historical discrepancies in prose are not the expected current state.
+    return ok and not any((total_bad, profit_bad, rate_bad, missing_quotes, duplicate, invalid)), notes
 
 
 async def check_orders_table(ctx: VerifyContext, concept) -> tuple[bool, list[str]]:

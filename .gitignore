@@ -63,3 +63,11 @@ playwright-report/
 
 # Claude
 .claude/
+
+# Commit only the root artifacts/fix-20261017 evidence bundle; agent/ and advisor/
+# eval artifacts and the machine-specific test Compose file stay local.
+!/artifacts/
+/artifacts/*
+!/artifacts/fix-20261017/
+!/artifacts/fix-20261017/**
+/artifacts/fix-20261017/compose.test.yml

@@ -55,6 +55,21 @@ def test_apply_price_reuses_last_check():
     assert event.output == {"quotation_number": "QT-20260325-001", "target_total": 200000.0}
 
 
+@pytest.mark.parametrize("token", ["QT-20260325-001ABC", "AQT-20260325-001", "QT-20260325-001_2", "QT-20260325"])
+@pytest.mark.parametrize("existing_state", [False, True])
+def test_invalid_quotation_token_cannot_be_truncated_or_reuse_previous(existing_state, token):
+    state = {"last_quotation": "QT-20260325-001", "last_check": {
+        "quotation_number": "QT-20260325-001", "target_total": 200000.0,
+    }} if existing_state else {}
+    _, event = run_route(f"幫我把 {token} 總價改成 200000", {
+        "intent": "apply_price", "quotation_number": "QT-20260325-001", "target_total": 200000,
+    }, state=state)
+    assert routed(event) == "clarify"
+    assert "quotation_number" in event.output["missing"]
+    assert event.actions.state_delta["last_check"] is None
+    assert event.actions.state_delta["last_quotation"] is None
+
+
 def test_hypothetical_question_only_checks():
     state = {"last_quotation": "QT-20260325-001"}
     _, event = run_route("如果改成 200000 呢？", {"intent": "apply_price", "target_total": 200000}, state=state)
@@ -199,9 +214,86 @@ def test_incomplete_answer_falls_back_to_rules():
     wrong = "毛利率 25% 以上業務可以直接調整，15% 到 25% 要業務主管核准，低於 15% 就不可報價。"
     reply = advisor.cite_sources(ctx, wrong)
     assert reply.startswith("知識庫的規則：")
-    assert "漏了「改價核准層級（2026 年版）」的 總經理" in reply
+    assert "5% 以上、未滿 15%，需總經理核准" in reply
     good = "毛利率 25% 以上業務可以直接調整；15% 以上、未滿 25% 要業務主管核准；5% 以上、未滿 15% 要總經理核准；未滿 5% 不可報價。"
-    assert advisor.cite_sources(ctx, good).startswith(good)
+    assert advisor.cite_sources(ctx, good) == reply
+
+
+@pytest.mark.parametrize("amount", ["-200000", "−200000", "－200000", "- 200000", "-18萬5千", "0"])
+def test_non_positive_text_is_never_reinterpreted_as_positive(amount):
+    _, event = run_route(f"幫我把 QT-20260325-001 總價改成 {amount}", {"intent": "apply_price", "target_total": 200000})
+    assert routed(event) == "clarify"
+    assert "target_total" in event.output["invalid"]
+
+
+def test_relative_apply_cannot_reuse_a_previous_absolute_price():
+    last = {"quotation_number": "QT-20260325-001", "target_total": 200000}
+    _, event = run_route("幫我把 QT-20260325-001 降 2 萬", {"intent": "apply_price", "target_total": 180000}, {"last_check": last})
+    assert routed(event) == "clarify"
+    assert event.output["hint"] == "relative"
+    assert event.actions.state_delta["last_check"] is None
+
+
+def test_hypothetical_question_with_command_phrase_never_writes():
+    _, event = run_route("如果幫我改 QT-20260325-001 總價 200000，毛利夠嗎？", {"intent": "apply_price"})
+    assert routed(event) == "price_check"
+
+
+@pytest.mark.parametrize("operation", ["apply_price", "convert_order", "quotation_request"])
+def test_multiple_quotation_numbers_require_a_unique_target(operation):
+    _, event = run_route("QT-20260325-001 是舊單；請改 QT-20260330-001 總價 200000", {"intent": operation, "quotation_number": "QT-20260330-001", "target_total": 200000})
+    assert routed(event) == "clarify"
+    assert event.output["hint"] == "ambiguous"
+
+
+def test_model_cannot_invent_a_quotation_number_for_a_new_write():
+    _, event = run_route("幫我改成 200000", {"intent": "apply_price", "quotation_number": "QT-20260325-001", "target_total": 200000})
+    assert routed(event) == "clarify"
+    assert "quotation_number" in event.output["missing"]
+
+
+def test_model_cannot_invent_an_unmentioned_price():
+    _, event = run_route("幫我改 QT-20260325-001 的總價", {"intent": "apply_price", "target_total": 200000})
+    assert routed(event) == "clarify"
+    assert "target_total" in event.output["missing"]
+
+
+@pytest.mark.parametrize("text,expected", [("十八萬", 180000), ("二十萬元", 200000), ("一點五萬", 15000), ("18萬5千", 185000), ("負二十萬", -200000)])
+def test_chinese_price_is_grounded_in_the_actual_text(text, expected):
+    assert advisor._amount_from_text(f"QT-20260325-001 總價改成 {text}")[0] == expected
+
+
+def test_confirmation_cannot_reuse_a_different_quotation_context():
+    state = {"last_quotation": "QT-20990101-001", "last_check": {"quotation_number": "QT-20260325-001", "target_total": 200000}}
+    _, event = run_route("那就幫我改", {"intent": "apply_price"}, state)
+    assert routed(event) == "clarify"
+    assert event.output["fields"]["target_total"] is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("node_name", ["price_check", "apply_price"])
+async def test_failed_new_check_invalidates_old_confirmation(monkeypatch, node_name):
+    async def failed(*args):
+        return {"ok": False, "text": "找不到報價單"}
+
+    monkeypatch.setattr(advisor, "_check_price", failed)
+    state = {"last_check": {"quotation_number": "QT-20260325-001", "target_total": 200000}}
+    event = await getattr(advisor, node_name)(SimpleNamespace(state=state), {"quotation_number": "QT-20990101-001", "target_total": 250000})
+    state.update(event.actions.state_delta)
+    assert state["last_check"] is None
+    _, confirmation = run_route("那就幫我改", {"intent": "apply_price"}, state)
+    assert routed(confirmation) == "clarify"
+
+
+def test_swapped_approval_mapping_is_replaced_with_authoritative_rules():
+    ctx = SimpleNamespace(state={"kb_used": ["policies/discount-approval"]})
+    wrong = "毛利率 25% 以上需總經理核准；15% 以上、未滿 25% 不可報價；5% 以上、未滿 15% 業務可直接調整；未滿 5% 需業務主管核准。"
+    reply = advisor.cite_sources(ctx, wrong)
+    assert "25% 以上，業務可直接調整" in reply
+    assert "15% 以上、未滿 25%，需業務主管核准" in reply
+    assert "5% 以上、未滿 15%，需總經理核准" in reply
+    assert "未滿 5%，不可報價" in reply
+    assert "25% 以上需總經理核准" not in reply
 
 
 @pytest.mark.parametrize(

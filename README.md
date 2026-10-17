@@ -148,26 +148,24 @@ swag --version            # swag version v1.x+
 **API key (required for the AI Agent, everything else runs without it):**
 
 ```bash
-cp .env.example .env      # then fill in GEMINI_API_KEY from https://aistudio.google.com/apikey
+cp .env.example .env      # then fill in GEMINI_API_KEY: https://aistudio.google.com/apikey
 ```
 
-**Option A — Use pre-built images from GHCR (default, no build required):**
+**Start (build from local source, both agents included):**
 
 ```bash
-docker compose up -d
+docker compose -p ezstore -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.advisor.yml up -d --build
 ```
 
-**Option B — Build from local source code:**
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
-```
+On Windows, `.\scripts\start-homework.ps1` does the same (`-SkipBuild` to skip the build, `-Action Status|Restart|Logs`). Plain `docker compose up -d` pulls the workshop's GHCR images, which do not contain this homework. After editing `.env`, run `up -d` again; a plain restart does not pick up new settings.
 
 **Load test data:**
 
 ```bash
-docker compose exec db psql -U ezstore -f /scripts/seed-test-data.sql
+docker compose -p ezstore exec db psql -U ezstore -f /scripts/seed-test-data.sql
 ```
+
+The seed runs `TRUNCATE` and then inserts the fixtures, so the data returns to the initial 12 quotations and 10 orders. Demos and evals add copies and orders; reseed before rerunning them.
 
 | Service | URL |
 |---------|-----|
@@ -179,10 +177,11 @@ docker compose exec db psql -U ezstore -f /scripts/seed-test-data.sql
 
 **Run E2E tests (verify the deployment is working):**
 
-```bash
-docker compose exec db psql -U ezstore -f /scripts/seed-test-data.sql
-docker compose run --rm e2e
+```powershell
+.\scripts\test-e2e.ps1            # add -SkipBuild to reuse the built test images
 ```
+
+The script starts a throwaway database and services (project `ezstore-e2e-<random>`), seeds it, runs the UI and API tests, and removes everything including the volume. The main services and data are not touched. On macOS/Linux use `pwsh -File scripts/test-e2e.ps1`.
 
 ### Development Mode
 
@@ -218,10 +217,10 @@ cd backend
 go test ./... -v -cover
 ```
 
-**Load test dataset** (idempotent — safe to run repeatedly):
+**Load test dataset** (clears and reinserts; rerunning gives the same data):
 
 ```bash
-docker compose exec db psql -U ezstore -f /scripts/seed-test-data.sql
+docker compose -p ezstore exec db psql -U ezstore -f /scripts/seed-test-data.sql
 ```
 
 The seed data includes: 15 customers (5 VIP + 6 Standard + 4 New), 20 products, 12 quotations (8 published + 4 draft), 10 orders (3 pending + 3 confirmed + 2 completed + 2 cancelled).
@@ -307,11 +306,14 @@ Every user message re-runs the graph from `START`. Cross-turn memory is the sess
 
 **Environment variables:**
 
+The default model follows the course spec: `gemini-3.8-flash`. To save quota, tests set `AGENT_MODEL=gemini-3.1-flash-lite` in `.env`, the cheapest model this account can call (`gemini-2.5-flash-lite` is closed to new users). Compose reads the root `.env`; running inside `agent/` or `advisor/` reads that folder's `.env`.
+
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `GEMINI_API_KEY` | — | AI Studio key (root `.env` for Compose, `agent/.env` for local runs) |
 | `GOOGLE_GENAI_USE_VERTEXAI`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` | —, —, `global` | Use Vertex AI instead of an AI Studio key |
 | `AGENT_MODEL` | `gemini-3.8-flash` | Model for `classify_intent`. A value starting with `openai/` (e.g. `openai/qwen3.5-9b`) switches to an OpenAI-compatible API |
+| `MODEL_MAX_ATTEMPTS` | `6` | Maximum attempts per Gemini call (429 is retried with backoff); set 1 when quota is tight |
 | `LOCAL_LLM_BASE` | Compose: `http://host.docker.internal:18081/v1`; local: `http://127.0.0.1:18081/v1` | Endpoint for `openai/` models |
 | `MCP_URL` | Compose: `http://mcp-server:8000/mcp`; local: `http://localhost:8010/mcp` | MCP Server |
 | `FRONTEND_URL`, `ALLOW_ORIGINS` | `http://localhost:3000` | Links in tool replies, CORS |
@@ -321,8 +323,7 @@ Every user message re-runs the graph from `START`. Cross-turn memory is the sess
 
 ```bash
 # Whole system; mcp-server is published on :8010 for locally running agents
-docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
-docker compose exec db psql -U ezstore -f /scripts/seed-test-data.sql
+docker compose -p ezstore -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.advisor.yml up -d --build
 
 cd agent && cp .env.example .env    # fill GEMINI_API_KEY; MCP_URL=http://localhost:8010/mcp
                                     # or Vertex AI: GOOGLE_GENAI_USE_VERTEXAI=true + GOOGLE_CLOUD_PROJECT after `gcloud auth application-default login`
@@ -336,7 +337,7 @@ agents-cli playground               # web UI on http://127.0.0.1:8501 with --por
 cd agent
 uv run pytest tests/unit tests/integration -q   # no API key; the classifier is faked, MCP tests skip when :8010 is down
 agents-cli eval run                              # smoke dataset tests/eval/datasets/basic-dataset.json
-agents-cli eval run --dataset tests/eval/datasets/quotation-actions.json     # 6 action cases (creates data; reseed before rerun)
+agents-cli eval run --dataset tests/eval/datasets/quotation-actions.json     # 6 action cases (writes data; reseed before rerunning)
 agents-cli eval run --dataset tests/eval/datasets/quotation-guardrails.json  # 2 refusals + 1 multi-turn clarification
 cd .. && python3 scripts/grading/grade_agent.py --suite scripts/grading/student-suite.json   # 0–100 self-acceptance score
 ```
@@ -363,9 +364,10 @@ Sales → ADK web UI (:8502/dev-ui) or an A2A client
 - The approval thresholds in `knowledge/ezstore/policies/` are demo rules made up for this homework; EZStore itself has no approval process.
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.advisor.yml up -d --build
-cd advisor && uv run python scripts/a2a_demo.py   # external client → advisor → quotation agent (changes data; reseed first)
+docker compose -p ezstore -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.advisor.yml up -d --build
 ```
+
+A2A demo: `cd advisor && uv run python scripts/a2a_demo.py` (external client → pricing advisor → quotation agent; it writes data, so reseed first).
 
 ### License
 
@@ -529,9 +531,8 @@ Default pricing factors: VIP → 0.80, Standard → 0.90, New → 1.00 (defined 
 
 ```bash
 # Full stack (Docker)
-docker compose up --build -d
-docker compose down -v                    # stop and remove volumes
-docker compose exec db psql -U ezstore -f /scripts/seed-test-data.sql
+docker compose -p ezstore -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.advisor.yml up -d --build
+docker compose -p ezstore -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.advisor.yml down  # stop; keep database volume
 
 # Backend
 cd backend

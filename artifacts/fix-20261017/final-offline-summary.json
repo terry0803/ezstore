@@ -1,0 +1,76 @@
+{
+  "checked_at": "2026-10-17T15:06:32.8293451+08:00",
+  "complete": true,
+  "test_kind": "non-LLM offline regression",
+  "real_model_calls": 0,
+  "main_database_writes": 0,
+  "python_passed": 317,
+  "go_passed": 14,
+  "subtests_passed": 28,
+  "failed": 0,
+  "network_guard": "Process-wide socket/DNS denial before importing pytest, plus suite fixtures; only standard-library Windows socketpair is allowed. Go runs with --network none, GOPROXY=off, GOTOOLCHAIN=local and read-only backend source.",
+  "runner": "C:/Users/terry/Documents/Codex/2026-09-18/https-gamma-app-docs-unit-2/work/ezstore_audit_20261017/engine/final_offline_test_runner.py",
+  "warning": "Agent emits one existing Google ADK experimental PLUGGABLE_AUTH warning.",
+  "suites": [
+    {
+      "suite": "agent",
+      "passed": 115,
+      "failed": 0,
+      "subtests_passed": 0,
+      "warnings": 1,
+      "seconds": 6.21,
+      "exit_code": 0,
+      "log": "agent-offline-tests.log",
+      "command": "agent/.venv/Scripts/python.exe -B final_offline_test_runner.py tests/unit tests/integration -q -p no:cacheprovider",
+      "log_sha256": "6a10759bcfa89e050f3d0ac78aa6868b39b46a4d1ea89d17c725ec24cdc685d7"
+    },
+    {
+      "suite": "advisor",
+      "passed": 158,
+      "failed": 0,
+      "subtests_passed": 0,
+      "warnings": 0,
+      "seconds": 16.73,
+      "exit_code": 0,
+      "log": "postwrite-advisor-tests.log",
+      "command": "advisor/.venv/Scripts/python.exe -B final_offline_test_runner.py tests/unit tests/integration -q -p no:cacheprovider",
+      "log_sha256": "b0d9390b5edb4096bc27913a0912e4671df3a22fbb17b63a114aa0a5e7ebaa75"
+    },
+    {
+      "suite": "mcp",
+      "passed": 16,
+      "failed": 0,
+      "subtests_passed": 0,
+      "warnings": 0,
+      "seconds": 1.67,
+      "exit_code": 0,
+      "log": "repair-mcp-tests.log",
+      "command": "agent/.venv/Scripts/python.exe -B final_offline_test_runner.py mcp_server/tests -q -p no:cacheprovider",
+      "log_sha256": "eb9e17d388e0ad15db9b2d5e086b9046959856b12129d75028bdf3ec4eafef9d"
+    },
+    {
+      "suite": "scripts",
+      "passed": 28,
+      "failed": 0,
+      "subtests_passed": 28,
+      "warnings": 0,
+      "seconds": 1.7,
+      "exit_code": 0,
+      "log": "scripts-offline-tests.log",
+      "command": "advisor/.venv/Scripts/python.exe -B final_offline_test_runner.py scripts/tests -q -p no:cacheprovider",
+      "log_sha256": "c41c01c1405bdf3fd6dc97cfdcf70f098e5e00194de2ee41dd3177db9aa653fa"
+    },
+    {
+      "suite": "backend_go",
+      "passed": 14,
+      "failed": 0,
+      "subtests_passed": 0,
+      "warnings": 0,
+      "seconds": 0.005,
+      "exit_code": 0,
+      "log": "repair-go-tests.log",
+      "command": "docker run --rm --network none [backend source:ro, cached Go modules/build volumes] golang:1.26-alpine go test -mod=readonly -count=1 -v ./...",
+      "log_sha256": "4089b81fbb3ab3d87131da17d7f71acd1d1f7cda5ace92ae365c88db4b984407"
+    }
+  ]
+}

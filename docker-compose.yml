@@ -59,6 +59,7 @@ services:
       GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-}
       GOOGLE_CLOUD_LOCATION: ${GOOGLE_CLOUD_LOCATION:-global}
       AGENT_MODEL: ${AGENT_MODEL:-gemini-3.8-flash}
+      MODEL_MAX_ATTEMPTS: ${MODEL_MAX_ATTEMPTS:-6}
       # AGENT_MODEL=openai/<模型> 時改用本機 OpenAI 相容 API（例如 llama.cpp）
       LOCAL_LLM_BASE: ${LOCAL_LLM_BASE:-http://host.docker.internal:18081/v1}
       MCP_URL: http://mcp-server:8000/mcp

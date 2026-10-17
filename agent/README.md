@@ -77,4 +77,6 @@ uv run pytest tests/unit tests/integration -q
 agents-cli eval run --dataset tests/eval/datasets/quotation-guardrails.json
 ```
 
-模型由 `AGENT_MODEL` 決定，預設 `gemini-3.8-flash`。設成 `openai/<模型>` 會經 LiteLLM 改走 OpenAI 相容 API（位址 `LOCAL_LLM_BASE`），例如本機 llama.cpp 的 `openai/qwen3.5-9b`。評估指標的評審模型用 `JUDGE_MODEL`，沒設就跟 `AGENT_MODEL` 一樣。
+模型由 `AGENT_MODEL` 決定，預設 `gemini-3.8-flash`（講義指定）。設成 `openai/<模型>` 會經 LiteLLM 改走 OpenAI 相容 API（位址 `LOCAL_LLM_BASE`），例如本機 llama.cpp 的 `openai/qwen3.5-9b`。`MODEL_MAX_ATTEMPTS` 是每次呼叫 Gemini 最多試幾次，預設 6，遇到 429 會退避重試；額度少的時候設成 1。評估指標的評審模型用 `JUDGE_MODEL`，沒設就跟 `AGENT_MODEL` 一樣。
+
+測試時為了省額度，`.env` 設 `AGENT_MODEL=gemini-3.1-flash-lite`，這是帳號可用的模型裡最便宜的（`gemini-2.5-flash-lite` 對新帳號已停用，回 404）。Compose 讀根目錄的 `.env`，在這個資料夾直接跑讀 `agent/.env`。

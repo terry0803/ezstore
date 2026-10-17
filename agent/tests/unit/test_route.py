@@ -2,6 +2,8 @@
 
 from types import SimpleNamespace
 
+import pytest
+
 from quotation_agent.agent import REFUSAL_TEXT, Intent, clarify, off_topic, route
 
 
@@ -34,6 +36,20 @@ def test_quotation_number_comes_from_user_text_not_llm():
     )
     assert r == "duplicate_quotation"
     assert out["quotation_number"] == "QT-20260330-001"
+
+
+@pytest.mark.parametrize("token", ["QT-20260330-001ABC", "AQT-20260330-001", "QT-20260330-001_2", "QT-20260330"])
+def test_invalid_number_cannot_reuse_a_pending_quotation(token):
+    pending = {"intent": "adjust_total_price", "quotation_number": "QT-20260330-001"}
+    r, out, state = run_route(
+        f"把 {token} 總價改成 8000", Intent(intent="provide_info", target_total_price=8000), pending,
+        clarify_source="把 QT-20260330-001 改總價",
+    )
+    assert r == "clarify"
+    assert out["missing"] == ["quotation_number"]
+    assert not out["fields"]
+    assert state["pending_intent"] is None
+    assert state["clarify_source_text"] == ""
 
 
 def test_missing_field_asks_and_keeps_pending():
@@ -108,3 +124,82 @@ def test_rules_refuse_even_if_classifier_says_operation():
 def test_clarify_without_operation_asks_what_to_do():
     text = clarify({"operation": None, "missing": [], "fields": {}})
     assert text.startswith("請告訴我您要對報價單")
+
+
+def test_two_quotations_ask_before_any_mutation():
+    r, out, state = run_route(
+        "QT-20260330-001 是舊單；請將 QT-20260330-002 轉訂單",
+        Intent(intent="convert_to_order", quotation_number="QT-20260330-002"),
+    )
+    assert r == "clarify"
+    assert "quotation_number" in out["missing"]
+    assert state["pending_intent"]["quotation_number"] is None
+    r, out, _ = run_route("QT-20260330-002", Intent(intent="provide_info"), state["pending_intent"])
+    assert r == "convert_to_order"
+    assert out == {"quotation_number": "QT-20260330-002"}
+
+
+def test_model_cannot_invent_a_missing_quotation():
+    r, out, _ = run_route("請幫我轉訂單", Intent(intent="convert_to_order", quotation_number="QT-20260330-001"))
+    assert r == "clarify"
+    assert out["missing"] == ["quotation_number"]
+
+
+def test_model_cannot_invent_customer_or_amount():
+    r, out, _ = run_route("查詢客戶報價單清單", Intent(intent="list_customer_quotations", customer_name="史塔克工業"))
+    assert r == "clarify" and "customer_name" in out["missing"]
+    r, out, _ = run_route("QT-20260330-001 總價改為 8000", Intent(intent="adjust_total_price", target_total_price=9000))
+    assert r == "adjust_total_price" and out["target_total_price"] == 8000
+
+
+@pytest.mark.parametrize("text", [
+    "我要修改客戶的報價單 QT-20260330-001，報價因子改為 1.5",
+    "客戶的報價單 QT-20260330-001，修改報價因子為1.5",
+    "修改客戶「史塔克工業」的報價單QT-20260330-001報價因子為1.5",
+])
+def test_customer_possessive_is_not_customer_crud(text):
+    r, out, _ = run_route(text, Intent(intent="update_pricing_factor", new_pricing_factor=1.5))
+    assert r == "update_pricing_factor"
+    assert out["quotation_number"] == "QT-20260330-001"
+
+
+def test_customer_crud_is_still_refused_in_mixed_request():
+    r, _, _ = run_route("修改客戶的報價單 QT-20260330-001 報價因子為1.5，然後刪除客戶", Intent(intent="update_pricing_factor", new_pricing_factor=1.5))
+    assert r == "off_topic"
+
+
+def test_crud_rule_does_not_join_separate_clauses():
+    r, out, _ = run_route(
+        "修改報價單總價，客戶名稱：史塔克工業，QT-20260330-001 改為8000",
+        Intent(intent="adjust_total_price", customer_name="史塔克工業", target_total_price=8000),
+    )
+    assert r == "adjust_total_price" and out["target_total_price"] == 8000
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), -float("inf")])
+def test_non_finite_values_never_route_to_mcp(value):
+    r, _, _ = run_route("QT-20260330-001 報價因子改為 1e309", Intent(intent="update_pricing_factor", new_pricing_factor=value))
+    assert r == "clarify"
+
+
+@pytest.mark.parametrize(("text", "value"), [("一點五", 1.5), ("八千", 8000), ("8,000", 8000), ("1e3", 1000)])
+def test_number_grounding_preserves_normal_formats(text, value):
+    r, out, _ = run_route("報價單QT-20260330-001總價改為" + text, Intent(intent="adjust_total_price", target_total_price=value))
+    assert r == "adjust_total_price"
+    assert out["target_total_price"] == value
+
+
+def test_pending_factor_is_preserved_after_providing_quote():
+    r, _, state = run_route("報價因子改為1.5", Intent(intent="update_pricing_factor", new_pricing_factor=1.5))
+    assert r == "clarify"
+    r, out, _ = run_route("QT-20260330-001", Intent(intent="provide_info", new_pricing_factor=1.5), state["pending_intent"])
+    assert r == "update_pricing_factor" and out["new_pricing_factor"] == 1.5
+
+
+def test_current_amount_takes_precedence_over_clarification_history():
+    r, out, _ = run_route(
+        "QT-20260330-001，總價改為 9000",
+        Intent(intent="adjust_total_price", target_total_price=8000),
+        clarify_source="總價改為 8000",
+    )
+    assert r == "adjust_total_price" and out["target_total_price"] == 9000

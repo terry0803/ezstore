@@ -19,12 +19,37 @@ async def test_price_change_impact_numbers(bundle_path, fake_backend):
     assert result["new_factor"] == "0.6977"
     assert result["new_total"] == "180006.60"
     assert result["new_margin"] == "0.2028"
-    assert result["stored_mismatch"] == ["profit_amount"]
+    assert result["stored_mismatch"] == []
     assert set(receipt) == {
         "computation", "computation_sha256", "source_url", "source_sha256",
         "source", "parameters", "result", "executed_at",
     }
     assert attest_receipt(bundle, receipt, claimed={"new_margin": "0.2028"})["ok"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("pollution, expected", [
+    ({"total_price": "211710"}, ["total_price"]),
+    ({"profit_amount": "66060"}, ["profit_amount"]),
+    ({"total_price": "211710", "profit_amount": "66060"}, ["total_price", "profit_amount"]),
+])
+async def test_polluted_snapshot_is_detected(bundle_path, fake_backend, pollution, expected):
+    # Corrupt a private copy so the normal fixture stays consistent for other tests.
+    original = await fake_backend.find_quotation("QT-20260325-001")
+    fake_backend.quotations = copy.deepcopy(fake_backend.quotations)
+    fake_backend.quotations["QT-20260325-001"].update(pollution)
+    bundle = Bundle(bundle_path)
+    receipt = await run_price_change_impact(bundle, fake_backend, "QT-20260325-001", 180000)
+    result = receipt["result"]
+    assert result["stored_mismatch"] == expected
+    # Recalculation still uses the unchanged item snapshots, not corrupted totals.
+    assert result["current_total"] == "211560.00"
+    assert result["current_profit"] == "68060.00"
+    assert result["current_margin"] == "0.3217"
+    assert result["new_total"] == "180006.60"
+    assert original["total_price"] == "211560"
+    assert original["profit_amount"] == "68060"
+    assert attest_receipt(bundle, receipt)["ok"]
 
 
 @pytest.mark.asyncio

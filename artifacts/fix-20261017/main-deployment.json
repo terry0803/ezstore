@@ -1,0 +1,79 @@
+{
+  "passed": true,
+  "main_data_unchanged_during_deployment": true,
+  "counts": {
+    "quotes": 12,
+    "orders": 10
+  },
+  "snapshot_sha256": "6727b991f78f1a06f7531c1d34ca4e79626a30b2e4646624267dbe25ab3fd662",
+  "endpoints": [
+    {
+      "url": "http://127.0.0.1:3000/",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:3000/agent",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:8080/health",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:3000/agent-api/a2a/quotation_agent/.well-known/agent-card.json",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:8502/dev-ui/",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:8502/a2a/pricing_advisor/.well-known/agent-card.json",
+      "status": 200
+    }
+  ],
+  "containers": [
+    {
+      "service": "db",
+      "image": "postgres:16-alpine",
+      "image_id": "sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea",
+      "running": true
+    },
+    {
+      "service": "backend",
+      "image": "ezstore-backend:local",
+      "image_id": "sha256:dde6aa04bc4f09a79b23c62e8731e66992ecbe0f1f93a7b5658d26e8a811ad39",
+      "running": true
+    },
+    {
+      "service": "mcp-server",
+      "image": "ezstore-mcp-server:local",
+      "image_id": "sha256:bf4a7372030db5abcf6052dea044357941febb53cc6370ec97230a5691cf4d41",
+      "running": true
+    },
+    {
+      "service": "agent",
+      "image": "ezstore-agent:local",
+      "image_id": "sha256:a01e9ff84614d3348094fd19afca3819f3b41f01455279aa41ddb5a35737084d",
+      "running": true,
+      "model": "gemini-3.5-flash-lite",
+      "model_max_attempts": "1",
+      "gemini_key_configured": true
+    },
+    {
+      "service": "advisor",
+      "image": "ezstore-advisor:local",
+      "image_id": "sha256:ced5a3777fdcc5725ef386283845767174225ab61aac93b518f2a6533be3413a",
+      "running": true,
+      "model": "gemini-3.5-flash-lite",
+      "model_max_attempts": "1",
+      "gemini_key_configured": true
+    },
+    {
+      "service": "frontend",
+      "image": "ezstore-frontend:local",
+      "image_id": "sha256:7e03a66db37fe0c5c480130e8486160f1909a380015d6952d581c6ea64f4eb60",
+      "running": true
+    }
+  ]
+}

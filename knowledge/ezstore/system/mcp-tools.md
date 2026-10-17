@@ -8,7 +8,7 @@ mcp_tools: [get_quotation, list_customer_quotations, duplicate_quotation, update
 bisect: { low: 0.01, high: 5.0, max_iterations: 20, tolerance: 0.01 }
 generated: { by: claude-code/claude-opus-5-5, at: 2026-10-16T17:10:00Z }
 verified:
-  - { by: process:okf-verify, at: 2026-10-17T04:49:26Z }
+  - { by: process:okf-verify, at: 2026-10-17T08:00:26Z }
 status: stable
 stale_after: 2027-04-01T00:00:00Z
 sources:

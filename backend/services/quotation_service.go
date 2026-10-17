@@ -47,6 +47,9 @@ func (s *QuotationService) GetByID(id uint) (*models.Quotation, error) {
 }
 
 func (s *QuotationService) Create(input *QuotationCreateInput) (*models.Quotation, error) {
+	if err := validateQuotationInput(input); err != nil {
+		return nil, err
+	}
 	customer, err := s.CustomerRepo.GetByID(input.CustomerID)
 	if err != nil {
 		return nil, errors.New("客戶不存在")
@@ -76,6 +79,9 @@ func (s *QuotationService) Create(input *QuotationCreateInput) (*models.Quotatio
 }
 
 func (s *QuotationService) Update(id uint, input *QuotationCreateInput) (*models.Quotation, error) {
+	if err := validateQuotationInput(input); err != nil {
+		return nil, err
+	}
 	existing, err := s.Repo.GetByID(id)
 	if err != nil {
 		return nil, err
@@ -108,6 +114,21 @@ func (s *QuotationService) Update(id uint, input *QuotationCreateInput) (*models
 	}
 
 	return s.Repo.GetByID(existing.ID)
+}
+
+func validateQuotationInput(input *QuotationCreateInput) error {
+	if input == nil || !input.PricingFactor.GreaterThan(decimal.Zero) {
+		return errors.New("報價因子必須大於 0")
+	}
+	if len(input.Items) == 0 {
+		return errors.New("報價單至少需要一個品項")
+	}
+	for _, item := range input.Items {
+		if item.Quantity <= 0 {
+			return errors.New("數量必須大於 0")
+		}
+	}
+	return nil
 }
 
 func (s *QuotationService) Publish(id uint) (*models.Quotation, error) {

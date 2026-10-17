@@ -5,7 +5,7 @@ Attested Computation 試算毛利率，判斷要不要核准，可以做的才�
 
 流程：
     START → load_context → understand（LLM，輸出 AdvisorIntent）→ route
-          → policy_question：retrieve_knowledge → answer_with_knowledge（LLM）→ cite_sources
+          → policy_question：retrieve_knowledge → answer_with_knowledge（LLM，條目沒有結構化規則時才用）→ cite_sources
           → price_check、apply_price、order_check（程式：試算、驗證、規則）
           → delegate_a2a（經 A2A 呼叫報價單 Agent）
           → clarify（追問）、off_topic（拒答）
@@ -79,10 +79,11 @@ REFUSAL_TEXT = (
     "也可以把查詢、複製報價單交給報價單 Agent。"
 )
 
-QUOTATION_NUMBER_RE = re.compile(r"QT-\d{8}-\d{3,}", re.IGNORECASE)
+QUOTATION_NUMBER_RE = re.compile(r"(?<![A-Za-z0-9_-])QT-\d{8}-\d{3,}(?![A-Za-z0-9_-])", re.IGNORECASE)
+QUOTATION_TOKEN_RE = re.compile(r"[A-Za-z0-9_-]*QT-[A-Za-z0-9_-]*", re.IGNORECASE)
 # 一個完整的數字（前後不能接著數字），後面接著年、月、件、%、折這類單位的不算金額
 _AMOUNT_RE = re.compile(
-    r"(?<![\d.,])(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)(?![\d.,])(?!\s*[年月日號%％折件台個人天週周次箱張份])"
+    r"(?<![\d.,+\-])([+\-]?\s*(?:\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?))(?![\d.,])(?!\s*[年月日號%％折件台個人天週周次箱張份])"
 )
 _TARGET_HINT_RE = re.compile(r"(壓到|降到|改成|改為|調到|變成|殺到|砍到|到)\s*$")
 # 「降 2 萬」「便宜 5000」「打九折」「降 10%」是相對的說法，不自己換算成總價
@@ -181,7 +182,7 @@ def _model():
         )
     return Gemini(
         model=MODEL,
-        retry_options=types.HttpRetryOptions(attempts=6, initial_delay=2.0, max_delay=30.0, exp_base=2.0),
+        retry_options=types.HttpRetryOptions(attempts=max(1, int(os.getenv("MODEL_MAX_ATTEMPTS", "6"))), initial_delay=2.0, max_delay=30.0, exp_base=2.0),
     )
 
 
@@ -239,13 +240,14 @@ def _is_rule_refusal(text: str) -> bool:
 def _is_question(text: str) -> bool:
     """「如果改成 200000 呢？」是問句，就算模型判成要改，也只試算。"""
     stripped = text.strip()
-    if any(w in stripped for w in _COMMAND_WORDS):
-        return False
     return any(w in stripped for w in _QUESTION_WORDS) or stripped.endswith(_QUESTION_ENDINGS)
 
 
 def _normalize_amounts(text: str) -> str:
     """「18萬5千」「1.2萬」「8千」換成一般數字。"""
+    text = text.translate(str.maketrans({"−": "-", "－": "-", "＋": "+"}))
+    chinese = r"[負负]?[零〇一壹二兩貳三參四肆五伍六陸七柒八捌九玖十拾][零〇一壹二兩貳三參四肆五伍六陸七柒八捌九玖十拾百佰千仟萬万億亿點点]*"
+    text = re.sub(chinese, lambda m: _chinese_amount(m.group(0)), text)
     text = re.sub(
         r"(\d+(?:\.\d+)?)\s*萬\s*(\d+)\s*千",
         lambda m: str(round(float(m.group(1)) * 10000 + int(m.group(2)) * 1000)),
@@ -253,6 +255,42 @@ def _normalize_amounts(text: str) -> str:
     )
     text = re.sub(r"(\d+(?:\.\d+)?)\s*萬", lambda m: str(round(float(m.group(1)) * 10000)), text)
     return re.sub(r"(\d+(?:\.\d+)?)\s*千", lambda m: str(round(float(m.group(1)) * 1000)), text)
+
+
+def _chinese_amount(text: str) -> str:
+    """原文中文金額轉數字；無法完整解析就保留，交由追問處理。"""
+    original = text
+    sign = -1 if text.startswith(("負", "负")) else 1
+    text = text.lstrip("負负")
+    digits = {c: n for n, chars in enumerate(("零〇", "一壹", "二兩貳", "三參", "四肆", "五伍", "六陸", "七柒", "八捌", "九玖")) for c in chars}
+    units = {"十": 10, "拾": 10, "百": 100, "佰": 100, "千": 1000, "仟": 1000}
+    large = {"萬": 10000, "万": 10000, "億": 100000000, "亿": 100000000}
+    multiplier = 1
+    if any(dot in text for dot in ("點", "点")) and text[-1:] in large:
+        multiplier = large[text[-1]]
+        text = text[:-1]
+    integer, dot, fraction = text.replace("點", ".").replace("点", ".").partition(".")
+    if not integer or (dot and (not fraction or any(c not in digits for c in fraction))):
+        return original
+    if all(c in digits for c in integer):
+        value = float("".join(str(digits[c]) for c in integer))
+    else:
+        total = section = current = 0
+        for char in integer:
+            if char in digits:
+                current = digits[char]
+            elif char in units:
+                section += (current or 1) * units[char]
+                current = 0
+            elif char in large:
+                total += (section + current) * large[char]
+                section = current = 0
+            else:
+                return original
+        value = float(total + section + current)
+    if dot:
+        value += float("0." + "".join(str(digits[c]) for c in fraction))
+    return _plain(sign * value * multiplier)
 
 
 def _amount_from_text(text: str) -> tuple[float | None, bool]:
@@ -265,12 +303,12 @@ def _amount_from_text(text: str) -> tuple[float | None, bool]:
     candidates: list[tuple[bool, float]] = []
     for match in _AMOUNT_RE.finditer(cleaned):
         try:
-            value = float(match.group(1).replace(",", ""))
+            value = float(re.sub(r"\s+", "", match.group(1)).replace(",", ""))
         except ValueError:
             continue
-        if value < 100:
-            continue
         hinted = bool(_TARGET_HINT_RE.search(cleaned[: match.start()]))
+        if 0 < value < 100 and not hinted:
+            continue
         candidates.append((hinted, value))
     if not candidates:
         return None, False
@@ -468,14 +506,14 @@ def route(ctx: Context, node_input: Any):
 
     # 1. 程式拒答
     if _is_rule_refusal(text):
-        return Event(output=REFUSAL_TEXT, route="off_topic", state={"pending": None})
+        return Event(output=REFUSAL_TEXT, route="off_topic", state={"pending": None, "last_check": None})
 
     operation = intent.intent
     if operation == "provide_info":
         # 沒有待補的要求、只給了報價單編號：當成查詢
         operation = pending.get("intent") or ("quotation_request" if QUOTATION_NUMBER_RE.search(text) else "off_topic")
     if operation == "off_topic":
-        return Event(output=REFUSAL_TEXT, route="off_topic", state={"pending": None})
+        return Event(output=REFUSAL_TEXT, route="off_topic", state={"pending": None, "last_check": None})
 
     # 2. 政策問答：條目 id 由程式核對。取模型挑的第一個，再加上關鍵字最相關的一個，
     #    模型挑錯時還有關鍵字這條路
@@ -495,7 +533,23 @@ def route(ctx: Context, node_input: Any):
         return Event(
             output={"question": text, "concept_ids": ids},
             route="policy_question",
-            state={"pending": None},
+            state={"pending": None, "last_check": None},
+        )
+
+    if any(not QUOTATION_NUMBER_RE.fullmatch(token) for token in QUOTATION_TOKEN_RE.findall(text)):
+        # 明確輸入的單號格式錯誤時，不能截短成另一張單或沿用上一輪單號。
+        return Event(
+            output={"operation": operation, "missing": ["quotation_number"], "fields": {}, "hint": "invalid_number"},
+            route="clarify",
+            state={"pending": None, "last_check": None, "last_quotation": None},
+        )
+    numbers = list(dict.fromkeys(n.upper() for n in QUOTATION_NUMBER_RE.findall(text)))
+    if len(numbers) > 1:
+        # 不讓模型猜測或固定採用第一張單；由使用者重新指定唯一目標。
+        return Event(
+            output={"operation": operation, "missing": ["quotation_number"], "fields": {}, "hint": "ambiguous"},
+            route="clarify",
+            state={"pending": None, "last_check": None, "last_quotation": None},
         )
 
     # 3. 一般報價單操作：只有查詢、清單、複製可以把原句經 A2A 交給報價單 Agent。
@@ -514,7 +568,7 @@ def route(ctx: Context, node_input: Any):
             return Event(
                 output={"text": request, "purpose": "quotation_request", "preface": ""},
                 route="delegate",
-                state={"pending": None},
+                state={"pending": None, "last_check": None, "last_quotation": numbers[0] if numbers else None},
             )
         operation = "order_check" if "訂單" in text else "price_check"
 
@@ -524,21 +578,27 @@ def route(ctx: Context, node_input: Any):
 
     # 合併欄位（原文 → 理解結果 → 待補 → 上一次試算）
     carry = pending if pending.get("intent") == operation else {}
-    match = QUOTATION_NUMBER_RE.search(text)
-    number = match.group(0).upper() if match else (intent.quotation_number or carry.get("quotation_number"))
-    # 金額以使用者原文為準（程式抽取），抓不到才用理解結果，再其次用待補的欄位。
+    # 單號只採使用者原文或已確認的對話狀態，不能接受模型憑空補出的單號。
+    number = numbers[0] if numbers else carry.get("quotation_number")
+    # 金額以使用者原文為準（程式抽取），抓不到只可用有效待補欄位。
     # 「降 2 萬」「打九折」是相對的說法，模型可能自己換算，所以不收，改問總價
     target, hinted = _amount_from_text(text)
     relative = not hinted and bool(_RELATIVE_RE.search(_normalize_amounts(text)))
-    if relative:
+    factor_only = "因子" in text and "總價" not in text
+    if relative or factor_only:
         target = None
     elif target is None:
-        target = _number(intent.target_total) if intent.target_total is not None else _number(carry.get("target_total"))
+        # 模型不能替使用者發明價格；中文金額也由原文解析，只有待補狀態可沿用。
+        model_number = _number(intent.target_total)
+        target = -1.0 if model_number is not None and not math.isfinite(model_number) else _number(carry.get("target_total"))
     if target is not None and not math.isfinite(target):
         target = -1.0
-    if operation == "apply_price" and not number and target is None and not relative and last_check.get("quotation_number"):
+    current_number = ctx.state.get("last_quotation")
+    if current_number and current_number != last_check.get("quotation_number"):
+        last_check = {}
+    if operation == "apply_price" and not number and target is None and not relative and not factor_only and last_check.get("quotation_number"):
         number, target = last_check["quotation_number"], last_check["target_total"]
-    if operation == "apply_price" and number and target is None and last_check.get("quotation_number") == number:
+    if operation == "apply_price" and number and target is None and not relative and not factor_only and last_check.get("quotation_number") == number:
         target = last_check["target_total"]
     if not number:
         # 「那 200000 呢？」這種接著問的句子，沿用上一張報價單
@@ -554,7 +614,7 @@ def route(ctx: Context, node_input: Any):
         return Event(
             output={"operation": operation, "missing": missing, "invalid": invalid, "fields": fields, "hint": hint},
             route="clarify",
-            state={"pending": {"intent": operation, **fields}},
+            state={"pending": {"intent": operation, **fields}, "last_check": None},
         )
 
     if operation in ("order_check", "convert_order"):
@@ -591,12 +651,15 @@ def retrieve_knowledge(ctx: Context, node_input: dict):
             route="direct",
             state={"kb_used": []},
         )
+    if any(rule_summary(bundle.get(cid), now)[0] for cid in used):
+        # 有結構化規則的條目，答案由 cite_sources 照 frontmatter 產生，不必再呼叫模型
+        return Event(output="", route="rules", state={"kb_used": used, "kb_prompt_chars": 0})
     prompt = f"問題：{question}\n\n" + "\n\n".join(blocks)
     return Event(output=prompt, route="answer", state={"kb_used": used, "kb_prompt_chars": len(prompt)})
 
 
 def cite_sources(ctx: Context, node_input: Any) -> str:
-    """檢查回答：數字都要出自知識條目（有據），規則條目的每一級都要講到（完整）。再附上依據與信任等級。"""
+    """結構化政策直接由規則產生，保留門檻與核准層級配對；其他知識檢查數字後附來源。"""
     bundle = _bundle()
     now = utc_now()
     answer = _content_text(node_input).strip()
@@ -610,18 +673,17 @@ def cite_sources(ctx: Context, node_input: Any) -> str:
         problems.append(f"出現知識庫沒有的數字 {'、'.join(stray)}")
     summaries = []
     for concept in concepts:
-        summary, required = rule_summary(concept, now)
+        summary, _ = rule_summary(concept, now)
         if summary:
             summaries.append(summary)
-            missing = [r for r in required if _normalized(r) not in _normalized(answer)]
-            if missing:
-                problems.append(f"漏了「{concept.title}」的 {'、'.join(missing)}")
 
-    if not answer or problems:
+    if summaries:
+        # 字詞全出現仍可能配對錯誤，不能用關鍵字齊全作為政策正確的證明。
         lines = ["知識庫的規則："] + [f"- {s}" for s in summaries]
-        if not summaries:
-            lines = ["知識庫的說法："] + [f"- {c.title}：{c.description}" for c in concepts]
-        lines.append(f"（模型的回答{'；'.join(problems) or '是空的'}，所以改列條目的內容。）")
+        lines += [f"- {c.title}：{c.description}" for c in concepts if not rule_summary(c, now)[0]]
+        answer = "\n".join(lines)
+    elif not answer or problems:
+        lines = ["知識庫的說法："] + [f"- {c.title}：{c.description}" for c in concepts]
         answer = "\n".join(lines)
     return f"{answer}\n\n{_knowledge_footer(bundle, used)}"
 
@@ -694,6 +756,7 @@ async def _check_price(quotation_number: str, target_total: float) -> dict[str, 
         "result": result,
         "customer": customer,
         "decision": decision,
+        "original_source_sha256": receipt["source_sha256"],
         "receipt_summary": {
             "computation_sha256": receipt["computation_sha256"],
             "source_url": receipt["source_url"],
@@ -725,7 +788,7 @@ async def price_check(ctx: Context, node_input: dict):
     number, target = node_input["quotation_number"], float(node_input["target_total"])
     check = await _check_price(number, target)
     if not check["ok"]:
-        return Event(output=check["text"], state={"last_quotation": number})
+        return Event(output=check["text"], state={"last_quotation": number, "last_check": None})
     text = check["text"]
     if check["approval"] == "none":
         text += "\n下一步：可以直接調整。要改的話跟我說「幫我改」，我會經 A2A 請報價單 Agent 先複製再改總價，原單不動。"
@@ -755,7 +818,7 @@ async def apply_price(ctx: Context, node_input: dict):
     number, target = node_input["quotation_number"], float(node_input["target_total"])
     check = await _check_price(number, target)
     if not check["ok"]:
-        return Event(output=check["text"], route="done", state={"last_quotation": number})
+        return Event(output=check["text"], route="done", state={"last_quotation": number, "last_check": None})
     state = _check_state(number, target, check)
     if check["approval"] == "none":
         request = f"我要修改報價單總價，報價單編號：{number}，總價改為 {_plain(target)}"
@@ -769,6 +832,8 @@ async def apply_price(ctx: Context, node_input: dict):
                 "preface": preface,
                 "quotation_number": number,
                 "original_factor": check["result"]["current_factor"],
+                "target_total": target,
+                "original_source_sha256": check["original_source_sha256"],
             },
             route="delegate",
             state=state,
@@ -791,54 +856,133 @@ _NEW_ORDER_RE = re.compile(r"訂單編號:\s*(ORD-\d{8}-\d{3,})")
 
 
 async def _verify_after_write(purpose: str, request: dict, reply: str) -> str:
-    """報價單 Agent 改完之後，從後端重新讀一次結果再核對，不只相信對方的回覆。"""
-    bundle = _bundle()
+    """核對新單內容、使用者的目標與原單完整快照；對方宣告成功不算驗證。"""
+    if purpose not in ("apply_price", "convert_order"):
+        return ""
+
+    def failed(reason):
+        return f"改完後核對失敗：{reason}。不能確認上方操作成功，請到系統核對，勿直接重試。"
+
+    def amount(value):
+        if isinstance(value, bool):
+            raise ValueError("Boolean is not an amount")
+        value = Decimal(str(value))
+        if not value.is_finite():
+            raise ValueError("Amount must be finite")
+        return value
+
+    def items(document, with_prices=False):
+        # 排序保留重複品項的次數；順序、明細 id 與複製後刷新價格不影響品項核對。
+        result = []
+        for item in document["items"]:
+            quantity = amount(item["quantity"])
+            if item["product_id"] is None or quantity <= 0 or quantity != quantity.to_integral_value():
+                raise ValueError("Invalid product or quantity")
+            entry = (str(item["product_id"]), quantity)
+            if with_prices:
+                unit, subtotal = amount(item["unit_price"]), amount(item["subtotal"])
+                # DB 各自將單價及小計存成兩位小數，乘數量後會放大單價的半分捨入差。
+                line_tolerance = Decimal("0.005") * (quantity + 1)
+                if unit < 0 or subtotal < 0 or abs(unit * quantity - subtotal) > line_tolerance:
+                    raise ValueError("Invalid line total")
+                entry += (unit, subtotal)
+            result.append(entry)
+        if not result:
+            raise ValueError("Missing items")
+        return sorted(result)
+
     try:
+        original = await backend.find_quotation(request["quotation_number"])
+        original_hash = request.get("original_source_sha256")
+        if original is None or not original_hash or sha256_hex(canonical_json(original)) != original_hash:
+            return failed("原報價單完整內容與操作前快照不同，或缺少可核對的快照")
+        if original.get("id") is None or original.get("customer_id") is None:
+            return failed("原報價單缺少識別資料")
+
         if purpose == "apply_price":
-            match = _NEW_QUOTATION_RE.search(reply)
-            if not match:
-                return "改完後核對：回覆裡找不到新報價單編號，請到系統確認。"
-            new_number = match.group(1)
+            numbers = list(dict.fromkeys(_NEW_QUOTATION_RE.findall(reply)))
+            if len(numbers) != 1:
+                return failed("回覆裡沒有唯一的新報價單編號")
+            new_number = numbers[0]
             fresh = await backend.find_quotation(new_number)
             if fresh is None:
-                return f"改完後核對：後端查不到 {new_number}，請到系統確認。"
+                return failed(f"後端查不到 {new_number}")
+            if (new_number == request["quotation_number"] or fresh.get("quotation_number") != new_number
+                    or fresh.get("id") is None or str(fresh["id"]) == str(original["id"])):
+                return failed("回傳的報價單不是與原單不同的新單")
+            if str(fresh.get("customer_id")) != str(original["customer_id"]):
+                return failed("新報價單的客戶與原單不同")
+            if items(fresh) != items(original):
+                return failed("新報價單的產品或數量與原單不同")
+            # 副本可帶入產品目前的價格；容差依副本的定價與因子四位精度計算。
+            list_total = sum(amount(item["list_price"]) * amount(item["quantity"]) for item in fresh["items"])
+            target, actual = amount(request["target_total"]), amount(fresh["total_price"])
+            if target <= 0 or list_total <= 0:
+                return failed("目標總價或品項定價不合法")
+            tolerance = max(Decimal("1"), list_total * Decimal("0.0001"))
+            if abs(actual - target) > tolerance:
+                return failed(f"新單總價 {actual} 不符合指定總價 {target}（容差 {tolerance}）")
+            price_items = items(fresh, with_prices=True)
+            if abs(sum(row[3] for row in price_items) - actual) > Decimal("0.005") * (len(price_items) + 1):
+                return failed("新報價單總價與明細加總不符")
+            bundle = _bundle()
             receipt = await run_price_change_impact(bundle, backend, new_number, float(fresh["total_price"]))
-            if not attest_receipt(bundle, receipt)["ok"]:
-                return "改完後核對：試算驗證失敗，請到系統確認。"
+            if (not attest_receipt(bundle, receipt)["ok"]
+                    or receipt["source_sha256"] != sha256_hex(canonical_json(fresh))):
+                return failed("試算驗證失敗或新單在核對期間發生變動")
             result = receipt["result"]
+            if result["stored_mismatch"]:
+                return failed("新報價單的儲存金額與重算結果不符")
             # 改完之後報價因子已經確定，用實際數字判斷，不再扣一格
             decision = evaluate_price_change(bundle, result, conservative=False)
-            original = await backend.find_quotation(request["quotation_number"])
-            unchanged = (
-                original is not None
-                and request.get("original_factor") is not None
-                and Decimal(str(original["pricing_factor"])) == Decimal(str(request["original_factor"]))
-            )
+            if not decision.can_apply:
+                return failed(f"實際改出來的結果{decision.label}，請通知主管")
+            original_now = await backend.find_quotation(request["quotation_number"])
+            if original_now is None or sha256_hex(canonical_json(original_now)) != original_hash:
+                return failed("原報價單在核對期間發生變動")
             lines = [
                 f"改完後核對（從後端重新讀 {new_number}）：報價因子 {result['current_factor']}、"
                 f"總價 {result['current_total']}、毛利率 {_percent(result['current_margin'])}，依規則{decision.label}。"
             ]
             if request.get("original_factor") is not None:
-                lines.append(
-                    f"原單 {request['quotation_number']} 的報價因子還是 {request['original_factor']}"
-                    if unchanged
-                    else f"注意：原單 {request['quotation_number']} 的報價因子變了，請到系統確認。"
-                )
-            if not decision.can_apply:
-                lines.append(f"注意：實際改出來的結果{decision.label}，請通知主管。")
+                lines.append(f"原單 {request['quotation_number']} 的報價因子還是 {request['original_factor']}")
+            lines.append("原單完整內容未變；新單客戶、產品與數量一致，總價符合指定目標的精度容差。")
             return "\n".join(lines)
         if purpose == "convert_order":
-            match = _NEW_ORDER_RE.search(reply)
-            quotation = await backend.find_quotation(request["quotation_number"])
-            if not match or quotation is None:
-                return "改完後核對：回覆裡找不到訂單編號，請到系統確認。"
-            orders = await backend.customer_orders(quotation["customer_id"])
-            found = [o for o in orders if o.get("order_number") == match.group(1) and o.get("quotation_id") == quotation["id"]]
-            if found:
-                return f"改完後核對：後端查得到 {match.group(1)}，關聯 {request['quotation_number']}，狀態 {found[0].get('status')}。"
-            return f"改完後核對：後端查不到關聯 {request['quotation_number']} 的 {match.group(1)}，請到系統確認。"
-    except (BackendError, ComputationError) as e:
-        return f"改完後核對失敗：{e}"
+            numbers = list(dict.fromkeys(_NEW_ORDER_RE.findall(reply)))
+            if len(numbers) != 1:
+                return failed("回覆裡沒有唯一的訂單編號")
+            orders = await backend.customer_orders(original["customer_id"])
+            found = [o for o in orders if o.get("order_number") == numbers[0]]
+            if len(found) != 1:
+                return failed("後端沒有唯一對應的新訂單")
+            order = found[0]
+            previous_ids = request.get("original_order_ids")
+            if (previous_ids is None or order.get("id") is None
+                    or str(order["id"]) in {str(value) for value in previous_ids}):
+                return failed("訂單不是本次新增，或缺少操作前訂單清單")
+            if (str(order.get("quotation_id")) != str(original["id"])
+                    or str(order.get("customer_id")) != str(original["customer_id"])):
+                return failed("新訂單關聯的報價單或客戶不符")
+            expected_items, actual_items = items(original, with_prices=True), items(order, with_prices=True)
+            if [row[:3] for row in actual_items] != [row[:3] for row in expected_items]:
+                return failed("新訂單的產品、數量、單價或明細金額與報價單不同")
+            if any(abs(row[1] * row[2] - row[3]) > Decimal("0.01") for row in actual_items):
+                return failed("新訂單明細金額不符合單價與數量")
+            actual, expected = amount(order["total_price"]), amount(original["total_price"])
+            # 轉單使用報價單已存為兩位的單價重算；與原小計的差只能來自存檔捨入。
+            source_tolerance = Decimal("0.005") * (sum(row[1] for row in expected_items) + len(expected_items) + 1)
+            sum_tolerance = Decimal("0.005") * (len(actual_items) + 1)
+            if (abs(actual - expected) > source_tolerance
+                    or abs(sum(row[3] for row in actual_items) - actual) > sum_tolerance):
+                return failed("新訂單總價與報價單或明細加總不符")
+            original_now = await backend.find_quotation(request["quotation_number"])
+            if original_now is None or sha256_hex(canonical_json(original_now)) != original_hash:
+                return failed("原報價單在核對期間發生變動")
+            return (f"改完後核對：後端查得到 {numbers[0]}，關聯 {request['quotation_number']}，狀態 {order.get('status')}。"
+                    "原單完整內容未變；新訂單客戶、產品、數量、單價與總價均符合。")
+    except (BackendError, ComputationError, OKFError, KeyError, TypeError, ValueError, InvalidOperation) as exc:
+        return failed(f"資料不完整或驗證發生錯誤（{type(exc).__name__}）")
     return ""
 
 
@@ -850,9 +994,9 @@ async def order_check(ctx: Context, node_input: dict):
         quotation = await backend.find_quotation(number)
         orders = await backend.customer_orders(quotation["customer_id"]) if quotation else []
     except BackendError as e:
-        return Event(output=f"讀不到報價單或訂單：{e}", route="done")
+        return Event(output=f"讀不到報價單或訂單：{e}", route="done", state={"last_check": None})
     if quotation is None:
-        return Event(output=f"找不到報價單 {number}。", route="done", state={"last_quotation": None})
+        return Event(output=f"找不到報價單 {number}。", route="done", state={"last_quotation": None, "last_check": None})
 
     decision = evaluate_order_conversion(bundle, quotation, orders)
     lines = [f"{number} 轉訂單檢查：{'可以轉' if decision.allowed else '不能轉'}"]
@@ -862,11 +1006,13 @@ async def order_check(ctx: Context, node_input: dict):
         lines.append(f"沒有套用：{_skipped_text(bundle, decision.skipped)}")
     lines.append(f"系統連結：{_quotation_link(quotation['id'])}")
     text = "\n".join(lines)
-    state = {"last_quotation": number}
+    state = {"last_quotation": number, "last_check": None}
     if convert and decision.allowed:
         request = f"我要將報價單轉訂單，報價單編號：{number}"
         return Event(
-            output={"text": request, "purpose": "convert_order", "preface": text, "quotation_number": number},
+            output={"text": request, "purpose": "convert_order", "preface": text, "quotation_number": number,
+                    "original_source_sha256": sha256_hex(canonical_json(quotation)),
+                    "original_order_ids": [order["id"] for order in orders]},
             route="delegate",
             state=state,
         )
@@ -893,6 +1039,8 @@ async def delegate_a2a(ctx: Context, node_input: dict):
 
 def clarify(node_input: dict) -> str:
     """缺資料時追問；使用者下一句補上後，route 會接續原本的要求。"""
+    if node_input.get("hint") == "ambiguous":
+        return "這句話包含多張報價單，請只指定這次要操作的一張報價單編號，並重新說明要做的操作。這次沒有修改資料。"
     operation = node_input.get("operation")
     asks = [FIELD_LABELS[name] for name in node_input.get("missing", []) + node_input.get("invalid", [])]
     lines = [f"請提供{'、'.join(asks)}，我才能幫你{INTENT_LABELS.get(operation, '處理')}。"]
@@ -943,7 +1091,7 @@ root_agent = Workflow(
                 "off_topic": off_topic,
             },
         ),
-        (retrieve_knowledge, {"answer": answer_with_knowledge, "direct": respond}),
+        (retrieve_knowledge, {"answer": answer_with_knowledge, "rules": cite_sources, "direct": respond}),
         (answer_with_knowledge, cite_sources),
         (cite_sources, respond),
         (price_check, respond),

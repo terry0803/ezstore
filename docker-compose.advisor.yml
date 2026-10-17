@@ -16,6 +16,7 @@ services:
       GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-}
       GOOGLE_CLOUD_LOCATION: ${GOOGLE_CLOUD_LOCATION:-global}
       AGENT_MODEL: ${AGENT_MODEL:-gemini-3.8-flash}
+      MODEL_MAX_ATTEMPTS: ${MODEL_MAX_ATTEMPTS:-6}
       LOCAL_LLM_BASE: ${LOCAL_LLM_BASE:-http://host.docker.internal:18081/v1}
       # 只用 GET 讀資料；會改資料的動作經 A2A 交給報價單 Agent
       BACKEND_API: http://backend:8080/api/v1

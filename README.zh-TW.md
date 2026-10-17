@@ -151,23 +151,21 @@ swag --version            # swag version v1.x+
 cp .env.example .env      # 再填入 GEMINI_API_KEY，取得方式：https://aistudio.google.com/apikey
 ```
 
-**方式 A — 使用 GHCR 雲端預建 image（預設，免編譯）：**
+**啟動（從本機原始碼建置，含兩個 Agent）：**
 
 ```bash
-docker compose up -d
+docker compose -p ezstore -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.advisor.yml up -d --build
 ```
 
-**方式 B — 使用本地原始碼編譯：**
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
-```
+Windows 也可以用 `.\scripts\start-homework.ps1`（加 `-SkipBuild` 不重建，`-Action Status|Restart|Logs` 看狀態、重啟、看紀錄）。只打 `docker compose up -d` 會拉課程的 GHCR 映像，沒有這份作業的修改。改了 `.env` 要重新 `up -d`，單純 restart 不會讀新設定。
 
 **載入測試資料：**
 
 ```bash
-docker compose exec db psql -U ezstore -f /scripts/seed-test-data.sql
+docker compose -p ezstore exec db psql -U ezstore -f /scripts/seed-test-data.sql
 ```
+
+seed 會先 `TRUNCATE` 再寫入，資料回到初始的 12 張報價單、10 筆訂單。示範和評鑑會新增複製單和訂單，重跑前灌一次。
 
 | 服務 | 網址 |
 |------|------|
@@ -179,10 +177,11 @@ docker compose exec db psql -U ezstore -f /scripts/seed-test-data.sql
 
 **執行 E2E 測試（驗證部署是否正常）：**
 
-```bash
-docker compose exec db psql -U ezstore -f /scripts/seed-test-data.sql
-docker compose run --rm e2e
+```powershell
+.\scripts\test-e2e.ps1            # 加 -SkipBuild 重用已建好的測試映像
 ```
+
+這支腳本另開一套臨時的資料庫和服務（專案名 `ezstore-e2e-<隨機值>`），灌 seed、跑 UI 與 API 測試，結束後連同 volume 一起刪掉，不碰主服務的資料。macOS／Linux 用 `pwsh -File scripts/test-e2e.ps1`。
 
 ### 開發模式
 
@@ -218,10 +217,10 @@ cd backend
 go test ./... -v -cover
 ```
 
-**載入測試資料集**（冪等 — 可安全重複執行）：
+**載入測試資料集**（會先清空再寫入，重跑結果一樣）：
 
 ```bash
-docker compose exec db psql -U ezstore -f /scripts/seed-test-data.sql
+docker compose -p ezstore exec db psql -U ezstore -f /scripts/seed-test-data.sql
 ```
 
 測試資料包含：15 位客戶（5 VIP + 6 一般 + 4 新客戶）、20 個產品、12 張報價單（8 已發佈 + 4 草稿）、10 筆訂單（3 待處理 + 3 已確認 + 2 已完成 + 2 已取消）。
@@ -307,11 +306,14 @@ Workflow 圖（agent/quotation_agent/agent.py）：
 
 **環境變數：**
 
+預設模型照講義用 `gemini-3.8-flash`。測試時為了省額度，`.env` 設 `AGENT_MODEL=gemini-3.1-flash-lite`，這是帳號可用的模型裡最便宜的（`gemini-2.5-flash-lite` 對新帳號已停用）。Compose 讀根目錄的 `.env`，在 `agent/`、`advisor/` 直接跑讀各自的 `.env`。
+
 | 變數 | 預設 | 用途 |
 |------|------|------|
 | `GEMINI_API_KEY` | 無 | AI Studio key（Compose 讀根目錄 `.env`，本機開發讀 `agent/.env`） |
 | `GOOGLE_GENAI_USE_VERTEXAI`、`GOOGLE_CLOUD_PROJECT`、`GOOGLE_CLOUD_LOCATION` | 無、無、`global` | 改用 Vertex AI |
 | `AGENT_MODEL` | `gemini-3.8-flash` | `classify_intent` 用的模型。以 `openai/` 開頭（例如 `openai/qwen3.5-9b`）就改走 OpenAI 相容 API |
+| `MODEL_MAX_ATTEMPTS` | `6` | 每次呼叫 Gemini 最多試幾次，429 會退避重試；額度少的時候設成 1 |
 | `LOCAL_LLM_BASE` | Compose：`http://host.docker.internal:18081/v1`；本機：`http://127.0.0.1:18081/v1` | `openai/` 模型的 API 位址 |
 | `MCP_URL` | Compose：`http://mcp-server:8000/mcp`；本機：`http://localhost:8010/mcp` | MCP Server |
 | `FRONTEND_URL`、`ALLOW_ORIGINS` | `http://localhost:3000` | 工具回覆裡的連結、CORS |
@@ -321,8 +323,7 @@ Workflow 圖（agent/quotation_agent/agent.py）：
 
 ```bash
 # 整套系統；mcp-server 對本機開 8010，讓本機跑的 Agent 連得到
-docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
-docker compose exec db psql -U ezstore -f /scripts/seed-test-data.sql
+docker compose -p ezstore -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.advisor.yml up -d --build
 
 cd agent && cp .env.example .env    # 填 GEMINI_API_KEY，MCP_URL=http://localhost:8010/mcp
                                     # 或改走 Vertex AI：先 `gcloud auth application-default login`，再設 GOOGLE_GENAI_USE_VERTEXAI=true 與 GOOGLE_CLOUD_PROJECT
@@ -363,9 +364,10 @@ cd .. && python3 scripts/grading/grade_agent.py --suite scripts/grading/student-
 - `knowledge/ezstore/policies/` 的核准門檻是作業示範用的虛構規則，EZStore 本身沒有核准流程。
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.advisor.yml up -d --build
-cd advisor && uv run python scripts/a2a_demo.py   # 外部 client → 議價顧問 → 報價單 Agent（會改資料，先重灌 seed）
+docker compose -p ezstore -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.advisor.yml up -d --build
 ```
+
+A2A 示範：`cd advisor && uv run python scripts/a2a_demo.py`（外部 client → 議價顧問 → 報價單 Agent，會改資料，先重灌 seed）。
 
 ### 授權
 
@@ -522,9 +524,8 @@ DELETE /api/v1/orders/:id             → 軟刪除
 
 ```bash
 # 完整環境（Docker）
-docker compose up --build -d
-docker compose down -v                    # 停止並移除 volumes
-docker compose exec db psql -U ezstore -f /scripts/seed-test-data.sql
+docker compose -p ezstore -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.advisor.yml up -d --build
+docker compose -p ezstore -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.advisor.yml down  # 停止，保留資料庫 volume
 
 # 後端
 cd backend

@@ -1,0 +1,11 @@
+{
+  "checked_at": "2026-10-17T15:06:32.8293451+08:00",
+  "command": "agent/.venv/Scripts/python.exe -B final_offline_test_runner.py tests/unit tests/integration -q -p no:cacheprovider",
+  "exit_code": 0,
+  "passed": 115,
+  "failed": 0,
+  "seconds": 6.21,
+  "log": "agent-offline-tests.log",
+  "log_sha256": "6a10759bcfa89e050f3d0ac78aa6868b39b46a4d1ea89d17c725ec24cdc685d7",
+  "note": "Final actual offline rerun; process-wide socket/DNS guard and suite conftest enabled. No real model/API or database requests."
+}

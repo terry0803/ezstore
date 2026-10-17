@@ -93,7 +93,7 @@ export default function QuotationFormPage() {
 
   const totalPrice = computedItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
   const profitAmount = computedItems.reduce((sum, item) => {
-    if (item.unit_price && item.cost) {
+    if (item.unit_price !== undefined && item.cost !== undefined) {
       return sum + (item.unit_price - item.cost) * item.quantity;
     }
     return sum;
@@ -153,7 +153,7 @@ export default function QuotationFormPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">報價因子 *</label>
               <input
                 type="number"
-                step="0.01"
+                step="0.0001"
                 min={0}
                 value={pricingFactor}
                 onChange={e => setPricingFactor(Number(e.target.value))}

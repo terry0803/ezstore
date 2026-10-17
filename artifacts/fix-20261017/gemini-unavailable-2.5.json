@@ -1,0 +1,71 @@
+{
+  "selected_model": "gemini-2.5-flash-lite",
+  "complete": false,
+  "isolated_backend": "http://127.0.0.1:58080/api/v1",
+  "call_limit": 4,
+  "model_call_count": 1,
+  "generation_http_attempt_count": 1,
+  "catalog_http_attempt_count": 2,
+  "configured_retry_attempts": 1,
+  "automatic_continuation": false,
+  "calls": [
+    {
+      "requested_model": "gemini-2.5-flash-lite",
+      "error_type": "ClientError"
+    }
+  ],
+  "http_attempts": [
+    {
+      "kind": "catalog",
+      "attempt": 1,
+      "method": "GET",
+      "elapsed_ms": 110,
+      "status": 200
+    },
+    {
+      "kind": "catalog",
+      "attempt": 2,
+      "method": "GET",
+      "elapsed_ms": 109,
+      "status": 200
+    },
+    {
+      "kind": "generation",
+      "attempt": 1,
+      "method": "POST",
+      "requested_model": "gemini-2.5-flash-lite",
+      "elapsed_ms": 266,
+      "status": 404
+    }
+  ],
+  "database_checks": [
+    {
+      "case": "read_via_real_mcp",
+      "checked": true,
+      "unchanged": true,
+      "before_sha256": "4a1972240edfaee9233d045883d453038aa9cd9a0449a34be9d152ba9d0acd53",
+      "after_sha256": "4a1972240edfaee9233d045883d453038aa9cd9a0449a34be9d152ba9d0acd53",
+      "counts_before": {
+        "quotes": 18,
+        "orders": 12
+      },
+      "counts_after": {
+        "quotes": 18,
+        "orders": 12
+      },
+      "changed_ids": {
+        "quotes": [],
+        "orders": []
+      }
+    }
+  ],
+  "results": [
+    {
+      "case": "incomplete",
+      "passed": false,
+      "error_type": "RuntimeError"
+    }
+  ],
+  "responses": [],
+  "cleanup_errors": []
+}

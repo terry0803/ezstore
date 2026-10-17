@@ -13,6 +13,7 @@
 
 from __future__ import annotations
 
+import math
 import os
 import re
 from typing import Any, Literal
@@ -97,7 +98,8 @@ REFUSAL_TEXT = (
     "修改報價因子、修改報價單總價、報價單轉訂單。"
 )
 
-QUOTATION_NUMBER_RE = re.compile(r"QT-\d{8}-\d{3,}", re.IGNORECASE)
+QUOTATION_NUMBER_RE = re.compile(r"(?<![A-Za-z0-9_-])QT-\d{8}-\d{3,}(?![A-Za-z0-9_-])", re.IGNORECASE)
+QUOTATION_TOKEN_RE = re.compile(r"[A-Za-z0-9_-]*QT-[A-Za-z0-9_-]*", re.IGNORECASE)
 
 # 程式層的拒答規則：分類器說是報價單操作也一樣擋下
 _INJECTION_PATTERNS = (
@@ -113,8 +115,8 @@ _INJECTION_PATTERNS = (
     "jailbreak",
 )
 _OUT_OF_SCOPE_PATTERNS = re.compile(
-    r"(新增|建立|修改|更新|刪除|移除|編輯|改).{0,6}(客戶|產品|商品)"
-    r"|(客戶|產品|商品).{0,6}(新增|建立|修改|更新|刪除|移除|編輯)"
+    r"(新增|建立|修改|更新|刪除|移除|編輯|改)[^，。；;,\n]{0,6}(客戶|產品|商品)"
+    r"|(客戶|產品|商品)[^，。；;,\n]{0,6}(新增|建立|修改|更新|刪除|移除|編輯)"
 )
 
 
@@ -172,6 +174,13 @@ def _uses_local_model() -> bool:
     return MODEL.startswith("openai/")
 
 
+def _model_max_attempts() -> int:
+    try:
+        return max(1, int(os.getenv("MODEL_MAX_ATTEMPTS", "6")))
+    except ValueError as exc:
+        raise ValueError("MODEL_MAX_ATTEMPTS 必須是整數") from exc
+
+
 def _model():
     if _uses_local_model():
         from google.adk.models.lite_llm import LiteLlm
@@ -186,7 +195,7 @@ def _model():
         model=MODEL,
         # 503（模型忙碌）、429 時以指數退避重試
         retry_options=types.HttpRetryOptions(
-            attempts=6, initial_delay=2.0, max_delay=30.0, exp_base=2.0
+            attempts=_model_max_attempts(), initial_delay=2.0, max_delay=30.0, exp_base=2.0
         ),
     )
 
@@ -232,7 +241,10 @@ def _is_rule_refusal(text: str) -> bool:
     lowered = text.lower()
     if any(p in lowered for p in _INJECTION_PATTERNS):
         return True
-    if _OUT_OF_SCOPE_PATTERNS.search(text):
+    # 「修改客戶的報價單」修改的是報價單，不能當成客戶 CRUD。
+    # 只移除緊鄰的所有格；別把同一句真正的「刪除客戶」一起放行。
+    crud_text = re.sub(r"(?:客戶|產品|商品)(?:[「『][^」』\n]{1,50}[」』])?的?報價單", "報價單", text)
+    if _OUT_OF_SCOPE_PATTERNS.search(crud_text):
         return True
     return False
 
@@ -244,7 +256,192 @@ def _clean_number(value: Any) -> float | None:
         number = float(value)
     except (TypeError, ValueError):
         return None
-    return number
+    return number if math.isfinite(number) else None
+
+
+def _chinese_number(text: str) -> float | None:
+    """Parse explicit Chinese place values; ambiguous shorthand is not guessed."""
+    sign = -1 if text.startswith(("-", "負", "负")) else 1
+    text = text.lstrip("+-負负")
+    digits = {c: n for n, chars in enumerate(("零〇", "一壹", "二兩貳", "三參", "四肆", "五伍", "六陸", "七柒", "八捌", "九玖")) for c in chars}
+    units = {"十": 10, "拾": 10, "百": 100, "佰": 100, "千": 1000, "仟": 1000}
+    large = {"萬": 10000, "万": 10000, "億": 100000000, "亿": 100000000}
+    multiplier = 1
+    if any(dot in text for dot in ("點", "点")) and text[-1:] in {**units, **large}:
+        multiplier = {**units, **large}[text[-1]]
+        text = text[:-1]
+    integer, dot, fraction = text.replace("點", ".").replace("点", ".").partition(".")
+    if not integer or (dot and (not fraction or any(c not in digits for c in fraction))):
+        return None
+    if all(c in digits for c in integer):
+        value = float("".join(str(digits[c]) for c in integer))
+    else:
+        total = section = current = 0
+        small_limit, large_limit, last_unit = 10000, 10**12, 1
+        zero_after_unit = False
+        for char in integer:
+            if char in digits:
+                if current and digits[char]:
+                    return None
+                current = digits[char]
+                zero_after_unit = zero_after_unit or current == 0
+            elif char in units:
+                unit = units[char]
+                if unit >= small_limit:
+                    return None
+                section += (current or 1) * unit
+                current, small_limit, last_unit, zero_after_unit = 0, unit, unit, False
+            elif char in large:
+                unit = large[char]
+                if unit >= large_limit or section + current == 0:
+                    return None
+                total += (section + current) * unit
+                section, current, small_limit = 0, 0, 10000
+                large_limit, last_unit, zero_after_unit = unit, unit, False
+            else:
+                return None
+        # 一萬二/二百五 can mean different amounts. Require 二千/零二 etc.
+        if current and last_unit >= 100 and not zero_after_unit:
+            return None
+        value = float(total + section + current)
+    if dot:
+        value += float("0." + "".join(str(digits[c]) for c in fraction))
+    return _clean_number(sign * value * multiplier)
+
+
+_NUMERIC_CHARS = "零〇一壹二兩貳三參四肆五伍六陸七柒八捌九玖十拾百佰千仟萬万億亿點点"
+_NUMERIC_TOKEN_RE = re.compile(
+    rf"(?<![A-Za-z0-9_.])[-+負负]?\s*(?:\d|[{_NUMERIC_CHARS}])[0-9{_NUMERIC_CHARS},.eE+\-]*"
+)
+_FIELD_RE = re.compile(
+    r"(?P<factor>報價因子|因子|pricing[ _-]*factor|\bfactor\b)"
+    r"|(?P<total>總價|總額|總金額|目標(?:總價|金額|價格)?|\btarget(?:\s+total)?(?:\s+price)?\b|\btotal(?:\s+price)?\b)"
+    r"|(?P<other>單價|定價|成本|數量|件數|日期|\bquantity\b|\bunit[ _-]*price\b)", re.IGNORECASE
+)
+_TARGET_RE = re.compile(
+    r"(?:改(?:成|為|到)|調(?:整)?(?:成|為|到)|設(?:定)?(?:成|為|到)|變成|壓到|降到|提高到"
+    r"|\bto\b|\bset(?:\s+to)?\b|為|是|[:：=])\s*(?:NT\$|[$￥¥])?\s*$", re.IGNORECASE
+)
+_OLD_RE = re.compile(r"(?:從|由|原本|原來|目前|現行|舊值|\bfrom\b)\s*$", re.IGNORECASE)
+_NON_TARGET_SUFFIX_RE = re.compile(
+    r"\s*(?:年|月|日|號|%|％|折|件|台|個|人|天|週|周|次|箱|張|份|套|組|公斤|公克|公尺|\bkg\b|\bpcs\b)", re.IGNORECASE
+)
+
+
+def _parse_number_token(token: str) -> float | None:
+    token = token.strip().rstrip(",")
+    if not token or len(token) > 128:
+        return None
+    if not re.search(r"\d", token):
+        return _chinese_number(token)
+    sign = -1 if token.startswith(("-", "負", "负")) else 1
+    token = token.lstrip("+-負负")
+    scalar = r"(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?:[eE][-+]?\d+)?"
+    scales = {"百": 100, "佰": 100, "千": 1000, "仟": 1000, "萬": 10000, "万": 10000, "億": 100000000, "亿": 100000000}
+    pieces = list(re.finditer(rf"({scalar})([百佰千仟萬万億亿]?)", token))
+    if not pieces or "".join(match.group(0) for match in pieces) != token:
+        return None
+    result, previous_scale = 0.0, float("inf")
+    for match in pieces:
+        unit = match.group(2)
+        scale = scales.get(unit, 1)
+        # 18萬5 is ambiguous; 18萬5千 is explicit. Unit order must decrease.
+        if scale >= previous_scale or (not unit and len(pieces) > 1):
+            return None
+        value = _clean_number(match.group(1).replace(",", ""))
+        if value is None:
+            return None
+        result += value * scale
+        previous_scale = scale
+    return _clean_number(sign * result)
+
+
+def _numeric_target(text: str, field: str, allow_bare: bool = False) -> tuple[float | None, bool]:
+    """Return one field-specific target and whether this turn blocks history fallback."""
+    text = text.translate(str.maketrans({"−": "-", "－": "-", "＋": "+", "﹣": "-"}))
+    # Users commonly type a visual separator before a magnitude unit ("18 萬").
+    # Join only that boundary; never collapse two independent bare numbers.
+    text = re.sub(rf"(?<=[0-9{_NUMERIC_CHARS}])\s+(?=[百佰千仟萬万億亿])", "", text)
+    text = QUOTATION_TOKEN_RE.sub(" ", text)
+    # Dates are never money or factors, even if the classifier drops punctuation.
+    text = re.sub(r"\d{4}[-/.]\d{1,2}[-/.]\d{1,2}", " ", text)
+    expected = "factor" if field == "new_pricing_factor" else "total"
+    labels = list(_FIELD_RE.finditer(text))
+    relevant_label = any(label.lastgroup == expected for label in labels)
+    candidates = []
+    numeric_seen = False
+    for match in _NUMERIC_TOKEN_RE.finditer(text):
+        token = match.group(0).strip()
+        prefix, suffix = text[:match.start()], text[match.end():]
+        preceding = [label for label in labels if label.end() <= match.start()]
+        owner = preceding[-1].lastgroup if preceding else None
+        hinted = bool(_TARGET_RE.search(prefix))
+        old = bool(_OLD_RE.search(prefix))
+        # Chinese numerals inside ordinary words (一樣/另一張) are not answers.
+        bare = not text[:match.start()].strip() and not suffix.strip(" 。.，,元塊圓")
+        if not (re.search(r"\d", token) or hinted or owner or bare):
+            continue
+        numeric_seen = True
+        if (owner and owner != expected) or _NON_TARGET_SUFFIX_RE.match(suffix):
+            continue
+        if (owner == expected or hinted or allow_bare) and re.search(
+            r"(?:調降|降低|降|減少|減|增加|加|便宜|折讓|扣|少|最多|最少|至少|至多|不超過|低於|高於|小於|大於|不要|[<>≤≥])\s*$", prefix
+        ):
+            return None, True  # Relative changes and bounds are not an exact target.
+        if re.match(r"[A-Za-z0-9_.]", suffix):
+            continue
+        if expected == "factor" and re.match(r"\s*[元塊圓]", suffix):
+            continue
+        if not owner and not hinted and not (allow_bare and bare):
+            continue
+        candidates.append({"value": _parse_number_token(token), "target": hinted and not old,
+                           "old": old, "start": match.start(), "end": match.end()})
+    signal = numeric_seen or relevant_label or bool(_TARGET_RE.search(text))
+    if not candidates:
+        return None, signal
+    # Alternatives/ranges do not identify one target, even if the first has 改成.
+    for left, right in zip(candidates, candidates[1:]):
+        if re.search(r"或|還是|、|~|～|至", text[left["end"]:right["start"]]):
+            return None, True
+    targets = [row for row in candidates if row["target"]]
+    if len(targets) == 1:
+        target = targets[0]
+        for row in candidates:
+            if row is target or row["old"]:
+                continue
+            # 「8000 改成 9000」 identifies the later value; an unexplained
+            # additional value after the target still requires clarification.
+            if row["end"] <= target["start"] and _TARGET_RE.search(text[row["end"]:target["start"]]):
+                continue
+            return None, True
+    # A first-turn write needs an explicit target cue such as 改成/壓到/to.
+    # A pending clarification may accept a concise field/value answer.
+    if targets:
+        selected = targets
+    elif allow_bare:
+        selected = [row for row in candidates if not row["old"]]
+    else:
+        return None, True
+    if len(selected) != 1:
+        return None, True
+    return selected[0]["value"], True
+
+
+def _ground_number(value: Any, text: str, field: str, carried: Any = None,
+                   clarify_source: str = "", allow_bare: bool = False) -> float | None:
+    parsed, current_signal = _numeric_target(text, field, allow_bare)
+    if not current_signal:
+        parsed = _clean_number(carried)
+        if parsed is None and clarify_source:
+            parsed, _ = _numeric_target(clarify_source, field)
+    if parsed is None:
+        return None
+    # The field-specific raw parser is authoritative once it identifies one
+    # unambiguous target.  This prevents a model that reads 「18 萬」 as 18, or
+    # selects the old value in 「從 0.85 改成 0.9」, from forcing a needless
+    # clarification or writing the wrong number. Ambiguous raw text returned
+    # above as None and still requires clarification.
+    return parsed
 
 
 def _format_number(value: float) -> str:
@@ -261,7 +458,12 @@ async def _call_mcp_tool(ctx: Context, tool_name: str, args: dict[str, Any]) -> 
     if tool is None:
         return f"報價單系統沒有提供 {tool_name} 工具，請聯絡管理員。"
 
-    result = await tool.run_async(args=args, tool_context=ctx)
+    try:
+        result = await tool.run_async(args=args, tool_context=ctx)
+    except Exception:
+        if tool_name in ("duplicate_quotation", "update_pricing_factor", "adjust_total_price", "convert_to_order"):
+            return "操作中斷，尚無法確認是否已完成。請先查詢報價單或訂單確認結果，再決定是否重試，避免重複建立資料。"
+        return "操作失敗：報價單系統暫時無法完成請求，請稍後再試。"
     if isinstance(result, dict):
         if result.get("error"):
             return f"操作失敗：{result['error']}"
@@ -272,6 +474,8 @@ async def _call_mcp_tool(ctx: Context, tool_name: str, args: dict[str, Any]) -> 
         ]
         text = "\n".join(t for t in texts if t).strip()
         if result.get("isError"):
+            # MCP SDK 會在錯誤前面加英文前綴，使用者只需要看到中文原因
+            text = re.sub(r"^Error executing tool \w+:\s*", "", text)
             return f"操作失敗：{text or '未知錯誤'}"
         return text or "操作完成，但系統沒有回傳內容。"
     return str(result)
@@ -375,25 +579,36 @@ def route(ctx: Context, node_input: Any):
     elif operation == "off_topic" or operation not in OPERATIONS:
         return Event(output=REFUSAL_TEXT, route="off_topic", state={"pending_intent": None})
 
+    if "quotation_number" in REQUIRED_FIELDS[operation] and any(
+        not QUOTATION_NUMBER_RE.fullmatch(token) for token in QUOTATION_TOKEN_RE.findall(text)
+    ):
+        return Event(
+            output={"operation": operation, "missing": ["quotation_number"], "fields": {}},
+            route="clarify",
+            state={"pending_intent": None, "clarify_source_text": ""},
+        )
+
     # 2. 合併欄位：本輪抽到的優先，其次是待補操作已經有的
     carry = pending if pending.get("intent") == operation else {}
+    clarify_source = ctx.state.get("clarify_source_text", "") or ""
+    source_text = text + "\n" + clarify_source
+    customer = (intent.customer_name or "").strip()
     fields: dict[str, Any] = {
-        "quotation_number": intent.quotation_number or carry.get("quotation_number"),
-        "customer_name": intent.customer_name or carry.get("customer_name"),
-        "new_pricing_factor": _clean_number(intent.new_pricing_factor)
-        if intent.new_pricing_factor is not None
-        else _clean_number(carry.get("new_pricing_factor")),
-        "target_total_price": _clean_number(intent.target_total_price)
-        if intent.target_total_price is not None
-        else _clean_number(carry.get("target_total_price")),
+        "quotation_number": carry.get("quotation_number"),
+        "customer_name": customer if customer and customer in source_text else (carry.get("customer_name") if not customer or customer == carry.get("customer_name") else None),
+        "new_pricing_factor": _ground_number(intent.new_pricing_factor, text, "new_pricing_factor",
+                                             carry.get("new_pricing_factor"), clarify_source, bool(carry or clarify_source)),
+        "target_total_price": _ground_number(intent.target_total_price, text, "target_total_price",
+                                            carry.get("target_total_price"), clarify_source, bool(carry or clarify_source)),
     }
     # 報價單編號以使用者原文為準（程式抽取，不靠 LLM）；這一句沒有時，
     # 若上一輪是追問，再看上一輪使用者的原文
-    match = QUOTATION_NUMBER_RE.search(text)
-    if not match and not carry:
-        match = QUOTATION_NUMBER_RE.search(ctx.state.get("clarify_source_text", "") or "")
-    if match:
-        fields["quotation_number"] = match.group(0)
+    numbers = set(number.upper() for number in QUOTATION_NUMBER_RE.findall(text))
+    if not numbers and not carry:
+        numbers = set(number.upper() for number in QUOTATION_NUMBER_RE.findall(ctx.state.get("clarify_source_text", "") or ""))
+    if numbers:
+        # 多張單不能靠第一個出現位置決定；先追問，再保留使用者單獨指定的那張。
+        fields["quotation_number"] = next(iter(numbers)) if len(numbers) == 1 else None
     if fields["quotation_number"]:
         fields["quotation_number"] = str(fields["quotation_number"]).strip().upper()
     if fields["customer_name"]:
@@ -406,7 +621,7 @@ def route(ctx: Context, node_input: Any):
         value = fields.get(name)
         if value in (None, ""):
             missing.append(name)
-        elif name in ("new_pricing_factor", "target_total_price") and value <= 0:
+        elif name in ("new_pricing_factor", "target_total_price") and (not math.isfinite(value) or value <= 0):
             invalid.append(name)
             fields[name] = None
 

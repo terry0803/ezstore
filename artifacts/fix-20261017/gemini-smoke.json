@@ -1,0 +1,162 @@
+{
+  "selected_model": "gemini-3.5-flash-lite",
+  "complete": true,
+  "isolated_backend": "http://127.0.0.1:58080/api/v1",
+  "call_limit": 3,
+  "expected_cases": 2,
+  "model_call_count": 3,
+  "generation_http_attempt_count": 3,
+  "catalog_http_attempt_count": 2,
+  "configured_retry_attempts": 1,
+  "automatic_continuation": false,
+  "calls": [
+    {
+      "requested_model": "gemini-3.5-flash-lite",
+      "usage": {
+        "candidates_token_count": 68,
+        "prompt_token_count": 456,
+        "prompt_tokens_details": [
+          {
+            "modality": "TEXT",
+            "token_count": 456
+          }
+        ],
+        "total_token_count": 524
+      },
+      "returned_model_version": "gemini-3.5-flash-lite"
+    },
+    {
+      "requested_model": "gemini-3.5-flash-lite",
+      "usage": {
+        "candidates_token_count": 43,
+        "prompt_token_count": 1179,
+        "prompt_tokens_details": [
+          {
+            "modality": "TEXT",
+            "token_count": 1179
+          }
+        ],
+        "total_token_count": 1222
+      },
+      "returned_model_version": "gemini-3.5-flash-lite"
+    },
+    {
+      "requested_model": "gemini-3.5-flash-lite",
+      "usage": {
+        "candidates_token_count": 17,
+        "prompt_token_count": 1352,
+        "prompt_tokens_details": [
+          {
+            "modality": "TEXT",
+            "token_count": 1352
+          }
+        ],
+        "total_token_count": 1369
+      },
+      "returned_model_version": "gemini-3.5-flash-lite"
+    }
+  ],
+  "http_attempts": [
+    {
+      "kind": "catalog",
+      "attempt": 1,
+      "method": "GET",
+      "elapsed_ms": 110,
+      "status": 200
+    },
+    {
+      "kind": "catalog",
+      "attempt": 2,
+      "method": "GET",
+      "elapsed_ms": 62,
+      "status": 200
+    },
+    {
+      "kind": "generation",
+      "attempt": 1,
+      "method": "POST",
+      "requested_model": "gemini-3.5-flash-lite",
+      "elapsed_ms": 1672,
+      "status": 200
+    },
+    {
+      "kind": "generation",
+      "attempt": 2,
+      "method": "POST",
+      "requested_model": "gemini-3.5-flash-lite",
+      "elapsed_ms": 1282,
+      "status": 200
+    },
+    {
+      "kind": "generation",
+      "attempt": 3,
+      "method": "POST",
+      "requested_model": "gemini-3.5-flash-lite",
+      "elapsed_ms": 1141,
+      "status": 200
+    }
+  ],
+  "database_checks": [
+    {
+      "case": "read_via_real_mcp",
+      "checked": true,
+      "unchanged": true,
+      "before_sha256": "4a1972240edfaee9233d045883d453038aa9cd9a0449a34be9d152ba9d0acd53",
+      "after_sha256": "4a1972240edfaee9233d045883d453038aa9cd9a0449a34be9d152ba9d0acd53",
+      "counts_before": {
+        "quotes": 18,
+        "orders": 12
+      },
+      "counts_after": {
+        "quotes": 18,
+        "orders": 12
+      },
+      "changed_ids": {
+        "quotes": [],
+        "orders": []
+      }
+    },
+    {
+      "case": "grounded_policy",
+      "checked": true,
+      "unchanged": true,
+      "before_sha256": "4a1972240edfaee9233d045883d453038aa9cd9a0449a34be9d152ba9d0acd53",
+      "after_sha256": "4a1972240edfaee9233d045883d453038aa9cd9a0449a34be9d152ba9d0acd53",
+      "counts_before": {
+        "quotes": 18,
+        "orders": 12
+      },
+      "counts_after": {
+        "quotes": 18,
+        "orders": 12
+      },
+      "changed_ids": {
+        "quotes": [],
+        "orders": []
+      }
+    }
+  ],
+  "results": [
+    {
+      "case": "read_via_real_mcp",
+      "passed": true
+    },
+    {
+      "case": "grounded_policy",
+      "passed": true
+    }
+  ],
+  "responses": [
+    {
+      "app": "quotation_agent",
+      "prompt": "查詢報價單 QT-20260330-001",
+      "reply": "報價單編號: QT-20260330-001\n客戶: 魔女宅急便股份有限公司\n客戶等級: new\n報價因子: 0.95\n總價: 6175\n利潤: 2375 (利潤率: 0.3846)\n狀態: draft\n備註: 測試用草稿 - 可供刪除測試\n品項:\n  1. A4影印紙 80磅 (5包/箱) — 單價: 617.5, 數量: 10, 小計: 6175\n系統連結: http://localhost:53000/quotations/12"
+    },
+    {
+      "app": "pricing_advisor",
+      "prompt": "毛利率要多少以上業務才能自己改價？",
+      "reply": "知識庫的規則：\n- 改價核准層級（2026 年版）：毛利率 25% 以上，業務可直接調整；15% 以上、未滿 25%，需業務主管核准；5% 以上、未滿 15%，需總經理核准；未滿 5%，不可報價。\n- 改價影響試算：給報價單編號與目標總價，算出要用的報價因子、改價後的總價、利潤與毛利率，也標出目標是不是超出可調範圍。\n\n依據（OKF 知識庫）：\n- policies/discount-approval：改價核准層級（2026 年版）（未驗證，作業示範用的虛構規則）\n- computations/price-change-impact：改價影響試算（機器驗證，process:okf-verify 2026-10-17）"
+    }
+  ],
+  "cleanup_errors": []
+}
