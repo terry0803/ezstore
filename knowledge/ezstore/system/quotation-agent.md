@@ -7,15 +7,15 @@ tags: [a2a, agent, quotation]
 a2a_skills: [get_quotation, list_customer_quotations, duplicate_quotation, update_pricing_factor, adjust_total_price, convert_to_order]
 generated: { by: claude-code/claude-opus-5-5, at: 2026-10-16T17:10:00Z }
 verified:
-  - { by: process:okf-verify, at: 2026-10-17T12:32:06Z }
+  - { by: process:okf-verify, at: 2026-10-17T17:30:20Z }
 status: stable
 stale_after: 2027-04-01T00:00:00Z
 sources:
   - id: quotation-agent-code
-    resource: https://github.com/terry0803/ezstore/tree/167c36e96b6022db0cbafecf0715e169a0477177/agent/quotation_agent
+    resource: https://github.com/terry0803/ezstore/tree/9ce9565889bae1335049e482e6d646472a8358de/agent/quotation_agent
     title: 報價單 Agent 原始碼（agent.py、fast_api_app.py、app_utils/a2a.py）
     author: claude-code/claude-opus-5-5
-    last_modified: 2026-10-16T18:04:52Z
+    last_modified: 2026-10-17T17:29:41Z
 ---
 
 # 位置

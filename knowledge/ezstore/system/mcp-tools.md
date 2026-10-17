@@ -9,7 +9,7 @@ bisect: { low: 0.01, high: 5.0, max_iterations: 20, tolerance: 0.01 }
 max_pricing_factor: 9.9999
 generated: { by: claude-code/claude-opus-5-5, at: 2026-10-16T17:10:00Z }
 verified:
-  - { by: process:okf-verify, at: 2026-10-17T12:32:06Z }
+  - { by: process:okf-verify, at: 2026-10-17T17:30:20Z }
 status: stable
 stale_after: 2027-04-01T00:00:00Z
 sources:
@@ -18,6 +18,11 @@ sources:
     title: MCP Server server.py
     author: team:ezstore-workshop
     last_modified: 2026-10-06T03:58:26Z
+  - id: mcp-server-fork
+    resource: https://github.com/terry0803/ezstore/blob/9ce9565889bae1335049e482e6d646472a8358de/mcp_server/server.py
+    title: 本作業 fork 的 server.py（報價因子範圍檢查）
+    author: claude-code/claude-opus-5-5
+    last_modified: 2026-10-17T17:29:41Z
 ---
 
 # 工具
@@ -38,10 +43,11 @@ Streamable HTTP，Compose 內部 `http://mcp-server:8000/mcp`，對本機開 `ht
 - 會改資料的工具都先複製，改的是副本，原單不動，回覆會寫「原始報價單：…（未修改）」。[^mcp-server]
 - 每則回覆附純文字連結，例如 `http://localhost:3000/quotations/12`、`http://localhost:3000/orders/11`。[^mcp-server]
 - 報價因子與目標總價要是大於 0 的有限數字，否則回「報價因子必須是大於 0 的有限數字」「目標總價必須是大於 0 的有限數字」。找不到報價單回「找不到報價單編號 …」。[^mcp-server]
-- 後端的報價因子欄位是 decimal(5,4)。`update_pricing_factor` 把因子四捨五入到小數 4 位，超過 9.9999 在複製之前就回錯誤，不會留下多的草稿；後端也會擋。
+- 後端的報價因子欄位是 decimal(5,4)。`update_pricing_factor` 把因子四捨五入到小數 4 位，超過 9.9999 在複製之前就回錯誤，不會留下多的草稿；後端也會擋。[^mcp-server-fork]
 
 # 改總價的二分法
 
 `adjust_total_price` 在報價因子 0.01 到 5.0 之間二分搜尋，每次把因子取到小數 4 位、寫回副本看總價，最多 20 次，和目標差不到 0.01 就停。[^mcp-server] 20 次後還沒到，回覆會加一句「注意: 已達最大迭代次數」。所以總價最高只能到定價合計 × 5.0，最低是定價合計 × 0.01。
 
 [^mcp-server]: MCP Server server.py
+[^mcp-server-fork]: 本作業 fork 的 server.py（報價因子範圍檢查）
