@@ -42,6 +42,11 @@ ezstore/
 │   ├── quotation_agent/        #   agent.py (Workflow, Intent, nodes), fast_api_app.py (ADK + A2A routes)
 │   ├── tests/                  #   unit / integration (offline) and eval datasets + metrics
 │   └── Dockerfile, pyproject.toml, uv.lock
+├── advisor/                    # Pricing advisor (second agent, calls the quotation agent over A2A); see advisor/README.md
+│   ├── pricing_advisor/        #   agent.py, okf.py (bundle reader), policies.py, computation.py, a2a_client.py, okf_cli.py
+│   └── tests/, scripts/        #   offline tests; demo dialogue and A2A demo
+├── knowledge/ezstore/          # OKF v0.2 bundle: system, policies, computations, playbooks, glossary, references
+├── docker-compose.advisor.yml  # Adds the advisor service (published on :8502)
 ├── mcp_server/
 │   ├── Dockerfile
 │   ├── pyproject.toml           # mcp>=2.2, httpx (+ uv.lock)
@@ -342,6 +347,26 @@ The four metrics in `agent/tests/eval/eval_config.yaml` (`custom_response_qualit
 
 Trustworthiness evaluation labs for learners: [eval-lab-quick.md](eval-lab-quick.md) (25 min, in class) and [eval-lab.md](eval-lab.md) (60–90 min, full version).
 
+### Second Agent: Pricing Advisor (A2A + OKF knowledge)
+
+`advisor/` adds a second agent (app name `pricing_advisor`) for sales staff. When a customer asks for a lower price or wants an order, it reads the company rules in the OKF knowledge bundle `knowledge/ezstore/`, runs the bundle's sanctioned computation to get the new margin, decides whether a manager has to approve, and only then hands the change to the quotation agent over A2A. Design and usage: [advisor/README.md](advisor/README.md).
+
+```
+Sales → ADK web UI (:8502/dev-ui) or an A2A client
+        → Pricing advisor ──reads──→ OKF bundle knowledge/ezstore
+             │  └─ GET ──→ Backend REST API
+             └─ A2A (JSON-RPC) ──→ Quotation agent (/a2a/quotation_agent) ── MCP ──→ Backend
+```
+
+- **A2A**: both agents serve A2A from `fast_api_app.py`; each agent card lists its skills (one per operation for the quotation agent). A2A replies carry only the `respond` node's text, the same text the Chat UI shows. After a change, the advisor re-reads the result from the backend to check it.
+- **OKF**: the bundle follows Open Knowledge Format v0.2 with 17 concepts (system facts, pricing and order rules, an Attested Computation, a negotiation playbook, glossary). `uv run okf validate` checks conformance, `uv run okf verify` checks system facts against the source code and the running system and records `process:okf-verify`, `uv run okf viz` writes the graph viewer `knowledge/ezstore/viz.html`.
+- The approval thresholds in `knowledge/ezstore/policies/` are demo rules made up for this homework; EZStore itself has no approval process.
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.advisor.yml up -d --build
+cd advisor && uv run python scripts/a2a_demo.py   # external client → advisor → quotation agent (changes data; reseed first)
+```
+
 ### License
 
 This project is licensed under the [MIT License](LICENSE).
@@ -402,6 +427,9 @@ HTTP Request → Handler (Gin) → Service (business logic) → Repository (GORM
 | Agent API client | `frontend/src/api/agentApi.ts` |
 | Docker orchestration | `docker-compose.yml` |
 | Test dataset | `scripts/seed-test-data.sql` |
+| Pricing advisor workflow | `advisor/pricing_advisor/agent.py` |
+| OKF knowledge bundle | `knowledge/ezstore/` (tools: `advisor/pricing_advisor/okf_cli.py`) |
+| Price-change computation (Attested Computation) | `knowledge/ezstore/computations/price-change-impact.md`, `references/computations/price_change_impact.py` |
 
 ### Database Schema Summary
 

@@ -1,0 +1,61 @@
+"""依知識庫規則判斷改價與轉訂單；已作廢、已過期的規則不拿來判斷。"""
+
+import pytest
+
+from pricing_advisor.computation import run_price_change_impact
+from pricing_advisor.okf import Bundle, parse_time
+from pricing_advisor.policies import evaluate_order_conversion, evaluate_price_change
+
+
+async def _decision(bundle, backend, number, target, now=None):
+    receipt = await run_price_change_impact(bundle, backend, number, target)
+    return evaluate_price_change(bundle, receipt["result"], now=now)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "target, expected",
+    [(200000, "none"), (180000, "sales_manager"), (160000, "general_manager"), (150000, "forbidden"), (140000, "forbidden")],
+)
+async def test_margin_tiers(bundle_path, fake_backend, target, expected):
+    decision = await _decision(Bundle(bundle_path), fake_backend, "QT-20260325-001", target)
+    assert decision.approval == expected
+
+
+@pytest.mark.asyncio
+async def test_deprecated_and_stale_rules_are_skipped(bundle_path, fake_backend):
+    decision = await _decision(Bundle(bundle_path), fake_backend, "QT-20260325-001", 180000)
+    skipped = dict(decision.skipped)
+    assert skipped["policies/discount-approval-2025"] == "已作廢"
+    assert "過期" in skipped["policies/promo-2026q3"]
+    assert {v.concept_id for v in decision.verdicts} == {"policies/discount-approval", "policies/pricing-factor-floor"}
+
+
+@pytest.mark.asyncio
+async def test_factor_floor_and_promo(bundle_path, fake_backend):
+    bundle = Bundle(bundle_path)
+    # 10 月：促銷已過期，new 下限 0.90，因子 0.8636 要主管核准（毛利率 34.87% 夠）
+    october = await _decision(bundle, fake_backend, "QT-20260328-001", 76000)
+    assert october.approval == "sales_manager"
+    # 8 月：促銷還有效，下限暫時是 0.85
+    august = await _decision(bundle, fake_backend, "QT-20260328-001", 76000, now=parse_time("2026-08-01T00:00:00Z"))
+    assert august.approval == "none"
+
+
+def test_order_conversion_rules(bundle_path, snapshot):
+    bundle = Bundle(bundle_path)
+    quotations, orders = snapshot["quotations"], snapshot["orders_by_customer"]
+
+    published = quotations["QT-20260301-001"]
+    assert evaluate_order_conversion(bundle, published, orders[str(published["customer_id"])]).allowed
+
+    draft = quotations["QT-20260325-001"]
+    decision = evaluate_order_conversion(bundle, draft, [])
+    assert not decision.allowed and "draft" in decision.reasons[0]
+
+    converted = quotations["QT-20260115-001"]
+    decision = evaluate_order_conversion(bundle, converted, orders[str(converted["customer_id"])])
+    assert not decision.allowed and decision.existing_orders == ["ORD-20260118-001（completed）"]
+
+    cancelled = [{**orders[str(converted["customer_id"])][0], "status": "cancelled"}]
+    assert evaluate_order_conversion(bundle, converted, cancelled).allowed

@@ -42,6 +42,11 @@ ezstore/
 │   ├── quotation_agent/        #   agent.py（Workflow、Intent、各節點）、fast_api_app.py（ADK 與 A2A 路由）
 │   ├── tests/                  #   unit／integration（離線）與 eval 題庫、指標
 │   └── Dockerfile、pyproject.toml、uv.lock
+├── advisor/                    # 議價顧問 Agent（第二個 Agent，A2A 呼叫報價單 Agent），說明見 advisor/README.md
+│   ├── pricing_advisor/        #   agent.py、okf.py（讀知識庫）、policies.py、computation.py、a2a_client.py、okf_cli.py
+│   └── tests/、scripts/        #   離線測試；示範對話與 A2A 示範
+├── knowledge/ezstore/          # OKF v0.2 知識庫：system、policies、computations、playbooks、glossary、references
+├── docker-compose.advisor.yml  # 加上議價顧問服務（對本機開 8502）
 ├── mcp_server/
 │   ├── Dockerfile
 │   ├── pyproject.toml           # mcp>=2.2、httpx（含 uv.lock）
@@ -342,6 +347,26 @@ cd .. && python3 scripts/grading/grade_agent.py --suite scripts/grading/student-
 
 學員用的可信賴度評鑑 LAB：課堂版 [eval-lab-quick.zh-TW.md](eval-lab-quick.zh-TW.md)（25 分鐘）、完整版 [eval-lab.zh-TW.md](eval-lab.zh-TW.md)（60–90 分鐘，回家做）。
 
+### 第二個 Agent：議價顧問（A2A 與 OKF 知識庫）
+
+`advisor/` 是另外加做的第二個 Agent（app 名稱 `pricing_advisor`），給業務用。客戶要求降價或轉訂單時，它先查 `knowledge/ezstore/` 的 OKF 知識庫、用知識庫指定的計算試算毛利率，判斷要不要主管核准，可以做的才經 A2A 交給報價單 Agent。設計與執行方式見 [advisor/README.md](advisor/README.md)。
+
+```
+業務 → ADK 網頁介面（:8502/dev-ui）或 A2A client
+        → 議價顧問 Agent ──讀──→ OKF 知識庫 knowledge/ezstore
+             │  └─ GET ──→ Backend REST API
+             └─ A2A（JSON-RPC）──→ 報價單 Agent（/a2a/quotation_agent）── MCP ──→ Backend
+```
+
+- **A2A**：兩個 Agent 都由 `fast_api_app.py` 開 A2A 端點，agent card 列出各自的 skill（報價單 Agent 是六個操作各一個）。A2A 回覆只帶 `respond` 節點的文字，和 Chat UI 看到的一樣。議價顧問改完資料後，會從後端重新讀一次結果核對。
+- **OKF**：知識庫照 Open Knowledge Format v0.2 寫，17 個條目（系統事實、改價與轉訂單規則、Attested Computation、議價流程、名詞）。`uv run okf validate` 檢查格式，`uv run okf verify` 對照原始碼與執行中的系統寫入機器驗證紀錄，`uv run okf viz` 產生關聯圖 `knowledge/ezstore/viz.html`。
+- `knowledge/ezstore/policies/` 的核准門檻是作業示範用的虛構規則，EZStore 本身沒有核准流程。
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.advisor.yml up -d --build
+cd advisor && uv run python scripts/a2a_demo.py   # 外部 client → 議價顧問 → 報價單 Agent（會改資料，先重灌 seed）
+```
+
 ### 授權
 
 本專案採用 [MIT License](LICENSE) 開源授權。
@@ -395,6 +420,9 @@ HTTP 請求 → Handler（Gin）→ Service（業務邏輯）→ Repository（GO
 | 共用元件 | `frontend/src/components/shared/*.tsx` |
 | Docker 編排 | `docker-compose.yml` |
 | 測試資料集 | `scripts/seed-test-data.sql` |
+| 議價顧問 Workflow | `advisor/pricing_advisor/agent.py` |
+| OKF 知識庫 | `knowledge/ezstore/`（工具：`advisor/pricing_advisor/okf_cli.py`） |
+| 改價試算（Attested Computation） | `knowledge/ezstore/computations/price-change-impact.md`、`references/computations/price_change_impact.py` |
 
 ### 資料庫 Schema 摘要
 

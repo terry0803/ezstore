@@ -71,3 +71,4 @@ Ask the user: Option A (simple single-project) or Option B (full CI/CD pipeline 
 - 拒答文字要含「只能協助」，追問要以「請提供」開頭；`scripts/grading/link_presence.py` 靠這兩個慣例辨認拒答與追問。
 - 不要改 `mcp_server/`、`frontend/`、`backend/`。
 - 本機模型（`AGENT_MODEL=openai/...`）只有一個推論槽時，eval 要加 `--concurrency 1`。
+- A2A：`fast_api_app.py` 的 agent card 每個操作一個 skill（例句同 spec 1.1–1.6），`only_node_artifacts("respond")` 讓 A2A 回覆只帶 respond 的文字。議價顧問（`../advisor`）會讀這張 card 確認 skill，改 skill id 要一起改 `advisor/pricing_advisor/a2a_client.py` 的 `REQUIRED_SKILLS`。

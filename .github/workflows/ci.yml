@@ -31,6 +31,9 @@ jobs:
           - component: agent
             context: ./agent
             dockerfile: ./agent/Dockerfile
+          - component: advisor
+            context: ./advisor
+            dockerfile: ./advisor/Dockerfile
           - component: e2e
             context: ./frontend
             dockerfile: ./frontend/e2e/Dockerfile
