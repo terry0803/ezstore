@@ -13,6 +13,9 @@
 | [agent-offline-tests.log](agent-offline-tests.log)／[agent-offline-summary.json](agent-offline-summary.json) | Agent 115／115；保留 Google ADK 實驗功能警告。 |
 | [postwrite-advisor-tests.log](postwrite-advisor-tests.log) | advisor 158／158。 |
 | [repair-mcp-tests.log](repair-mcp-tests.log) | MCP 16／16（當時的版本，含「複製前拒絕」那題；改回原流程後是 15 個）。 |
+| [gemini31-full-acceptance.json](gemini31-full-acceptance.json) | 新版程式用 `gemini-3.1-flash-lite` 重跑 30 題功能實測：30／30，37 輪對話。 |
+| [concurrency-result.json](concurrency-result.json) | 同時對同一張報價單複製、改因子、改總價、轉訂單（`scripts/verify_concurrency.py`）。 |
+| [disconnect-result.json](disconnect-result.json) | 真的停掉後端、MCP、A2A 對方，以及改總價途中暫停後端（`scripts/verify_disconnect.py`）。 |
 | [scripts-offline-tests.log](scripts-offline-tests.log) | scripts 28／28，另 28 子測試通過。 |
 | [repair-go-tests.log](repair-go-tests.log) | Go 14 個測試函式通過；隔離網路、唯讀來源。 |
 | [frontend-verification.json](frontend-verification.json) | E2E 12／12、unit 7／7、production build 通過，零模型呼叫／主庫寫入，隔離環境已清理、主容器未變。 |
@@ -48,7 +51,7 @@
 
 ## 完整性與可攜性
 
-[evidence-manifest.json](evidence-manifest.json) 記錄本資料夾可提交檔案的 byte 數與 SHA-256；不對 manifest 本身做循環雜湊。機器限定的 `compose.test.yml` 排除於 Git 與 manifest，金鑰與 `.env` 不納入證據包。
+[evidence-manifest.json](evidence-manifest.json) 記錄本資料夾可提交檔案的 byte 數與 SHA-256；不對 manifest 本身做循環雜湊。機器限定的 `compose.test.yml` 排除於 Git 與 manifest，金鑰與 `.env` 不納入證據包。10/17 晚上提交時文字檔的換行從 CRLF 統一成 LF，內容沒變，manifest 依提交的版本重算。
 
 相對連結可隨專案搬移。JSON／log 裡的 `localhost`、Docker 服務名稱、容器識別或測試當時的本機路徑是歷史來源資訊，不表示收件者開啟檔案就能連上當時服務。離線摘要中的暫存 runner 路徑亦是原執行紀錄；不可把該絕對路徑當成跨電腦可直接執行的命令。
 

@@ -203,3 +203,34 @@ def test_current_amount_takes_precedence_over_clarification_history():
         clarify_source="總價改為 8000",
     )
     assert r == "adjust_total_price" and out["target_total_price"] == 9000
+
+
+@pytest.mark.parametrize(
+    "text,operation,missing",
+    [
+        ("我要查詢報價單", "get_quotation", ["quotation_number"]),
+        ("我要複製報價單", "duplicate_quotation", ["quotation_number"]),
+        ("我要修改報價單報價因子", "update_pricing_factor", ["quotation_number", "new_pricing_factor"]),
+        ("我要修改報價單總價", "adjust_total_price", ["quotation_number", "target_total_price"]),
+        ("我要將報價單轉訂單", "convert_to_order", ["quotation_number"]),
+        ("我要查詢客戶的報價單清單", "list_customer_quotations", ["customer_name"]),
+    ],
+)
+def test_misclassified_quotation_request_still_clarifies(text, operation, missing):
+    """便宜的模型曾把沒給編號的「我要查詢報價單」判成離題；程式依關鍵字改判，照講義 1.9 追問。"""
+    r, out, state = run_route(text, Intent(intent="off_topic"))
+    assert r == "clarify"
+    assert out["operation"] == operation
+    assert out["missing"] == missing
+    assert state["pending_intent"]["intent"] == operation
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["今天台北天氣如何？", "講個笑話給我聽", "我要刪除報價單 QT-20260330-001", "幫我發佈報價單 QT-20260330-001",
+     "我要查詢訂單", "我要新增一個客戶叫星際公司"],
+)
+def test_keyword_fallback_does_not_open_unsupported_requests(text):
+    r, out, _ = run_route(text, Intent(intent="off_topic"))
+    assert r == "off_topic"
+    assert out == REFUSAL_TEXT

@@ -46,3 +46,28 @@ async def test_mcp_error_prefix_is_removed(monkeypatch):
     monkeypatch.setattr(agent, "mcp_toolset", SimpleNamespace(get_tools=get_tools))
     reply = await agent._call_mcp_tool(None, "get_quotation", {"quotation_number": "QT-20990101-001"})
     assert reply == "操作失敗：找不到報價單編號 QT-20990101-001"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "tool,message,hint",
+    [
+        ("adjust_total_price", "後端服務逾時，請稍後再試", True),
+        ("convert_to_order", "無法連線後端服務：connection refused", True),
+        ("update_pricing_factor", "後端回應 502：bad gateway", True),
+        ("update_pricing_factor", "找不到報價單編號 QT-20990101-001", False),
+        ("get_quotation", "後端服務逾時，請稍後再試", False),
+    ],
+)
+async def test_partial_write_failure_asks_user_to_check(monkeypatch, tool, message, hint):
+    """實測：改總價二分到一半後端斷掉時，複製單已經建好；回覆要提醒先查詢，不能只說失敗。"""
+    async def run_async(**_kwargs):
+        return {"isError": True, "content": [{"type": "text", "text": f"Error executing tool {tool}: {message}"}]}
+
+    async def get_tools():
+        return [SimpleNamespace(name=tool, run_async=run_async)]
+
+    monkeypatch.setattr(agent, "mcp_toolset", SimpleNamespace(get_tools=get_tools))
+    reply = await agent._call_mcp_tool(None, tool, {"quotation_number": "QT-20260330-001"})
+    assert reply.startswith(f"操作失敗：{message}")
+    assert ("請先查詢確認" in reply) is hint

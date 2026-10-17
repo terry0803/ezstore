@@ -67,7 +67,7 @@ def generate(output, local_result, api_result, date):
               paragraph("第一個 Agent：六個報價單操作、離題拒答、多輪追問。第二個 Agent：知識庫依據、改價試算、核准判斷、A2A 改資料後的核對。程式判定連結、原單有沒有動、新單內容；LLM 評審看回覆品質和該拒答還是該做事。"),
               paragraph("02　本次驗證結果與證據範圍", section)]
     rows = [evidence_row("項目", "結果"),
-            evidence_row("離線測試", "報價單 Agent 116、議價顧問 158、MCP 15、scripts 28（另 28 子測試）全過；Go 後端 vet、test 通過；前端單元 7、型別檢查、隔離 E2E 12 通過。"),
+            evidence_row("離線測試", "報價單 Agent 133、議價顧問 158、MCP 15、scripts 28（另 28 子測試）全過；Go 後端 vet、test 通過；前端單元 7、型別檢查、隔離 E2E 12 通過。"),
             evidence_row("自我驗收", escape(local_result)),
             evidence_row("實際對話", escape(api_result)),
             evidence_row("OKF 與資料", "17 個條目，validate 0 error、0 warning；verify 對照原始碼與執行中的系統 10／10。seed 裡 9 張報價單的利潤欄位改成重算值，12 張都和品項一致。")]
@@ -83,7 +83,7 @@ def generate(output, local_result, api_result, date):
     story += [table, paragraph("03　修復重點與資料保護", section),
               paragraph("數字和報價單編號改由程式從原文抓，中文數字也能解析，含糊就追問。議價顧問經 A2A 改完後，從後端重讀原單和新單核對。課程元件修了負報價因子能存、客戶名稱模糊時選第一筆、清單只讀第一頁、中文輸入法 Enter 誤送。改總價做不到時照講義流程先複製，再照實回報實際總價。主資料庫修正前有備份。"),
               paragraph("04　尚未覆蓋與使用界線", section),
-              paragraph("講義指定的 Gemini 3.8 Flash 因為額度沒有跑，測試用帳號裡最便宜的 3.1 Flash-Lite。評審和 Agent 是同一個模型，可能偏寬。提示注入只測了清單裡的句型；多人同時改同一張單還沒測；操作途中斷線只用假的逾時做過單元測試。"),
+              paragraph("講義指定的 Gemini 3.8 Flash 因為額度沒有跑，測試用帳號裡最便宜的 3.1 Flash-Lite。評審和 Agent 是同一個模型，可能偏寬。提示注入只測了清單裡的句型；同一張報價單同時轉兩次訂單會建立兩張訂單，要擋得改後端或 MCP，這次沒改。"),
               Spacer(1, 10),
               paragraph("詳細內容：同目錄的《可信賴度報告.md》（LAB 各節、穩定性、破壞測試、多輪題）與《修正與驗證紀錄.md》（改了什麼、測試結果、備份位置）。", small)]
 

@@ -162,6 +162,7 @@ CLASSIFIER_INSTRUCTION = """\
 - new_pricing_factor：新的報價因子，轉成數字（例如「一點五」寫 1.5）
 - target_total_price：目標總價，轉成數字（例如「八千」寫 8000）
 - 訊息裡沒有提到的欄位一律留空，不要猜
+- 使用者說要做前六種操作之一，只是還沒給報價單編號或數字，意圖照樣填那個操作，欄位留空（例如「我要查詢報價單」是 get_quotation，不是 off_topic）
 
 輸入會附上「待補的前一輪操作」，有時還會附上「上一輪對話」。
 - 有待補的前一輪操作，而使用者這一句只是補資料：意圖填 provide_info。
@@ -247,6 +248,28 @@ def _is_rule_refusal(text: str) -> bool:
     if _OUT_OF_SCOPE_PATTERNS.search(crud_text):
         return True
     return False
+
+
+# 分類器把明確的報價單操作判成離題時（例如沒給編號的「我要查詢報價單」），由程式依關鍵字改判。
+# 只在句子提到報價單、而且沒有刪除／新增／發佈這類不支援的動作時才改判；順序有意義，先比對較具體的操作。
+_UNSUPPORTED_ACTION_RE = re.compile(r"刪除|移除|新增|建立|發佈|作廢|取消")
+_KEYWORD_OPERATIONS = (
+    ("convert_to_order", re.compile(r"轉(?:成|為)?訂單")),
+    ("adjust_total_price", re.compile(r"(?:改|修改|調整|調|變更|設定?).{0,8}總價|總價.{0,8}(?:改|修改|調整|調|變更)")),
+    ("update_pricing_factor", re.compile(r"(?:改|修改|調整|調|變更|設定?).{0,8}因子|因子.{0,8}(?:改|修改|調整|調|變更)")),
+    ("duplicate_quotation", re.compile(r"複製")),
+    ("list_customer_quotations", re.compile(r"客戶.{0,10}報價單.{0,4}(?:清單|列表|有哪些|全部|所有)|(?:清單|列表|所有|全部).{0,6}報價單.{0,6}客戶")),
+    ("get_quotation", re.compile(r"(?:查詢|查看|查|看|顯示|列出|show|view|get).{0,8}(?:報價單|quotation)", re.IGNORECASE)),
+)
+
+
+def _keyword_operation(text: str) -> str | None:
+    if not re.search(r"報價單|quotation|QT-\d{8}-\d{3,}", text, re.IGNORECASE) or _UNSUPPORTED_ACTION_RE.search(text):
+        return None
+    for operation, pattern in _KEYWORD_OPERATIONS:
+        if pattern.search(text):
+            return operation
+    return None
 
 
 def _clean_number(value: Any) -> float | None:
@@ -448,6 +471,11 @@ def _format_number(value: float) -> str:
     return str(int(value)) if float(value).is_integer() else str(value)
 
 
+_WRITE_TOOLS = ("duplicate_quotation", "update_pricing_factor", "adjust_total_price", "convert_to_order")
+_PARTIAL_WRITE_RE = re.compile(r"逾時|無法連線|後端回應 5\d\d")
+_PARTIAL_WRITE_HINT = "這次操作可能已經建立了新的報價單或訂單，請先查詢確認，再決定要不要重試，免得重複建立。"
+
+
 async def _call_mcp_tool(ctx: Context, tool_name: str, args: dict[str, Any]) -> str:
     """呼叫一個 MCP 工具，回傳工具的文字結果（工具錯誤也轉成文字）。"""
     try:
@@ -461,7 +489,7 @@ async def _call_mcp_tool(ctx: Context, tool_name: str, args: dict[str, Any]) -> 
     try:
         result = await tool.run_async(args=args, tool_context=ctx)
     except Exception:
-        if tool_name in ("duplicate_quotation", "update_pricing_factor", "adjust_total_price", "convert_to_order"):
+        if tool_name in _WRITE_TOOLS:
             return "操作中斷，尚無法確認是否已完成。請先查詢報價單或訂單確認結果，再決定是否重試，避免重複建立資料。"
         return "操作失敗：報價單系統暫時無法完成請求，請稍後再試。"
     if isinstance(result, dict):
@@ -476,6 +504,9 @@ async def _call_mcp_tool(ctx: Context, tool_name: str, args: dict[str, Any]) -> 
         if result.get("isError"):
             # MCP SDK 會在錯誤前面加英文前綴，使用者只需要看到中文原因
             text = re.sub(r"^Error executing tool \w+:\s*", "", text)
+            if tool_name in _WRITE_TOOLS and _PARTIAL_WRITE_RE.search(text):
+                # 逾時或斷線可能發生在複製之後（例如改總價二分到一半），新單可能已經建好
+                return f"操作失敗：{text}\n{_PARTIAL_WRITE_HINT}"
             return f"操作失敗：{text or '未知錯誤'}"
         return text or "操作完成，但系統沒有回傳內容。"
     return str(result)
@@ -577,7 +608,9 @@ def route(ctx: Context, node_input: Any):
                 state={"pending_intent": None},
             )
     elif operation == "off_topic" or operation not in OPERATIONS:
-        return Event(output=REFUSAL_TEXT, route="off_topic", state={"pending_intent": None})
+        operation = _keyword_operation(text)
+        if operation is None:
+            return Event(output=REFUSAL_TEXT, route="off_topic", state={"pending_intent": None})
 
     if "quotation_number" in REQUIRED_FIELDS[operation] and any(
         not QUOTATION_NUMBER_RE.fullmatch(token) for token in QUOTATION_TOKEN_RE.findall(text)
