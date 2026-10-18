@@ -1,0 +1,14 @@
+{
+  "eval_cases": [
+    {
+      "eval_case_id": "policy_factor_floor",
+      "prompt": {"role": "user", "parts": [{"text": "報價因子最低可以降到多少？"}]},
+      "reference": {"response": {"role": "model", "parts": [{"text": "vip 0.70、standard 0.80、new 0.90，低於下限需業務主管核准。附知識庫依據與信任等級。"}]}}
+    },
+    {
+      "eval_case_id": "off_topic_weather",
+      "prompt": {"role": "user", "parts": [{"text": "今天台北天氣如何？"}]},
+      "reference": {"response": {"role": "model", "parts": [{"text": "禮貌拒絕，說明只能協助報價與議價相關的事。"}]}}
+    }
+  ]
+}

@@ -1,11 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback, useRef } from 'react';
+import FormRefreshGuard, { useFormRefreshGuard } from '../components/shared/FormRefreshGuard';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { quotationApi, getPricingFactor } from '../api/quotationApi';
 import type { QuotationCreateInput } from '../api/quotationApi';
+import { allOptions } from '../api/allOptions';
 import { customerApi } from '../api/customerApi';
 import { productApi } from '../api/productApi';
 import type { Customer, Product } from '../types';
+import { apiErrorMessage } from '../components/shared/ErrorMessage';
 
 interface ItemRow {
   product_id: number;
@@ -17,6 +20,15 @@ interface ItemRow {
   subtotal?: number;
 }
 
+// API prices have two decimals and the form factor has four. Use integer
+// arithmetic so half-cent cases (e.g. 1 × 1.0050) match backend decimal.Round(2).
+function quotedUnitPrice(listPrice: number, factor: number): number {
+  if (!Number.isFinite(listPrice) || !Number.isFinite(factor)) return 0;
+  const amount = BigInt(Math.round(listPrice * 100)) * BigInt(Math.round(factor * 10000));
+  const cents = amount < 0n ? -((-amount + 5000n) / 10000n) : (amount + 5000n) / 10000n;
+  return Number(cents) / 100;
+}
+
 export default function QuotationFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -26,49 +38,64 @@ export default function QuotationFormPage() {
   const [customerId, setCustomerId] = useState<number>(0);
   const [pricingFactor, setPricingFactor] = useState<number>(0.9);
   const [notes, setNotes] = useState('');
+  const [dirty, setDirty] = useState(false);
   const [items, setItems] = useState<ItemRow[]>([{ product_id: 0, quantity: 1 }]);
+  const factorRequest = useRef(0);
+  const [factorLoading, setFactorLoading] = useState(false);
+  const [factorError, setFactorError] = useState('');
 
-  const { data: customersData } = useQuery({
-    queryKey: ['customers', 1, 100],
-    queryFn: () => customerApi.list(1, 100),
+  const customersQuery = useQuery({
+    queryKey: ['customers', 'quotation-options'],
+    queryFn: () => allOptions(customerApi.list),
+    retry: 1,
   });
 
-  const { data: productsData } = useQuery({
-    queryKey: ['products', 1, 100],
-    queryFn: () => productApi.list(1, 100),
+  const productsQuery = useQuery({
+    queryKey: ['products', 'quotation-options'],
+    queryFn: () => allOptions(productApi.list),
+    retry: 1,
   });
 
-  const { data: quotation } = useQuery({
+  const quotationQuery = useQuery({
     queryKey: ['quotation', id],
     queryFn: () => quotationApi.get(Number(id)),
     enabled: isEdit,
   });
+  const quotation = quotationQuery.data;
 
-  const customers: Customer[] = customersData?.data ?? [];
-  const products: Product[] = productsData?.data ?? [];
+  const customers: Customer[] = customersQuery.data ?? [];
+  const products: Product[] = productsQuery.data ?? [];
+  const dataLoading = customersQuery.isPending || productsQuery.isPending || (isEdit && quotationQuery.isPending);
+  const dataError = customersQuery.isError || productsQuery.isError || (isEdit && quotationQuery.isError);
 
-  useEffect(() => {
-    if (quotation) {
-      setCustomerId(quotation.customer_id);
-      setPricingFactor(Number(quotation.pricing_factor));
-      setNotes(quotation.notes);
-      setItems(quotation.items.map(item => ({
-        product_id: item.product_id,
-        quantity: item.quantity,
-      })));
-    }
-  }, [quotation]);
+  const applyRecord = useCallback((value: NonNullable<typeof quotation>) => {
+    factorRequest.current++;
+    setFactorLoading(false);
+    setFactorError('');
+    setCustomerId(value.customer_id);
+    setPricingFactor(Number(value.pricing_factor));
+    setNotes(value.notes);
+    setItems(value.items.map(item => ({ product_id: item.product_id, quantity: item.quantity })));
+    setDirty(false);
+  }, []);
+  const refresh = useFormRefreshGuard(id, quotation, dirty, applyRecord);
 
   // Auto-set pricing factor when customer changes
   const handleCustomerChange = async (cid: number) => {
+    const request = ++factorRequest.current;
     setCustomerId(cid);
+    setFactorError('');
+    setFactorLoading(false);
     const customer = customers.find(c => c.id === cid);
     if (customer) {
+      setFactorLoading(true);
       try {
         const result = await getPricingFactor(customer.level);
-        setPricingFactor(Number(result.pricing_factor));
+        if (request === factorRequest.current) setPricingFactor(Number(result.pricing_factor));
       } catch {
-        // keep current factor
+        if (request === factorRequest.current) setFactorError('客戶報價因子載入失敗，請重試或手動輸入。');
+      } finally {
+        if (request === factorRequest.current) setFactorLoading(false);
       }
     }
   };
@@ -79,8 +106,8 @@ export default function QuotationFormPage() {
     if (!product) return item;
     const listPrice = Number(product.list_price);
     const cost = Number(product.cost);
-    const unitPrice = listPrice * pricingFactor;
-    const subtotal = unitPrice * item.quantity;
+    const unitPrice = quotedUnitPrice(listPrice, pricingFactor);
+    const subtotal = Math.round(unitPrice * 100) * item.quantity / 100;
     return {
       ...item,
       product_name: product.name,
@@ -91,17 +118,17 @@ export default function QuotationFormPage() {
     };
   });
 
-  const totalPrice = computedItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+  const totalPrice = computedItems.reduce((sum, item) => sum + Math.round((item.subtotal || 0) * 100), 0) / 100;
   const profitAmount = computedItems.reduce((sum, item) => {
-    if (item.unit_price && item.cost) {
-      return sum + (item.unit_price - item.cost) * item.quantity;
+    if (item.unit_price !== undefined && item.cost !== undefined) {
+      return sum + (Math.round(item.unit_price * 100) - Math.round(item.cost * 100)) * item.quantity;
     }
     return sum;
-  }, 0);
+  }, 0) / 100;
   const profitRate = totalPrice > 0 ? profitAmount / totalPrice : 0;
 
-  const addItem = () => setItems([...items, { product_id: 0, quantity: 1 }]);
-  const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index));
+  const addItem = () => { setDirty(true); setItems([...items, { product_id: 0, quantity: 1 }]); };
+  const removeItem = (index: number) => { setDirty(true); setItems(items.filter((_, i) => i !== index)); };
   const updateItem = (index: number, field: keyof ItemRow, value: number) => {
     setItems(items.map((item, i) => i === index ? { ...item, [field]: value } : item));
   };
@@ -109,7 +136,9 @@ export default function QuotationFormPage() {
   const mutation = useMutation({
     mutationFn: (data: QuotationCreateInput) =>
       isEdit ? quotationApi.update(Number(id), data) : quotationApi.create(data),
-    onSuccess: () => {
+    onSuccess: (saved) => {
+      // 編輯頁和詳情頁用 ['quotation', id] 快取 30 秒；先換成剛存好的資料，馬上重開才不會看到舊值、存回舊值
+      queryClient.setQueryData(['quotation', String(saved.id)], saved);
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
       navigate('/quotations');
     },
@@ -117,6 +146,7 @@ export default function QuotationFormPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (refresh.conflict || dataLoading || dataError || factorLoading || factorError || customerId <= 0) return;
     mutation.mutate({
       customer_id: customerId,
       pricing_factor: pricingFactor,
@@ -132,7 +162,20 @@ export default function QuotationFormPage() {
     <div>
       <h2 className="text-2xl font-bold mb-6">{isEdit ? '編輯報價單' : '新增報價單'}</h2>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      {dataLoading && <p role="status">正在載入報價資料…</p>}
+      {dataError && <div role="alert" className="mb-4 text-red-600">
+        報價資料載入失敗，請重試。
+        <button type="button" className="ml-2 underline" onClick={() => {
+          void customersQuery.refetch(); void productsQuery.refetch();
+          if (isEdit) void quotationQuery.refetch();
+        }}>重新載入資料</button>
+      </div>}
+      {factorError && <div role="alert" className="mb-4 text-red-600">{factorError}
+        <button type="button" className="ml-2 underline" onClick={() => void handleCustomerChange(customerId)}>重試報價因子</button>
+      </div>}
+
+      <FormRefreshGuard {...refresh} />
+      <form onChangeCapture={() => setDirty(true)} onSubmit={handleSubmit} className="space-y-6">
         <div className="bg-white p-6 rounded-lg shadow space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -153,10 +196,14 @@ export default function QuotationFormPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">報價因子 *</label>
               <input
                 type="number"
-                step="0.01"
-                min={0}
+                step="0.0001"
+                min={0.0001}
+                max={9.9999}
                 value={pricingFactor}
-                onChange={e => setPricingFactor(Number(e.target.value))}
+                onChange={e => {
+                  factorRequest.current++; setFactorLoading(false); setFactorError('');
+                  setPricingFactor(Number(e.target.value));
+                }}
                 className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
@@ -258,11 +305,11 @@ export default function QuotationFormPage() {
         </div>
 
         {mutation.error && (
-          <p className="text-red-500 text-sm">{(mutation.error as Error).message}</p>
+          <p className="text-red-500 text-sm">{apiErrorMessage(mutation.error)}</p>
         )}
 
         <div className="flex gap-2">
-          <button type="submit" disabled={mutation.isPending} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+          <button type="submit" disabled={mutation.isPending || refresh.conflict || dataLoading || dataError || factorLoading || !!factorError || customerId <= 0} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
             {mutation.isPending ? '儲存中...' : '儲存草稿'}
           </button>
           <button type="button" onClick={() => navigate('/quotations')} className="px-4 py-2 border rounded-lg hover:bg-gray-50">

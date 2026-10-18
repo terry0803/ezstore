@@ -1,0 +1,16 @@
+{
+  "compose": "C:\\Users\\terry\\Documents\\Codex\\2026-09-18\\https-gamma-app-docs-unit-2\\work\\ezstore_recheck_20261017\\compose.yml",
+  "expected_project": "ezstore-recheck",
+  "container_count": 6,
+  "containers": [
+    "29c98893fca8|ezstore-recheck-advisor-1|ezstore-recheck",
+    "76b9a3075bb5|ezstore-recheck-frontend-1|ezstore-recheck",
+    "bbea2cb8b267|ezstore-recheck-agent-1|ezstore-recheck",
+    "7c0297b90b03|ezstore-recheck-mcp-server-1|ezstore-recheck",
+    "520f5b08fe1f|ezstore-recheck-backend-1|ezstore-recheck",
+    "752e0f0f6c19|ezstore-recheck-db-1|ezstore-recheck"
+  ],
+  "volumes": [
+    "ezstore-recheck-pgdata"
+  ]
+}

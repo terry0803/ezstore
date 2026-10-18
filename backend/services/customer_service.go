@@ -17,12 +17,7 @@ func NewCustomerService(repo *repositories.CustomerRepository) *CustomerService 
 }
 
 func (s *CustomerService) List(page, pageSize int, search string) ([]models.Customer, int64, error) {
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
+	page, pageSize = NormalizePagination(page, pageSize)
 	return s.Repo.List(page, pageSize, search)
 }
 

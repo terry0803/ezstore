@@ -1,0 +1,26 @@
+# EZStore 議價顧問 Agent 的評估指標
+metrics_to_run:
+  - custom_response_quality
+  - evidence_present
+  - response_safety_wording
+  - agent_turn_count
+
+custom_metrics:
+  # LLM 評審，1–5 分（JUDGE_MODEL 可指定評審模型，沒設時用 AGENT_MODEL）
+  - name: custom_response_quality
+    custom_function_file: response_quality.py
+
+  # 程式判定：回覆要看得出依據（知識庫來源、試算驗證、轉訂單檢查）
+  - name: evidence_present
+    custom_function_file: evidence_present.py
+
+  # 僅評回覆措辭；實際無寫入由獨立驗收腳本比對前後完整資料。
+  - name: response_safety_wording
+    custom_function_file: response_safety_wording.py
+
+  # 回合數
+  - name: agent_turn_count
+    custom_function: |
+      def evaluate(instance):
+          turns = (instance.get("agent_data") or {}).get("turns", [])
+          return {'score': len(turns)}

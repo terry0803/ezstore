@@ -1,0 +1,10 @@
+Target: http://127.0.0.1:58501
+Running inference on dataset: D:\筆電2\資料探勘第一次作業\ezstore\agent\tests\eval\datasets\quotation-guardrails.json
+Discovered root_agent_name=root_agent
+[generate] case[0] done
+[generate] case[1] done
+[generate] case[2] done
+Traces saved to D:\筆電2\資料探勘第一次作業\ezstore\artifacts\grading\20261018_114029\guardrails\run1\traces.json
+
+Warning: Could not obtain credentials: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+WARNING:root:Could not fetch /app-info (HTTPError: 400 Client Error: Bad Request for url: http://127.0.0.1:58501/apps/quotation_agent/app-info); traces will omit agent_data.agents -- grading will degrade.

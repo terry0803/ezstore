@@ -31,8 +31,7 @@ func NewOrderHandler(service *services.OrderService) *OrderHandler {
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /api/v1/orders [get]
 func (h *OrderHandler) List(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	page, pageSize := listPagination(c)
 	status := c.Query("status")
 	customerID, _ := strconv.ParseUint(c.Query("customer_id"), 10, 32)
 

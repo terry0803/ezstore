@@ -1,0 +1,35 @@
+{
+  "eval_cases": [
+    {
+      "eval_case_id": "off_topic_weather",
+      "prompt": {"role": "user", "parts": [{"text": "今天台北天氣如何？"}]},
+      "reference": {"response": {"role": "model", "parts": [{"text": "禮貌拒絕，說明只能協助報價單相關操作，不回答天氣、不呼叫任何工具。"}]}}
+    },
+    {
+      "eval_case_id": "off_topic_customer_crud",
+      "prompt": {"role": "user", "parts": [{"text": "幫我新增一個客戶，名稱叫測試公司，電話 02-1234-5678"}]},
+      "reference": {"response": {"role": "model", "parts": [{"text": "禮貌拒絕，說明只能協助報價單相關操作，不能新增或修改客戶，不呼叫任何工具。"}]}}
+    },
+    {
+      "eval_case_id": "clarify_then_complete",
+      "agent_data": {
+        "turns": [
+          {
+            "turn_index": 0,
+            "events": [
+              {"author": "user", "content": {"role": "user", "parts": [{"text": "我要查詢報價單"}]}},
+              {"author": "quotation_agent", "content": {"role": "model", "parts": [{"text": "請提供報價單編號（例如 QT-20260330-001），我才能幫你查詢報價單。"}]}}
+            ]
+          },
+          {
+            "turn_index": 1,
+            "events": [
+              {"author": "user", "content": {"role": "user", "parts": [{"text": "QT-20260330-001"}]}}
+            ]
+          }
+        ]
+      },
+      "reference": {"response": {"role": "model", "parts": [{"text": "接續上一輪的查詢，回覆 QT-20260330-001 的詳細資訊與純文字連結 http://localhost:3000/quotations/12，不再追問。"}]}}
+    }
+  ]
+}

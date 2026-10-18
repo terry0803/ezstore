@@ -1,0 +1,34 @@
+<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>五項問題修正與驗證 — 2026-10-18</title>
+<style>body{margin:0;background:#f1f5f9;color:#243247;font:17px/1.8 system-ui,sans-serif}main{max-width:960px;margin:32px auto;padding:36px;background:white;border-radius:16px}h1{font-size:30px}h2{font-size:23px;margin-top:30px}a{color:#165ac1}table{border-collapse:collapse;width:100%}th,td{padding:12px;border-bottom:1px solid #d8e1eb;text-align:left;vertical-align:top}code{background:#f0f3f8;padding:3px 5px}.ok{background:#e8f5ed;padding:16px;border-radius:10px}</style>
+<main><h1>五項問題修正與驗證</h1><p>2026-10-18 · EZStore 作業</p>
+<p class="ok">本輪確認的五項問題皆已修正，對應重現情境通過。正式服務已更新成測試過的映像；正式資料完整內容未變。隔離測試服務已停止。</p>
+<h2>修正內容與實測</h2>
+<table><tr><th>問題</th><th>修正與證據</th></tr>
+<tr><td>模擬改價仍寫入</td><td>兩個 Agent 同步擴充唯讀意圖判斷，涵蓋模擬、計算、比較、分析、推演與詢問改價結果，並保留明確執行指令。補入錯誤模型分類及無「結果」後綴的測試。真實 Gemini 對同一句「可以幫我模擬報價單 QT-20260325-001 總價改成 210000 的結果嗎？」：兩個 Agent 均未新增或改動資料；議價顧問回傳試算。另兩個明確改價請求正常建立副本，包括 A2A 委派。</td></tr>
+<tr><td>客戶關聯錯置</td><td>報價單與訂單 Repository 更新時排除舊 Customer 關聯，保留 Service 設定的新外鍵。真實 API 測試確認報價單 customer_id、customer_level、Customer 一致，訂單與關聯報價也屬於同一客戶；刻意不一致的要求被拒絕且原資料不變。</td></tr>
+<tr><td>發佈與修改競態</td><td>報價更新交易先取得列鎖、重新確認 draft，再寫入明細與價格；不寫回舊 Status。用 PostgreSQL 列鎖安排並行 HTTP 請求後，發佈成功，過期修改回 403，最終狀態仍為 published，備註與明細不變。</td></tr>
+<tr><td>訂單選項只載入 100 筆</td><td>抽出報價與訂單表單共用的完整分頁載入函式。瀏覽器模擬 101 筆客戶與產品，確認讀取第二頁，兩個選單都可選第 101 筆。</td></tr>
+<tr><td>訂單選項讀取失敗無提示</td><td>加入載入狀態、錯誤原因與重試；必要資料不可用時停用表單輸入及儲存，提交處理函式也阻止寫入。分別測試客戶／產品 API 500，確認無 POST、重試後恢復；取消按鈕仍可離開頁面。</td></tr></table>
+<h2>驗證結果</h2><ul>
+<li>Python：Agent 408、Advisor 355、MCP 35、scripts 17，共 815 項通過，另 4 個子測試通過。</li>
+<li>Go：以目前工作目錄來源執行 go test ./...、go vet ./...，均通過。</li>
+<li>前端：TypeScript 與 Vite 建置通過，41 項 Playwright 測試通過。最後調整取消按鈕可用性後重建，3 項訂單表單測試再次通過。</li>
+<li>真實隔離後端：3 項客戶及競態測試通過；另 4 項 MCP 故障注入通過，確認拒絕更新時可補償清理，回應遺失時不盲目刪除或重送。</li>
+<li>Gemini：4 個情境通過，使用既有 Flash-Lite 設定；兩個模擬請求不寫入、兩個明確要求正常執行。</li>
+<li>部署：backend、frontend、agent、advisor 正式容器映像與已測試映像一致，服務健康。正式資料仍為 15 客戶、20 產品、12 報價、10 訂單，逐筆完整比對未變。</li>
+<li>git diff --check 通過；使用者授權修正範圍檢查通過。</li></ul>
+<h2>程式碼與可重跑測試</h2><ul>
+<li>寫入判斷：agent/quotation_agent/write_intent.py、advisor/pricing_advisor/write_intent.py、advisor/pricing_advisor/agent.py；兩個 Agent 的 tests/unit/test_review_regressions.py。</li>
+<li>存檔與競態：backend/repositories/quotation_repo.go、order_repo.go；scripts/verify_storage_regressions.py。此腳本固定連線隔離服務 58080 與 ezstore-fix-check-db-1，不使用正式資料庫。</li>
+<li>前端：frontend/src/api/allOptions.ts、pages/OrderFormPage.tsx、pages/QuotationFormPage.tsx；frontend/e2e/review-regressions.spec.ts。</li></ul>
+<h2>完整證據</h2>
+<p>本輪證據目錄：<code>C:/Users/terry/Documents/Codex/2026-09-18/https-gamma-app-docs-unit-2/work/ezstore_five_fixes_20261018</code>。</p>
+<ul><li><a href="file:///C:/Users/terry/Documents/Codex/2026-09-18/https-gamma-app-docs-unit-2/work/ezstore_five_fixes_20261018/gemini-results.json">Gemini 輸入、回覆與寫入差異</a></li>
+<li><a href="file:///C:/Users/terry/Documents/Codex/2026-09-18/https-gamma-app-docs-unit-2/work/ezstore_five_fixes_20261018/storage-results.json">客戶及競態測試</a></li>
+<li><a href="file:///C:/Users/terry/Documents/Codex/2026-09-18/https-gamma-app-docs-unit-2/work/ezstore_five_fixes_20261018/fault-results.json">故障注入測試</a></li>
+<li><a href="file:///C:/Users/terry/Documents/Codex/2026-09-18/https-gamma-app-docs-unit-2/work/ezstore_five_fixes_20261018/main-verification.json">正式資料與映像核對</a></li>
+<li><a href="file:///C:/Users/terry/Documents/Codex/2026-09-18/https-gamma-app-docs-unit-2/work/ezstore_five_fixes_20261018/verification-summary.json">測試統計</a></li></ul>
+<h2>作業範圍與限制</h2>
+<p>本輪依使用者明確要求修正五項問題，保留第一個 Agent 的六個動作、第二個 Agent 的議價主題、A2A 與 OKF 流程。老師原版的 backend/frontend 等保護目錄已有使用者授權的修改；這不等於老師同意修改基底。差異維持登記於 scripts/check_assignment.py，嚴格原版比對仍會回報差異。</p>
+<p>這些結果確認列出的重現情境已修正，不代表能保證所有自然語句或未測試並行情境永遠無誤。模擬防護使用規則判斷，未宣稱已全面理解所有中文語意。先前報告保留為歷史紀錄，最新結果以本頁及目前狀態.md 為準。</p></main></html>

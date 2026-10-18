@@ -1,0 +1,86 @@
+{
+  "review_scope": "current working tree at e68052e34a975cc3a2f12f9f065b33ba1fa32f5e",
+  "production_source_modified_by_this_review": false,
+  "model": "gemini-3.1-flash-lite",
+  "qwen_calls": 0,
+  "standard_regression": {
+    "quotation_agent": 172,
+    "advisor": 167,
+    "scripts": 28,
+    "scripts_subtests": 28,
+    "backend": 21,
+    "backend_real_postgres_subset": 7,
+    "mcp": 17,
+    "frontend_unit": 7,
+    "frontend_e2e": 15,
+    "frontend_build": true,
+    "gemini_cases_passed": 30,
+    "gemini_cases_total": 30,
+    "gemini_turns": 37,
+    "gemini_visible_tokens": 32775,
+    "gemini_attempt_failures": 0
+  },
+  "new_boundary_review": {
+    "deterministic_route_review": {
+      "probes": 12,
+      "network_calls": 0,
+      "model_calls": 0,
+      "database_calls": 0,
+      "conditional_route_failures": [
+        "Advisor rewrites a negated or explanation-only duplicate request into a positive duplicate command if the model classifies it as quotation_request.",
+        "Advisor routes a negated conversion or price change to a write operation if the model emits the corresponding positive intent.",
+        "A positive apply_price classification can dispatch an arbitrarily selected value from an ambiguous multi-amount request."
+      ]
+    },
+    "live_gemini_review": {
+      "probe_groups": 7,
+      "turns": 9,
+      "visible_tokens": 11194,
+      "confirmed_write_in_isolated_database": "A pending total-price change followed by '先不要改了，QT-20260330-001' created isolated quotation id 23 without changing or deleting the original quotation.",
+      "confirmed_false_refusal": "'不要修改原單，請複製報價單 QT-20260330-001' created no quotation and incorrectly asked for a target total.",
+      "confirmed_ambiguous_selection_without_write": "For '200000 或 210000', Advisor selected 200000 for a calculation instead of asking for one target; this live run did not write data.",
+      "other_probe_writes": 0
+    }
+  },
+  "okf": {
+    "entries": 17,
+    "errors": 0,
+    "warnings": 0,
+    "machine_confirmed": 10,
+    "unverified": 7,
+    "machine_checks_passed": 10
+  },
+  "main_deployment_after_review": {
+    "passed": true,
+    "http_200_endpoints": 6,
+    "running_containers": 6,
+    "quotes": 12,
+    "orders": 10,
+    "snapshot_sha256": "6727b991f78f1a06f7531c1d34ca4e79626a30b2e4646624267dbe25ab3fd662",
+    "unchanged": true
+  },
+  "isolated_resources_remaining": {
+    "containers": [],
+    "volumes": []
+  },
+  "repository_state": {
+    "modified_entries": 24,
+    "untracked_entries": 8,
+    "diff_check_default_crlf_warnings": 452,
+    "actual_space_or_tab_at_line_end": 0,
+    "diff_check_with_cr_at_eol": "passed",
+    "note": "The CRLF warnings add review noise; the affected files still contain substantive changes."
+  },
+  "documentation_state": {
+    "previous_completion_claim_is_outdated": true,
+    "previous_targeted_5_of_5_scope": "The preservation/copy guard case exercised quotation_agent, not pricing_advisor.",
+    "historical_scores_remain_historical": true
+  },
+  "secret_scan": {
+    "files_scanned": 519,
+    "google_api_key_matches": 0,
+    "private_key_matches": 0,
+    "env_files_excluded": true
+  },
+  "conclusion": "The standard suites pass, but the current application is not ready to be described as fully correct because new P1 semantic-routing defects remain unfixed."
+}

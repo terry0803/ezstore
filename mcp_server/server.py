@@ -10,7 +10,10 @@
 - 後端錯誤一律轉成中文 ToolError，不把 traceback 丟給 Agent。
 """
 
+import math
 import os
+from contextlib import asynccontextmanager
+from decimal import ROUND_HALF_UP, Decimal
 
 import httpx
 from mcp.server import MCPServer
@@ -42,7 +45,7 @@ async def _request(method: str, path: str, *, timeout: httpx.Timeout | None = No
     try:
         resp = await _client.request(method, path, timeout=timeout or _TIMEOUT, **kwargs)
         resp.raise_for_status()
-        return resp.json()
+        return resp.json() if resp.content else {}
     except httpx.HTTPStatusError as e:
         status = e.response.status_code
         detail = e.response.text[:200]
@@ -53,10 +56,28 @@ async def _request(method: str, path: str, *, timeout: httpx.Timeout | None = No
         raise ToolError("後端服務逾時，請稍後再試") from e
     except httpx.TransportError as e:
         raise ToolError(f"無法連線後端服務：{e}") from e
+    except ValueError as e:
+        raise ToolError("後端回覆格式異常，操作結果尚未確認") from e
 
 
 async def _get(path: str, **params) -> dict:
     return await _request("GET", path, params=params)
+
+
+async def _all_rows(path: str, **params) -> list[dict]:
+    """Never silently claim a first page is the full result."""
+    rows = {}
+    page = 1
+    while True:
+        result = await _get(path, page=page, page_size=100, **params)
+        previous = len(rows)
+        for row in result.get("data") or []:
+            rows[row["id"]] = row
+        if len(rows) >= result["total"]:
+            return list(rows.values())
+        if len(rows) == previous:
+            raise ToolError("清單沒有完整載入，請稍後重新查詢")
+        page += 1
 
 
 async def _post(path: str, json: dict | None = None) -> dict:
@@ -65,6 +86,44 @@ async def _post(path: str, json: dict | None = None) -> dict:
 
 async def _put(path: str, json: dict, *, timeout: httpx.Timeout | None = None) -> dict:
     return await _request("PUT", path, json=json, timeout=timeout)
+
+
+@asynccontextmanager
+async def _editing_copy(source: dict):
+    """Compensate failed edits; never repeat a write after an uncertain response.
+
+    A completed error response allows cleanup of our new draft. A timeout or
+    malformed response may hide a committed/in-flight update, so retain its ID
+    for reconciliation instead of racing that update with a DELETE.
+    """
+    copy = await _duplicate(source)
+    try:
+        yield copy
+    except ToolError as error:
+        cause = error.__cause__
+        uncertain = isinstance(cause, (httpx.TransportError, ValueError))
+        if isinstance(cause, httpx.HTTPStatusError):
+            # Gateway/server failures can arrive while an upstream write is
+            # still running. Only a definite rejection is safe to compensate.
+            uncertain = cause.response.status_code >= 500 or cause.response.status_code == 408
+        detail = (
+            f"本次改價未完成：{error}\n"
+            f"原始報價單: {source['quotation_number']}（未修改） — {_quotation_link(source['id'])}\n"
+        )
+        if not uncertain and copy.get("updated_at"):
+            try:
+                await _request("DELETE", f"/quotations/{copy['id']}",
+                               params={"expected_updated_at": copy["updated_at"]})
+            except ToolError as cleanup_error:
+                detail += f"失敗副本清理未確認：{cleanup_error}\n"
+            else:
+                raise ToolError(detail + "本次失敗副本已移除，沒有保留調整結果。") from error
+        else:
+            detail += "更新結果尚未確認，未自動刪除副本或重送改價。\n"
+        raise ToolError(
+            detail + f"待確認副本: {copy['quotation_number']} — {_quotation_link(copy['id'])}\n"
+            "請先開啟副本核對，勿直接重試以免重複建立。"
+        ) from error
 
 
 # ---------------------------------------------------------------------------
@@ -144,14 +203,16 @@ async def _find_quotation_by_number(quotation_number: str) -> dict | None:
 
 
 async def _find_customer_by_name(customer_name: str) -> dict | None:
-    """依客戶名稱查詢（後端為 ILIKE 模糊搜尋）。完全相符者優先，否則取第一筆。"""
-    data = await _get("/customers", search=customer_name, page_size=100)
-    customers = data.get("data", [])
+    """Prefer an exact name; an ambiguous partial name requires clarification."""
+    customers = await _all_rows("/customers", search=customer_name)
     if not customers:
         return None
-    for c in customers:
-        if c.get("name") == customer_name:
-            return c
+    exact = [c for c in customers if c.get("name") == customer_name]
+    if len(exact) == 1:
+        return exact[0]
+    if len(customers) > 1:
+        names = "、".join(c["name"] for c in customers[:10])
+        raise ToolError(f"找到多個符合的客戶：{names}。請提供唯一的完整客戶名稱。")
     return customers[0]
 
 
@@ -201,8 +262,7 @@ async def list_customer_quotations(customer_name: str) -> str:
     if not customer:
         raise ToolError(f"找不到客戶名稱包含「{customer_name}」的客戶")
 
-    data = await _get("/quotations", customer_id=customer["id"], page_size=100)
-    quotations = data.get("data", [])
+    quotations = await _all_rows("/quotations", customer_id=customer["id"])
     if not quotations:
         return f"客戶「{customer['name']}」目前沒有任何報價單"
 
@@ -237,19 +297,23 @@ async def update_pricing_factor(quotation_number: str, new_pricing_factor: float
     """
     if new_pricing_factor <= 0:
         raise ToolError("報價因子必須大於 0")
+    # 複製之前先檢查：後端欄位是 decimal(5,4)，存不下的值複製完才失敗，會留下一張多的草稿
+    if (not math.isfinite(new_pricing_factor) or new_pricing_factor >= 10
+            or not Decimal("0.0001") <= Decimal(str(new_pricing_factor)).quantize(
+                Decimal("0.0001"), rounding=ROUND_HALF_UP) <= Decimal("9.9999")):
+        raise ToolError("報價因子四捨五入到小數 4 位後必須介於 0.0001 和 9.9999，沒有建立副本")
 
     q = await _require_quotation(quotation_number)
-    new_q = await _duplicate(q)
-
-    updated = await _put(
-        f"/quotations/{new_q['id']}",
-        {
-            "customer_id": new_q["customer_id"],
-            "pricing_factor": new_pricing_factor,
-            "notes": new_q.get("notes", ""),
-            "items": _items_input(new_q),
-        },
-    )
+    async with _editing_copy(q) as new_q:
+        updated = await _put(
+            f"/quotations/{new_q['id']}",
+            {
+                "customer_id": new_q["customer_id"],
+                "pricing_factor": new_pricing_factor,
+                "notes": new_q.get("notes", ""),
+                "items": _items_input(new_q),
+            },
+        )
     return (
         f"已成功修改報價因子。\n"
         f"原始報價單: {quotation_number}（未修改） — {_quotation_link(q['id'])}\n"
@@ -268,36 +332,38 @@ async def adjust_total_price(quotation_number: str, target_total_price: float) -
         quotation_number: 要修改的報價單編號，例如 QT-20260330-001
         target_total_price: 目標總價數值，例如 100000
     """
-    if target_total_price <= 0:
-        raise ToolError("目標總價必須大於 0")
+    if not math.isfinite(target_total_price) or target_total_price <= 0:
+        raise ToolError("目標總價必須是大於 0 的有限數值")
 
     q = await _require_quotation(quotation_number)
-    new_q = await _duplicate(q)
-    items = _items_input(new_q)
-    bisect_timeout = httpx.Timeout(connect=5.0, read=10.0, write=10.0, pool=5.0)
+    async with _editing_copy(q) as new_q:
+        items = _items_input(new_q)
+        bisect_timeout = httpx.Timeout(connect=5.0, read=10.0, write=10.0, pool=5.0)
 
-    lo, hi = BISECT_LOW, BISECT_HIGH
-    best_q = new_q
-    iterations = 0
-    for iterations in range(1, BISECT_MAX_ITERATIONS + 1):
-        mid = (lo + hi) / 2.0
-        best_q = await _put(
-            f"/quotations/{new_q['id']}",
-            {
-                "customer_id": new_q["customer_id"],
-                "pricing_factor": round(mid, 4),
-                "notes": new_q.get("notes", ""),
-                "items": items,
-            },
-            timeout=bisect_timeout,
-        )
-        current_total = float(best_q["total_price"])
-        if abs(current_total - target_total_price) < BISECT_TOLERANCE:
-            break
-        if current_total < target_total_price:
-            lo = mid
-        else:
-            hi = mid
+        lo, hi = BISECT_LOW, BISECT_HIGH
+        best_q = new_q
+        iterations = 0
+        for iterations in range(1, BISECT_MAX_ITERATIONS + 1):
+            mid = (lo + hi) / 2.0
+            best_q = await _put(
+                f"/quotations/{new_q['id']}",
+                {
+                    "customer_id": new_q["customer_id"],
+                    "pricing_factor": round(mid, 4),
+                    "notes": new_q.get("notes", ""),
+                    "items": items,
+                },
+                timeout=bisect_timeout,
+            )
+            # Keep the last acknowledged version for conditional compensation.
+            new_q.update(best_q)
+            current_total = float(best_q["total_price"])
+            if abs(current_total - target_total_price) < BISECT_TOLERANCE:
+                break
+            if current_total < target_total_price:
+                lo = mid
+            else:
+                hi = mid
 
     actual_total = float(best_q["total_price"])
     note = ""

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { customerApi } from '../api/customerApi';
+import ErrorMessage from '../components/shared/ErrorMessage';
 import DataTable from '../components/shared/DataTable';
 import Pagination from '../components/shared/Pagination';
 import ConfirmDialog from '../components/shared/ConfirmDialog';
@@ -28,7 +29,7 @@ export default function CustomerListPage() {
   const [search, setSearch] = useState('');
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ['customers', page, search],
     queryFn: () => customerApi.list(page, 20, search),
   });
@@ -39,6 +40,7 @@ export default function CustomerListPage() {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       setDeleteId(null);
     },
+    onError: () => setDeleteId(null),
   });
 
   const columnsWithActions: Column<Customer>[] = columns.map(col => {
@@ -54,7 +56,7 @@ export default function CustomerListPage() {
               編輯
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); setDeleteId(customer.id); }}
+              onClick={(e) => { e.stopPropagation(); deleteMutation.reset(); setDeleteId(customer.id); }}
               className="text-red-600 hover:text-red-800 text-sm"
             >
               刪除
@@ -88,13 +90,16 @@ export default function CustomerListPage() {
         />
       </div>
 
-      <DataTable columns={columnsWithActions} data={data?.data ?? []} loading={isLoading} />
-      <Pagination
+      <ErrorMessage error={error} action="讀取客戶清單" />
+      {error && <button onClick={() => void refetch()} disabled={isFetching} className="mb-4 text-blue-600">重新載入資料</button>}
+      <ErrorMessage error={deleteMutation.error} action="刪除客戶" />
+      {!error && <DataTable columns={columnsWithActions} data={data?.data ?? []} loading={isLoading} />}
+      {!error && <Pagination
         page={page}
         pageSize={20}
         total={data?.total ?? 0}
         onPageChange={setPage}
-      />
+      />}
 
       <ConfirmDialog
         open={deleteId !== null}

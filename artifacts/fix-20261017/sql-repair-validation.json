@@ -1,0 +1,139 @@
+{
+  "project": "ezstore-fix-test",
+  "volume": "ezstore-fix-test-pgdata",
+  "applied_updates": 9,
+  "changes": [
+    {
+      "quotation_number": "QT-20260115-001",
+      "changes": {
+        "total_price": [
+          253500.0,
+          253350.0
+        ],
+        "profit_amount": [
+          72000.0,
+          66150.0
+        ],
+        "profit_rate": [
+          0.284,
+          0.2611
+        ]
+      }
+    },
+    {
+      "quotation_number": "QT-20260120-001",
+      "changes": {
+        "profit_amount": [
+          82120.0,
+          86570.0
+        ],
+        "profit_rate": [
+          0.2953,
+          0.3113
+        ]
+      }
+    },
+    {
+      "quotation_number": "QT-20260205-001",
+      "changes": {
+        "profit_rate": [
+          0.3578,
+          0.3579
+        ]
+      }
+    },
+    {
+      "quotation_number": "QT-20260210-001",
+      "changes": {
+        "profit_amount": [
+          21320.0,
+          22720.0
+        ],
+        "profit_rate": [
+          0.3076,
+          0.3278
+        ]
+      }
+    },
+    {
+      "quotation_number": "QT-20260218-001",
+      "changes": {
+        "profit_amount": [
+          39450.0,
+          52130.0
+        ],
+        "profit_rate": [
+          0.2913,
+          0.3849
+        ]
+      }
+    },
+    {
+      "quotation_number": "QT-20260305-001",
+      "changes": {
+        "profit_rate": [
+          0.2948,
+          0.2947
+        ]
+      }
+    },
+    {
+      "quotation_number": "QT-20260325-001",
+      "changes": {
+        "profit_amount": [
+          66060.0,
+          68060.0
+        ],
+        "profit_rate": [
+          0.3123,
+          0.3217
+        ]
+      }
+    },
+    {
+      "quotation_number": "QT-20260326-001",
+      "changes": {
+        "profit_amount": [
+          39960.0,
+          52960.0
+        ],
+        "profit_rate": [
+          0.3075,
+          0.4075
+        ]
+      }
+    },
+    {
+      "quotation_number": "QT-20260328-001",
+      "changes": {
+        "profit_amount": [
+          33000.0,
+          38500.0
+        ],
+        "profit_rate": [
+          0.375,
+          0.4375
+        ]
+      }
+    }
+  ],
+  "after_dry_run_skipped": 12,
+  "non_derived_quotation_fields_unchanged": true,
+  "all_items_orders_customers_products_unchanged": true,
+  "stale_plan_refused_without_changes": true,
+  "restored_corrected_seed": true,
+  "restored_fixture_equals_repaired_snapshot": true,
+  "restored_counts": {
+    "quotations": 12,
+    "quotation_items": 41,
+    "orders": 10,
+    "order_items": 31,
+    "products": 20,
+    "customers": 15
+  },
+  "final_service_states": {
+    "agent": "exited",
+    "advisor": "exited"
+  },
+  "original_project_accessed": false
+}

@@ -48,6 +48,34 @@ services:
         condition: service_started
 
 
+  agent:
+    # 報價單管理 Agent（ADK Graph Workflow）。本機建置請加 -f docker-compose.build.yml
+    image: ghcr.io/terry0803/ezstore/agent:latest
+    pull_policy: missing
+    environment:
+      # 模型憑證二選一，沒設時系統照常啟動，只有對話會回覆清楚的錯誤訊息
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GOOGLE_GENAI_USE_VERTEXAI: ${GOOGLE_GENAI_USE_VERTEXAI:-}
+      GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-}
+      GOOGLE_CLOUD_LOCATION: ${GOOGLE_CLOUD_LOCATION:-global}
+      AGENT_MODEL: ${AGENT_MODEL:-gemini-3.8-flash}
+      MODEL_MAX_ATTEMPTS: ${MODEL_MAX_ATTEMPTS:-6}
+      # AGENT_MODEL=openai/<模型> 時改用本機 OpenAI 相容 API（例如 llama.cpp）
+      LOCAL_LLM_BASE: ${LOCAL_LLM_BASE:-http://host.docker.internal:18081/v1}
+      MCP_URL: http://mcp-server:8000/mcp
+      BACKEND_API: http://backend:8080/api/v1
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      ALLOW_ORIGINS: ${ALLOW_ORIGINS:-http://localhost:3000}
+      APP_URL: http://agent:8080
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # port 8080 只開在 compose 內部網路，前端 nginx 以 /agent-api 轉過來
+    expose:
+      - "8080"
+    depends_on:
+      mcp-server:
+        condition: service_started
+
   frontend:
     image: ghcr.io/cshliu77/ezstore/frontend:latest
     pull_policy: always
@@ -56,6 +84,7 @@ services:
     depends_on:
       - backend
       - mcp-server
+      - agent
 
   e2e:
     image: ghcr.io/cshliu77/ezstore/e2e:latest

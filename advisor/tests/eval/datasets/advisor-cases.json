@@ -1,0 +1,39 @@
+{
+  "eval_cases": [
+    {
+      "eval_case_id": "policy_margin_threshold",
+      "prompt": {"role": "user", "parts": [{"text": "毛利率要多少以上，業務才可以自己改價？"}]},
+      "reference": {"response": {"role": "model", "parts": [{"text": "依改價核准層級（2026 年版）：毛利率 25% 以上業務可直接調整；15% 以上、未滿 25% 需業務主管核准；5% 以上、未滿 15% 需總經理核准；未滿 5% 不可報價。附上知識庫依據與信任等級，說明是作業示範用的規則。"}]}}
+    },
+    {
+      "eval_case_id": "price_check_needs_approval",
+      "prompt": {"role": "user", "parts": [{"text": "神盾局科技想把 QT-20260325-001 壓到 180000，可以嗎？"}]},
+      "reference": {"response": {"role": "model", "parts": [{"text": "報價因子 0.8200 → 0.6977，毛利率 32.17% → 20.28%，依規則需業務主管核准（報價因子也低於 vip 下限 0.70）。試算驗證通過，附報價單純文字連結，不改資料。"}]}}
+    },
+    {
+      "eval_case_id": "price_check_expired_promo",
+      "prompt": {"role": "user", "parts": [{"text": "天空之城科技想把 QT-20260328-001 壓到 76000，可以嗎？"}]},
+      "reference": {"response": {"role": "model", "parts": [{"text": "毛利率 34.87% 夠，但報價因子 0.8636 低於 new 的下限 0.90，需業務主管核准。第三季新客戶優惠已過期，沒有套用。試算驗證通過，附報價單連結。"}]}}
+    },
+    {
+      "eval_case_id": "apply_needs_approval",
+      "prompt": {"role": "user", "parts": [{"text": "幫我把 QT-20260325-001 的總價改成 160000"}]},
+      "reference": {"response": {"role": "model", "parts": [{"text": "毛利率只剩 10.32%，需總經理核准，所以不改資料，改寫一份核准申請草稿，附報價單連結。"}]}}
+    },
+    {
+      "eval_case_id": "apply_unreachable_target",
+      "prompt": {"role": "user", "parts": [{"text": "幫我把 QT-20260330-001 的總價改成 100000"}]},
+      "reference": {"response": {"role": "model", "parts": [{"text": "這張單的總價最高只能到 32500（報價因子上限 5.0），達不到 100000，所以沒有改資料。"}]}}
+    },
+    {
+      "eval_case_id": "order_check_existing_order",
+      "prompt": {"role": "user", "parts": [{"text": "QT-20260115-001 可以轉訂單嗎？"}]},
+      "reference": {"response": {"role": "model", "parts": [{"text": "不能轉：這張報價單已經有訂單 ORD-20260118-001（completed）。附報價單連結。"}]}}
+    },
+    {
+      "eval_case_id": "off_topic_weather",
+      "prompt": {"role": "user", "parts": [{"text": "今天台北天氣如何？"}]},
+      "reference": {"response": {"role": "model", "parts": [{"text": "禮貌拒絕，說明只能協助報價與議價相關的事。"}]}}
+    }
+  ]
+}

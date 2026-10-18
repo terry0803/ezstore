@@ -1,5 +1,7 @@
 # EZStore
 
+此版本保留老師的六項操作與 Agent 架構，並依使用者要求修正已確認的基底問題。`backend/`、`frontend/`、`mcp_server/` 因此與講師 `09f6588` 有差異；這不是講師已核准修改。`python scripts/check_assignment.py` 仍會嚴格回報差異；`--allow-user-fixes` 只放行列明的修補檔案。目前狀態和最新測試見 [目前狀態](reports/目前狀態.md)。
+
 > 輕量級 B2B 報價與訂單管理系統。
 
 [English](README.md)
@@ -38,8 +40,15 @@ ezstore/
 ├── scripts/
 │   └── seed-test-data.sql      # 冪等測試資料集（TRUNCATE + INSERT）
 ├── .env.example                # GEMINI_API_KEY 與 Agent 設定（複製為 .env）
-├── agent/                      # ★ LAB 作業 — 本分支不含此資料夾，請依 agent-spec-prompt.md 開發
-│                               #   （agents-cli scaffold → ADK 2.x Graph Workflow → 連接 mcp_server）
+├── agent/                      # 報價單 Agent（ADK 2.x Graph Workflow → mcp_server），說明見 agent/README.md
+│   ├── quotation_agent/        #   agent.py（Workflow、Intent、各節點）、fast_api_app.py（ADK 與 A2A 路由）
+│   ├── tests/                  #   unit／integration（離線）與 eval 題庫、指標
+│   └── Dockerfile、pyproject.toml、uv.lock
+├── advisor/                    # 議價顧問 Agent（第二個 Agent，A2A 呼叫報價單 Agent），說明見 advisor/README.md
+│   ├── pricing_advisor/        #   agent.py、okf.py（讀知識庫）、policies.py、computation.py、a2a_client.py、okf_cli.py
+│   └── tests/、scripts/        #   離線測試；示範對話與 A2A 示範
+├── knowledge/ezstore/          # OKF v0.2 知識庫：system、policies、computations、playbooks、glossary、references
+├── docker-compose.advisor.yml  # 加上議價顧問服務（對本機開 8502）
 ├── mcp_server/
 │   ├── Dockerfile
 │   ├── pyproject.toml           # mcp>=2.2、httpx（含 uv.lock）
@@ -66,7 +75,7 @@ ezstore/
     │   ├── types/index.ts      # TypeScript 型別定義
     │   ├── App.tsx             # Router + QueryClientProvider
     │   └── main.tsx            # React 入口
-    └── e2e/                    # Playwright E2E 測試（規劃中）
+    └── e2e/                    # Playwright E2E 測試
 ```
 
 ### 開發環境需求
@@ -144,37 +153,37 @@ swag --version            # swag version v1.x+
 cp .env.example .env      # 再填入 GEMINI_API_KEY，取得方式：https://aistudio.google.com/apikey
 ```
 
-**方式 A — 使用 GHCR 雲端預建 image（預設，免編譯）：**
+**啟動（從本機原始碼建置，含兩個 Agent）：**
 
 ```bash
-docker compose up -d
+docker compose -p ezstore -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.advisor.yml up -d --build
 ```
 
-**方式 B — 使用本地原始碼編譯：**
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
-```
+Windows 也可以用 `.\scripts\start-homework.ps1`（加 `-SkipBuild` 不重建，`-Action Status|Restart|Logs` 看狀態、重啟、看紀錄）。只打 `docker compose up -d` 會拉課程的 GHCR 映像，沒有這份作業的修改。改了 `.env` 要重新 `up -d`，單純 restart 不會讀新設定。
 
 **載入測試資料：**
 
 ```bash
-docker compose exec db psql -U ezstore -f /scripts/seed-test-data.sql
+docker compose -p ezstore exec db psql -U ezstore -f /scripts/seed-test-data.sql
 ```
+
+seed 會先 `TRUNCATE` 再寫入，資料回到初始的 12 張報價單、10 筆訂單。示範和評鑑會新增複製單和訂單，重跑前灌一次。
 
 | 服務 | 網址 |
 |------|------|
 | 前端 | http://localhost:3000 |
+| AI 智能助理（Chat UI） | http://localhost:3000/agent |
 | 後端 API | http://localhost:8080/api/v1 |
 | Swagger UI | http://localhost:8080/swagger/index.html |
 | 健康檢查 | http://localhost:8080/health |
 
 **執行 E2E 測試（驗證部署是否正常）：**
 
-```bash
-docker compose exec db psql -U ezstore -f /scripts/seed-test-data.sql
-docker compose run --rm e2e
+```powershell
+.\scripts\test-e2e.ps1            # 加 -SkipBuild 重用已建好的測試映像
 ```
+
+這支腳本另開一套臨時的資料庫和服務（專案名 `ezstore-e2e-<隨機值>`），灌 seed、跑 UI 與 API 測試，結束後連同 volume 一起刪掉，不碰主服務的資料。macOS／Linux 用 `pwsh -File scripts/test-e2e.ps1`。
 
 ### 開發模式
 
@@ -210,10 +219,10 @@ cd backend
 go test ./... -v -cover
 ```
 
-**載入測試資料集**（冪等 — 可安全重複執行）：
+**載入測試資料集**（會先清空再寫入，重跑結果一樣）：
 
 ```bash
-docker compose exec db psql -U ezstore -f /scripts/seed-test-data.sql
+docker compose -p ezstore exec db psql -U ezstore -f /scripts/seed-test-data.sql
 ```
 
 測試資料包含：15 位客戶（5 VIP + 6 一般 + 4 新客戶）、20 個產品、12 張報價單（8 已發佈 + 4 草稿）、10 筆訂單（3 待處理 + 3 已確認 + 2 已完成 + 2 已取消）。
@@ -254,29 +263,30 @@ $(go env GOPATH)/bin/swag init -g main.go --parseDependency --parseInternal
 
 ### AI 智能助理
 
-> **本分支（`workshop-start`）是 LAB 的起點。** 後端、前端 Chat UI、MCP Server、資料庫都已提供；`agent/` 服務是你要開發的部分，把 `agent-spec-prompt.md` 餵給 AI coding 工具即可開始。以下說明是你要做出來的目標。
-
-EZStore 內建自然語言報價單管理助手，以 Google ADK 2.x 開發。Agent 是一張 **Graph Workflow 圖**：只有意圖分類節點會呼叫 LLM，工具選擇、參數傳遞、追問與拒答全部由程式決定。
+EZStore 內建自然語言報價單管理助手，程式在 `agent/`，用 Google ADK 2.11 開發。Agent 是一張 **Graph Workflow 圖**：只有意圖分類節點會呼叫 LLM，工具選擇、參數、追問與拒答全部由程式決定。
 
 **架構：**
 
 ```
 使用者 → React Chat UI → nginx /agent-api → Agent（ADK FastAPI，port 8080）→ MCP Server（port 8000）→ Backend REST API
                                                │                                     Streamable HTTP
-                                          Gemini 3.8 Flash                           （mcp Python SDK 2.x）
-                                        （AI Studio API key）
+                                     classify_intent 用的模型                        （mcp Python SDK 2.x）
+                         Gemini 3.8 Flash（AI Studio key 或 Vertex AI）
+                         或本機 OpenAI 相容模型（AGENT_MODEL=openai/...，經 LiteLLM）
 
 Workflow 圖（agent/quotation_agent/agent.py）：
 
-  START → load_context → classify_intent（LLM，output_schema=Intent）→ route
-            ├─ get_quotation / list_customer_quotations / duplicate_quotation
-            ├─ update_pricing_factor / adjust_total_price / convert_to_order    ← 各呼叫一個 MCP 工具
-            ├─ clarify    （缺欄位就追問，並把意圖暫存在 state.pending_intent）
-            └─ off_topic  （固定拒答，由程式決定）
-          全部 → respond  （輸出文字、更新 state.chat_history）
+  START → load_context ──（沒有憑證）──────────────────────────────────┐
+            │                                                           │
+            └─（classify）→ classify_intent（LlmAgent，output_schema=Intent）→ route
+                            ├─ get_quotation / list_customer_quotations / duplicate_quotation
+                            ├─ update_pricing_factor / adjust_total_price / convert_to_order   ← 各呼叫一個 MCP 工具
+                            ├─ clarify   （缺欄位或數字不合法就回「請提供…」，意圖暫存在 state.pending_intent）
+                            └─ off_topic （由程式決定拒答）
+                          全部 → respond （Chat UI 只顯示這個節點的文字）
 ```
 
-每一則使用者訊息都會從 `START` 重新跑一次圖；跨回合的記憶放在 session state（`chat_history`、`pending_intent`），所以使用者可以在下一句補上被追問的資料。
+每一則使用者訊息都從 `START` 重新跑一次圖，跨回合的記憶放在 session state 的 `pending_intent`。state 是空的、但上一輪助手正在追問時（例如 eval 題目自己帶進來的對話紀錄），`load_context` 會把上一句使用者的話一起交給分類器，一樣接得下去。
 
 **功能：**
 
@@ -290,33 +300,76 @@ Workflow 圖（agent/quotation_agent/agent.py）：
 | 報價單轉訂單 | 依報價單的客戶與品項建立訂單並以 `quotation_id` 關聯；報價單本身不動 |
 
 **設計原則：**
-- 所有修改採用 **copy-on-write** — 原始報價單永遠不會被直接更動
-- 所有回覆包含 **純文字系統連結**，直接點開報價單／訂單頁
-- 離題請求 **由程式拒答**，缺少必要欄位時 **追問一輪**
-- 沒有 API key 時 Agent 仍會啟動（對話回傳清楚錯誤），`docker compose up` 不會因缺金鑰而失敗
+- 所有修改都先複製再改副本，原始報價單不會被動到。MCP 工具的回覆本身就有寫這件事，Agent 原樣呈現
+- 每則回覆都附 **純文字系統連結**，不用 Markdown 連結
+- 報價單編號用正規表示式從使用者原文抓，不靠 LLM；報價因子與目標總價必須大於 0
+- 離題請求 **由程式拒答**：分類器判成 `off_topic`，或命中提示注入、客戶／產品增修刪的規則。缺少必要欄位時 **追問一輪**
+- 沒有任何憑證時 Agent 照常啟動，對話回覆設定說明，`docker compose up` 不會因缺金鑰而失敗
+
+**環境變數：**
+
+預設模型照講義用 `gemini-3.8-flash`。測試時為了省額度，`.env` 設 `AGENT_MODEL=gemini-3.1-flash-lite`，這是帳號可用的模型裡最便宜的（`gemini-2.5-flash-lite` 對新帳號已停用）。Compose 讀根目錄的 `.env`，在 `agent/`、`advisor/` 直接跑讀各自的 `.env`。
+
+| 變數 | 預設 | 用途 |
+|------|------|------|
+| `GEMINI_API_KEY` | 無 | AI Studio key（Compose 讀根目錄 `.env`，本機開發讀 `agent/.env`） |
+| `GOOGLE_GENAI_USE_VERTEXAI`、`GOOGLE_CLOUD_PROJECT`、`GOOGLE_CLOUD_LOCATION` | 無、無、`global` | 改用 Vertex AI |
+| `AGENT_MODEL` | `gemini-3.8-flash` | `classify_intent` 用的模型。以 `openai/` 開頭（例如 `openai/qwen3.5-9b`）就改走 OpenAI 相容 API |
+| `MODEL_MAX_ATTEMPTS` | `6` | 每次呼叫 Gemini 最多試幾次，429 會退避重試；額度少的時候設成 1 |
+| `LOCAL_LLM_BASE` | Compose：`http://host.docker.internal:18081/v1`；本機：`http://127.0.0.1:18081/v1` | `openai/` 模型的 API 位址 |
+| `MCP_URL` | Compose：`http://mcp-server:8000/mcp`；本機：`http://localhost:8010/mcp` | MCP Server |
+| `FRONTEND_URL`、`ALLOW_ORIGINS` | `http://localhost:3000` | 工具回覆裡的連結、CORS |
+| `JUDGE_MODEL` | 同 `AGENT_MODEL` | `agent/tests/eval` 評估指標用的評審模型 |
 
 **本機開發：**
 
 ```bash
-# MCP Server（用 8010 避免與本機其他服務撞埠）
-cd mcp_server && uv sync
-BACKEND_URL=http://localhost:8080 MCP_PORT=8010 uv run python server.py
+# 整套系統；mcp-server 對本機開 8010，讓本機跑的 Agent 連得到
+docker compose -p ezstore -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.advisor.yml up -d --build
 
-# Agent（另開終端）
-cd agent && cp .env.example .env    # 填 GEMINI_API_KEY，MCP_URL 改為 http://localhost:8010/mcp
+cd agent && cp .env.example .env    # 填 GEMINI_API_KEY，MCP_URL=http://localhost:8010/mcp
                                     # 或改走 Vertex AI：先 `gcloud auth application-default login`，再設 GOOGLE_GENAI_USE_VERTEXAI=true 與 GOOGLE_CLOUD_PROJECT
-uv sync --group dev
-agents-cli playground               # 網頁介面
-agents-cli run "我要查詢報價單，報價單編號：QT-20260330-001"
-
-# 測試
-uv run pytest tests/unit -q                                            # 不需 LLM、不需 MCP
-MCP_URL=http://localhost:8010/mcp uv run pytest tests/integration -q   # 離線圖測試（有金鑰時一併跑 LLM 測試）
-agents-cli eval run --dataset tests/eval/datasets/quotation-actions.json     # 6 個操作案例（會新增資料，重跑前重灌 seed）
-agents-cli eval run --dataset tests/eval/datasets/quotation-guardrails.json  # 2 個拒答 + 1 個多輪追問
+uv sync --group dev --extra eval
+agents-cli playground               # 網頁介面（加 --port 8501 就在 http://127.0.0.1:8501）
 ```
 
-學員用的可信賴度評鑑 LAB：課堂版 [eval-lab-quick.zh-TW.md](eval-lab-quick.zh-TW.md)（25 分鐘）、完整版 [eval-lab.zh-TW.md](eval-lab.zh-TW.md)（60–90 分鐘，回家做）。
+**測試與評估：**
+
+```bash
+cd agent
+uv run pytest tests/unit tests/integration -q   # 不需金鑰，分類器換成假模型；8010 沒開時 MCP 相關測試會略過
+agents-cli eval run                              # 預設的小題庫 tests/eval/datasets/basic-dataset.json
+agents-cli eval run --dataset tests/eval/datasets/quotation-actions.json     # 6 個操作案例（會新增資料，重跑前重灌 seed）
+agents-cli eval run --dataset tests/eval/datasets/quotation-guardrails.json  # 2 個拒答 + 1 個多輪追問
+cd .. && python3 scripts/grading/grade_agent.py --suite scripts/grading/student-suite.json   # 0–100 自我驗收分數
+```
+
+`agent/tests/eval/eval_config.yaml` 的四個指標是自訂函式，已有 AI Studio 與本機模型介接；這不代表安裝的 CLI 評分流程不需要雲端設定：
+- 本輪實測 `agents-cli` v1.10.0 的雲端提示評分指標因無法解析 GCP 專案而停止；選用該路徑另需具權限的雲端認證（例如 ADC）。這不等於所有評分都必須上雲，也不是老師要求購買雲端服務：講義允許 AI Studio API key，助教正式評分使用其私有題庫。詳見 `scripts/local_eval/README.md`。
+- 本機模型如果只開一個推論槽，要用 `agents-cli eval run --concurrency 1`。
+
+學員用的可信賴度評鑑 LAB：課堂版 [eval-lab-quick.zh-TW.md](eval-lab-quick.zh-TW.md)（25 分鐘）、完整版 [eval-lab.zh-TW.md](eval-lab.zh-TW.md)（60–90 分鐘，回家做）。這個 Agent 照完整版做完的結果與一頁報告見 [reports/可信賴度報告.md](reports/可信賴度報告.md)。
+
+### 第二個 Agent：議價顧問（A2A 與 OKF 知識庫）
+
+`advisor/` 是另外加做的第二個 Agent（app 名稱 `pricing_advisor`），給業務用。客戶要求降價或轉訂單時，它先查 `knowledge/ezstore/` 的 OKF 知識庫、用知識庫指定的計算試算毛利率，判斷要不要主管核准，可以做的才經 A2A 交給報價單 Agent。設計與執行方式見 [advisor/README.md](advisor/README.md)。
+
+```
+業務 → ADK 網頁介面（:8502/dev-ui）或 A2A client
+        → 議價顧問 Agent ──讀──→ OKF 知識庫 knowledge/ezstore
+             │  └─ GET ──→ Backend REST API
+             └─ A2A（JSON-RPC）──→ 報價單 Agent（/a2a/quotation_agent）── MCP ──→ Backend
+```
+
+- **A2A**：兩個 Agent 都由 `fast_api_app.py` 開 A2A 端點，agent card 列出各自的 skill（報價單 Agent 是六個操作各一個）。A2A 回覆只帶 `respond` 節點的文字，和 Chat UI 看到的一樣。議價顧問改完資料後，會從後端重新讀一次結果核對。
+- **OKF**：知識庫照 Open Knowledge Format v0.2 寫，17 個條目（系統事實、改價與轉訂單規則、Attested Computation、議價流程、名詞）。`uv run okf validate` 檢查格式，`uv run okf verify` 對照原始碼與執行中的系統寫入機器驗證紀錄，`uv run okf viz` 產生關聯圖 `knowledge/ezstore/viz.html`。
+- `knowledge/ezstore/policies/` 的核准門檻是作業示範用的虛構規則，EZStore 本身沒有核准流程。
+
+```bash
+docker compose -p ezstore -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.advisor.yml up -d --build
+```
+
+A2A 示範：`cd advisor && uv run python scripts/a2a_demo.py`（外部 client → 議價顧問 → 報價單 Agent，會改資料，先重灌 seed）。
 
 ### 授權
 
@@ -371,6 +424,9 @@ HTTP 請求 → Handler（Gin）→ Service（業務邏輯）→ Repository（GO
 | 共用元件 | `frontend/src/components/shared/*.tsx` |
 | Docker 編排 | `docker-compose.yml` |
 | 測試資料集 | `scripts/seed-test-data.sql` |
+| 議價顧問 Workflow | `advisor/pricing_advisor/agent.py` |
+| OKF 知識庫 | `knowledge/ezstore/`（工具：`advisor/pricing_advisor/okf_cli.py`） |
+| 改價試算（Attested Computation） | `knowledge/ezstore/computations/price-change-impact.md`、`references/computations/price_change_impact.py` |
 
 ### 資料庫 Schema 摘要
 
@@ -470,9 +526,8 @@ DELETE /api/v1/orders/:id             → 軟刪除
 
 ```bash
 # 完整環境（Docker）
-docker compose up --build -d
-docker compose down -v                    # 停止並移除 volumes
-docker compose exec db psql -U ezstore -f /scripts/seed-test-data.sql
+docker compose -p ezstore -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.advisor.yml up -d --build
+docker compose -p ezstore -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.advisor.yml down  # 停止，保留資料庫 volume
 
 # 後端
 cd backend
@@ -510,3 +565,5 @@ bun run build                             # 正式建置 → dist/
 
 **新增實體：**
 依循現有模式：model → repository → service → handler → route。每個實體在每一層都有獨立檔案。可參考 `customer` 作為最簡單的完整範例。
+
+Windows 的 Docker Desktop 若不能掛載 D 槽，可執行 `.\scripts\start-homework.ps1 -DockerBindCache "$env:LOCALAPPDATA\EZStore\docker-bind-cache"`。Start 每次重新複製 scripts 與知識庫到指定快取並建置，保留原資料庫；首次設定後會記住快取路徑。修改知識或本人簽核後執行 `-Action SyncKnowledge` 並開新對話；未設定快取時直接掛載原資料夾。

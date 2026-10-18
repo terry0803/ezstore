@@ -1,0 +1,80 @@
+?   	github.com/cshliu/ezstore/backend	[no test files]
+?   	github.com/cshliu/ezstore/backend/config	[no test files]
+?   	github.com/cshliu/ezstore/backend/docs	[no test files]
+?   	github.com/cshliu/ezstore/backend/handlers	[no test files]
+?   	github.com/cshliu/ezstore/backend/middleware	[no test files]
+?   	github.com/cshliu/ezstore/backend/models	[no test files]
+?   	github.com/cshliu/ezstore/backend/repositories	[no test files]
+?   	github.com/cshliu/ezstore/backend/routes	[no test files]
+=== RUN   TestDatabaseQuotationCustomerUpdate
+    database_integration_test.go:72: 
+        	Error Trace:	/src/services/database_integration_test.go:72
+        	Error:      	Not equal: 
+        	            	expected: 0x2
+        	            	actual  : 0x1
+        	Test:       	TestDatabaseQuotationCustomerUpdate
+        	Messages:   	loaded old Customer must not overwrite the explicitly requested foreign key
+--- FAIL: TestDatabaseQuotationCustomerUpdate (0.08s)
+=== RUN   TestDatabaseOrderCustomerUpdate
+    database_integration_test.go:87: 
+        	Error Trace:	/src/services/database_integration_test.go:87
+        	Error:      	Not equal: 
+        	            	expected: 0x2
+        	            	actual  : 0x1
+        	Test:       	TestDatabaseOrderCustomerUpdate
+        	Messages:   	saving a preloaded Customer must not undo the customer's change
+--- FAIL: TestDatabaseOrderCustomerUpdate (0.07s)
+=== RUN   TestDatabaseConcurrentQuotationUpdatesReplaceItems
+    database_integration_test.go:133: 
+        	Error Trace:	/src/services/database_integration_test.go:133
+        	Error:      	"[{2 2026-10-17 09:28:30.292199 +0000 UTC 2026-10-17 09:28:30.292199 +0000 UTC {0001-01-01 00:00:00 +0000 UTC false} 1 1 Test product 40 100 100 3 300} {3 2026-10-17 09:28:30.44888 +0000 UTC 2026-10-17 09:28:30.44888 +0000 UTC {0001-01-01 00:00:00 +0000 UTC false} 1 1 Test product 40 100 100 2 200}]" should have 1 item(s), but has 2
+        	Test:       	TestDatabaseConcurrentQuotationUpdatesReplaceItems
+        	Messages:   	concurrent replacements must not merge item lists
+--- FAIL: TestDatabaseConcurrentQuotationUpdatesReplaceItems (0.40s)
+=== RUN   TestDatabaseConcurrentOrderUpdatesReplaceItems
+    database_integration_test.go:149: 
+        	Error Trace:	/src/services/database_integration_test.go:149
+        	Error:      	"[{2 2026-10-17 09:28:30.720034 +0000 UTC 2026-10-17 09:28:30.720034 +0000 UTC {0001-01-01 00:00:00 +0000 UTC false} 1 1 Test product 100 3 300} {3 2026-10-17 09:28:30.875246 +0000 UTC 2026-10-17 09:28:30.875246 +0000 UTC {0001-01-01 00:00:00 +0000 UTC false} 1 1 Test product 100 2 200}]" should have 1 item(s), but has 2
+        	Test:       	TestDatabaseConcurrentOrderUpdatesReplaceItems
+        	Messages:   	concurrent replacements must not merge item lists
+--- FAIL: TestDatabaseConcurrentOrderUpdatesReplaceItems (0.42s)
+=== RUN   TestDatabaseStaleDraftCannotUndoPublish
+    database_integration_test.go:166: 
+        	Error Trace:	/src/services/database_integration_test.go:166
+        	Error:      	An error is expected but got nil.
+        	Test:       	TestDatabaseStaleDraftCannotUndoPublish
+        	Messages:   	a stale draft must not overwrite a published quotation
+--- FAIL: TestDatabaseStaleDraftCannotUndoPublish (0.09s)
+=== RUN   TestDatabaseRepeatedConversionRemainsAllowed
+--- PASS: TestDatabaseRepeatedConversionRemainsAllowed (0.09s)
+=== RUN   TestQuotationRejectsNonPositiveFactorBeforeDatabase
+--- PASS: TestQuotationRejectsNonPositiveFactorBeforeDatabase (0.00s)
+=== RUN   TestOrderRejectsNegativePriceBeforeDatabase
+--- PASS: TestOrderRejectsNegativePriceBeforeDatabase (0.00s)
+=== RUN   TestOrderZeroPriceIsValid
+--- PASS: TestOrderZeroPriceIsValid (0.00s)
+=== RUN   TestOrderRejectsCrossCustomerQuotationBeforeWrite
+--- PASS: TestOrderRejectsCrossCustomerQuotationBeforeWrite (0.00s)
+=== RUN   TestOrderQuotationValidation
+--- PASS: TestOrderQuotationValidation (0.00s)
+=== RUN   TestCreateWithRetry_RetriesOnDuplicateKey
+--- PASS: TestCreateWithRetry_RetriesOnDuplicateKey (0.00s)
+=== RUN   TestCreateWithRetry_GivesUpAfterMaxRetries
+--- PASS: TestCreateWithRetry_GivesUpAfterMaxRetries (0.00s)
+=== RUN   TestCreateWithRetry_DoesNotRetryOtherErrors
+--- PASS: TestCreateWithRetry_DoesNotRetryOtherErrors (0.00s)
+=== RUN   TestIsDuplicateKey
+--- PASS: TestIsDuplicateKey (0.00s)
+=== RUN   TestComputeTotals
+--- PASS: TestComputeTotals (0.00s)
+=== RUN   TestComputeTotals_MultipleItems
+--- PASS: TestComputeTotals_MultipleItems (0.00s)
+=== RUN   TestComputeTotals_ZeroTotal
+--- PASS: TestComputeTotals_ZeroTotal (0.00s)
+=== RUN   TestDuplicateNotesFormat
+--- PASS: TestDuplicateNotesFormat (0.00s)
+=== RUN   TestDefaultPricingFactor
+--- PASS: TestDefaultPricingFactor (0.00s)
+FAIL
+FAIL	github.com/cshliu/ezstore/backend/services	1.152s
+FAIL

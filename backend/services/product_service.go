@@ -17,12 +17,7 @@ func NewProductService(repo *repositories.ProductRepository) *ProductService {
 }
 
 func (s *ProductService) List(page, pageSize int, search string) ([]models.Product, int64, error) {
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
+	page, pageSize = NormalizePagination(page, pageSize)
 	return s.Repo.List(page, pageSize, search)
 }
 

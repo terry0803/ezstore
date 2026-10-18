@@ -1,0 +1,286 @@
+FFFFF                                                                    [100%]
+================================== FAILURES ===================================
+_____ test_uncertain_dispatch_does_not_send_a_second_conversion[timeout] ______
+
+conversion = (<tests.conftest.FakeBackend object at 0x0000017C187ADF70>, {'id': 6, 'created_at': '2026-03-01T02:00:00Z', 'updated_a...nction conversion.<locals>.commit at 0x0000017C1877F6A0>, <function conversion.<locals>.request at 0x0000017C1877F740>)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000017C18729130>
+failure = 'timeout'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("failure", ["timeout", "cancel", "unverified_completed_reply"])
+    async def test_uncertain_dispatch_does_not_send_a_second_conversion(conversion, monkeypatch, failure):
+        backend, quote, commit, request = conversion
+        inputs = [await request(), await request()]
+        release, dispatched = asyncio.Event(), asyncio.Event()
+        remote_tasks, calls = [], []
+    
+        async def later_commit(number):
+            await release.wait()
+            commit(number)
+    
+        async def send(text):
+            calls.append(text)
+            remote_tasks.append(asyncio.create_task(later_commit(998 + len(calls))))
+            dispatched.set()
+            if failure == "cancel":
+                await asyncio.Event().wait()
+            if failure == "unverified_completed_reply":
+                return A2AResult("操作中斷，尚無法確認是否完成", "task", "context", "completed", "quotation_agent")
+            raise A2AError("timed out after request dispatch")
+    
+        monkeypatch.setattr(agent, "quotation_agent", SimpleNamespace(send=send))
+        first = asyncio.create_task(agent.delegate_a2a(None, inputs[0]))
+        try:
+            await dispatched.wait()
+            if failure == "cancel":
+                first.cancel()
+                with pytest.raises(asyncio.CancelledError):
+                    await first
+            else:
+                await first
+            # Remote work has not committed yet, so rereading orders alone sees none.
+            second = await asyncio.wait_for(agent.delegate_a2a(None, inputs[1]), 1)
+>           assert len(calls) == 1
+E           AssertionError: assert 2 == 1
+E            +  where 2 = len(['我要將報價單轉訂單，報價單編號：QT-20260301-001', '我要將報價單轉訂單，報價單編號：QT-20260301-001'])
+
+tests\unit\test_conversion_safety.py:75: AssertionError
+______ test_uncertain_dispatch_does_not_send_a_second_conversion[cancel] ______
+
+text = '我要將報價單轉訂單，報價單編號：QT-20260301-001'
+
+    async def send(text):
+        calls.append(text)
+        remote_tasks.append(asyncio.create_task(later_commit(998 + len(calls))))
+        dispatched.set()
+        if failure == "cancel":
+>           await asyncio.Event().wait()
+
+tests\unit\test_conversion_safety.py:58: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <asyncio.locks.Event object at 0x0000017C187C6F00 [unset]>
+
+    async def wait(self):
+        """Block until the internal flag is true.
+    
+        If the internal flag is true on entry, return True
+        immediately.  Otherwise, block until another coroutine calls
+        set() to set the flag to true, then return True.
+        """
+        if self._value:
+            return True
+    
+        fut = self._get_loop().create_future()
+        self._waiters.append(fut)
+        try:
+>           await fut
+E           asyncio.exceptions.CancelledError
+
+C:\Users\terry\.local\share\uv\python\cpython-3.12-windows-x86_64-none\Lib\asyncio\locks.py:212: CancelledError
+
+The above exception was the direct cause of the following exception:
+
+conversion = (<tests.conftest.FakeBackend object at 0x0000017C187C72C0>, {'id': 6, 'created_at': '2026-03-01T02:00:00Z', 'updated_a...nction conversion.<locals>.commit at 0x0000017C187DE480>, <function conversion.<locals>.request at 0x0000017C187DE520>)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000017C187ADD90>
+failure = 'cancel'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("failure", ["timeout", "cancel", "unverified_completed_reply"])
+    async def test_uncertain_dispatch_does_not_send_a_second_conversion(conversion, monkeypatch, failure):
+        backend, quote, commit, request = conversion
+        inputs = [await request(), await request()]
+        release, dispatched = asyncio.Event(), asyncio.Event()
+        remote_tasks, calls = [], []
+    
+        async def later_commit(number):
+            await release.wait()
+            commit(number)
+    
+        async def send(text):
+            calls.append(text)
+            remote_tasks.append(asyncio.create_task(later_commit(998 + len(calls))))
+            dispatched.set()
+            if failure == "cancel":
+                await asyncio.Event().wait()
+            if failure == "unverified_completed_reply":
+                return A2AResult("操作中斷，尚無法確認是否完成", "task", "context", "completed", "quotation_agent")
+            raise A2AError("timed out after request dispatch")
+    
+        monkeypatch.setattr(agent, "quotation_agent", SimpleNamespace(send=send))
+        first = asyncio.create_task(agent.delegate_a2a(None, inputs[0]))
+        try:
+            await dispatched.wait()
+            if failure == "cancel":
+                first.cancel()
+                with pytest.raises(asyncio.CancelledError):
+                    await first
+            else:
+                await first
+            # Remote work has not committed yet, so rereading orders alone sees none.
+>           second = await asyncio.wait_for(agent.delegate_a2a(None, inputs[1]), 1)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_conversion_safety.py:74: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\terry\.local\share\uv\python\cpython-3.12-windows-x86_64-none\Lib\asyncio\tasks.py:519: in wait_for
+    async with timeouts.timeout(timeout):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Timeout [expired]>
+exc_type = <class 'asyncio.exceptions.CancelledError'>
+exc_val = CancelledError(), exc_tb = <traceback object at 0x0000017C187A1240>
+
+    async def __aexit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> Optional[bool]:
+        assert self._state in (_State.ENTERED, _State.EXPIRING)
+    
+        if self._timeout_handler is not None:
+            self._timeout_handler.cancel()
+            self._timeout_handler = None
+    
+        if self._state is _State.EXPIRING:
+            self._state = _State.EXPIRED
+    
+            if self._task.uncancel() <= self._cancelling and exc_type is exceptions.CancelledError:
+                # Since there are no new cancel requests, we're
+                # handling this.
+>               raise TimeoutError from exc_val
+E               TimeoutError
+
+C:\Users\terry\.local\share\uv\python\cpython-3.12-windows-x86_64-none\Lib\asyncio\timeouts.py:115: TimeoutError
+_ test_uncertain_dispatch_does_not_send_a_second_conversion[unverified_completed_reply] _
+
+conversion = (<tests.conftest.FakeBackend object at 0x0000017C187ADEB0>, {'id': 6, 'created_at': '2026-03-01T02:00:00Z', 'updated_a...nction conversion.<locals>.commit at 0x0000017C1877F060>, <function conversion.<locals>.request at 0x0000017C1877F380>)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000017C187AE2A0>
+failure = 'unverified_completed_reply'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("failure", ["timeout", "cancel", "unverified_completed_reply"])
+    async def test_uncertain_dispatch_does_not_send_a_second_conversion(conversion, monkeypatch, failure):
+        backend, quote, commit, request = conversion
+        inputs = [await request(), await request()]
+        release, dispatched = asyncio.Event(), asyncio.Event()
+        remote_tasks, calls = [], []
+    
+        async def later_commit(number):
+            await release.wait()
+            commit(number)
+    
+        async def send(text):
+            calls.append(text)
+            remote_tasks.append(asyncio.create_task(later_commit(998 + len(calls))))
+            dispatched.set()
+            if failure == "cancel":
+                await asyncio.Event().wait()
+            if failure == "unverified_completed_reply":
+                return A2AResult("操作中斷，尚無法確認是否完成", "task", "context", "completed", "quotation_agent")
+            raise A2AError("timed out after request dispatch")
+    
+        monkeypatch.setattr(agent, "quotation_agent", SimpleNamespace(send=send))
+        first = asyncio.create_task(agent.delegate_a2a(None, inputs[0]))
+        try:
+            await dispatched.wait()
+            if failure == "cancel":
+                first.cancel()
+                with pytest.raises(asyncio.CancelledError):
+                    await first
+            else:
+                await first
+            # Remote work has not committed yet, so rereading orders alone sees none.
+            second = await asyncio.wait_for(agent.delegate_a2a(None, inputs[1]), 1)
+>           assert len(calls) == 1
+E           AssertionError: assert 2 == 1
+E            +  where 2 = len(['我要將報價單轉訂單，報價單編號：QT-20260301-001', '我要將報價單轉訂單，報價單編號：QT-20260301-001'])
+
+tests\unit\test_conversion_safety.py:75: AssertionError
+_______________ test_known_preflight_failure_allows_safe_retry ________________
+
+conversion = (<tests.conftest.FakeBackend object at 0x0000017C187E2780>, {'id': 6, 'created_at': '2026-03-01T02:00:00Z', 'updated_a...nction conversion.<locals>.commit at 0x0000017C1877F880>, <function conversion.<locals>.request at 0x0000017C1877FA60>)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000017C187ADF10>
+
+    @pytest.mark.asyncio
+    async def test_known_preflight_failure_allows_safe_retry(conversion, monkeypatch):
+        _, _, commit, request = conversion
+        inputs = [await request(), await request()]
+        calls = []
+    
+        async def send(text):
+            calls.append(text)
+            if len(calls) == 1:
+                raise A2AError("agent card unavailable", may_have_written=False)
+            order = commit()
+            return A2AResult(f"訂單編號: {order['order_number']}", "task", "context", "completed", "quotation_agent")
+    
+        monkeypatch.setattr(agent, "quotation_agent", SimpleNamespace(send=send))
+>       await agent.delegate_a2a(None, inputs[0])
+
+tests\unit\test_conversion_safety.py:100: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+pricing_advisor\agent.py:1060: in delegate_a2a
+    return await _send_a2a(node_input)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pricing_advisor\agent.py:1067: in _send_a2a
+    result = await quotation_agent.send(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+text = '我要將報價單轉訂單，報價單編號：QT-20260301-001'
+
+    async def send(text):
+        calls.append(text)
+        if len(calls) == 1:
+>           raise A2AError("agent card unavailable", may_have_written=False)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: A2AError() takes no keyword arguments
+
+tests\unit\test_conversion_safety.py:95: TypeError
+______________ test_rule_reload_failure_does_not_escape_or_send _______________
+
+conversion = (<tests.conftest.FakeBackend object at 0x0000017C187E3860>, {'id': 6, 'created_at': '2026-03-01T02:00:00Z', 'updated_a...nction conversion.<locals>.commit at 0x0000017C18A228E0>, <function conversion.<locals>.request at 0x0000017C18A22840>)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000017C187E3200>
+
+    @pytest.mark.asyncio
+    async def test_rule_reload_failure_does_not_escape_or_send(conversion, monkeypatch):
+        _, _, _, request = conversion
+        body = await request()
+        calls = []
+    
+        def broken():
+            raise agent.OKFError("knowledge file unavailable")
+    
+        async def send(text):
+            calls.append(text)
+    
+        monkeypatch.setattr(agent, "_bundle", broken)
+        monkeypatch.setattr(agent, "quotation_agent", SimpleNamespace(send=send))
+>       result = await agent.delegate_a2a(None, body)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_conversion_safety.py:120: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+pricing_advisor\agent.py:1056: in delegate_a2a
+    blocked = await _recheck_order_conversion(node_input)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pricing_advisor\agent.py:1042: in _recheck_order_conversion
+    decision = evaluate_order_conversion(_bundle(), quotation, orders)
+                                         ^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def broken():
+>       raise agent.OKFError("knowledge file unavailable")
+E       pricing_advisor.okf.OKFError: knowledge file unavailable
+
+tests\unit\test_conversion_safety.py:113: OKFError
+=========================== short test summary info ===========================
+FAILED tests/unit/test_conversion_safety.py::test_uncertain_dispatch_does_not_send_a_second_conversion[timeout]
+FAILED tests/unit/test_conversion_safety.py::test_uncertain_dispatch_does_not_send_a_second_conversion[cancel]
+FAILED tests/unit/test_conversion_safety.py::test_uncertain_dispatch_does_not_send_a_second_conversion[unverified_completed_reply]
+FAILED tests/unit/test_conversion_safety.py::test_known_preflight_failure_allows_safe_retry
+FAILED tests/unit/test_conversion_safety.py::test_rule_reload_failure_does_not_escape_or_send
+5 failed in 3.34s

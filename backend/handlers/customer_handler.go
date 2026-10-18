@@ -31,8 +31,7 @@ func NewCustomerHandler(service *services.CustomerService) *CustomerHandler {
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /api/v1/customers [get]
 func (h *CustomerHandler) List(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	page, pageSize := listPagination(c)
 	search := c.Query("search")
 
 	customers, total, err := h.Service.List(page, pageSize, search)

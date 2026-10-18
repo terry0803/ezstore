@@ -1,0 +1,75 @@
+{
+  "baseline_head": "e68052e",
+  "tests": {
+    "frontend_e2e": {
+      "passed": 15,
+      "log": "frontend-e2e-after.log"
+    },
+    "frontend_unit": {
+      "passed": 7,
+      "log": "frontend-unit-final.log"
+    },
+    "frontend_production_build": {
+      "passed": true,
+      "modules": 150,
+      "log": "frontend-build-final.log"
+    },
+    "go_postgres_and_unit": {
+      "passed": 21,
+      "integration_cases": 7,
+      "log": "backend-integration-final.log"
+    },
+    "mcp_offline_unit": {
+      "passed": 17,
+      "log": "mcp-unit-final.log"
+    }
+  },
+  "before_fix_evidence": {
+    "backend": "backend-integration-before.log (5 failures)",
+    "frontend": "frontend-e2e-before-cache-fix.log (3 failures, 12 passes)"
+  },
+  "findings_fixed": [
+    {
+      "severity": "P1",
+      "description": "Concurrent quotation/order replacements merged two item lists while keeping only one header total. Parent row is now locked before item deletion."
+    },
+    {
+      "severity": "P1",
+      "description": "A previously loaded draft could overwrite a committed published status. Publication/edit/deletion now lock and revalidate the current row inside the transaction."
+    },
+    {
+      "severity": "P2",
+      "description": "Saving a preloaded old Customer overwrote the requested new CustomerID. Read-only Customer/Quotation associations are excluded from Save."
+    },
+    {
+      "severity": "P2",
+      "description": "Customer/product/quotation forms reused old cached detail values immediately after save. Successful API responses now update their detail caches."
+    }
+  ],
+  "preserved_contract": [
+    "First Agent/MCP can convert the same quotation more than once; concurrent repeated-conversion regression passes.",
+    "MCP unreachable price target still duplicates, iterates, and reports actual result with warning."
+  ],
+  "safety": {
+    "model_calls": 0,
+    "main_database_writes": 0,
+    "main_container_ids_unchanged": true,
+    "test_resources_remaining": {
+      "containers": [],
+      "networks": [],
+      "volumes": []
+    },
+    "test_database": "ephemeral ezstore_recheck, unique internal Docker network, no host ports"
+  },
+  "source_sha256": {
+    "backend/repositories/order_repo.go": "a6290541247639749434f6b301803d096fe7772c30e9eee18daf928ccf182015",
+    "backend/repositories/quotation_repo.go": "7d8593f0943d990b3581974f583203d88336c81cb1d2f2d28b0e2e25ddfabb81",
+    "backend/services/database_integration_test.go": "81df3f9e9b114c13852d004c219516072265bca04af62b2f415b1dd835c41196",
+    "backend/tests/test-postgres.ps1": "4258d0752fb0a3d524da24e659a7a5e29b10c839f6b25ffa9e0731bae5a8e814",
+    "frontend/src/pages/CustomerFormPage.tsx": "c3f429c06274f6d192b97a5a1edd7566e5fddf580cf218c741aded052deb9d14",
+    "frontend/src/pages/ProductFormPage.tsx": "819583651bcba362e9774dc1805ae48f515fe841cd050eee4c5bc69df3a58138",
+    "frontend/src/pages/QuotationFormPage.tsx": "8799453f884c4d4a6f4ce67031f8481415383aa62c6fca4c6ba810e50accb988",
+    "frontend/e2e/edit-cache.spec.ts": "6dee44d947bfc4ee751acc9d25e512f6b7da9771b385a92b1ea87c64b3d4d9df",
+    "mcp_server/tests/test_server.py": "f3382afd8795bb394074f3236cfd9a380750d0af593d4ac485d64ecefb714b9b"
+  }
+}

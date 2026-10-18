@@ -1,0 +1,44 @@
+# 第二個 Agent：議價顧問（pricing_advisor）。和主要的 compose 檔一起用：
+#
+#   docker compose -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.advisor.yml up -d --build
+#
+# 網頁介面（ADK dev UI）：http://localhost:8502/dev-ui/
+# A2A agent card：http://localhost:8502/a2a/pricing_advisor/.well-known/agent-card.json
+services:
+  advisor:
+    image: ezstore-advisor:local
+    pull_policy: never
+    build: ./advisor
+    environment:
+      # 模型設定和報價單 Agent 相同，讀根目錄的 .env
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GOOGLE_GENAI_USE_VERTEXAI: ${GOOGLE_GENAI_USE_VERTEXAI:-}
+      GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-}
+      GOOGLE_CLOUD_LOCATION: ${GOOGLE_CLOUD_LOCATION:-global}
+      AGENT_MODEL: ${AGENT_MODEL:-gemini-3.8-flash}
+      MODEL_MAX_ATTEMPTS: ${MODEL_MAX_ATTEMPTS:-6}
+      LOCAL_LLM_BASE: ${LOCAL_LLM_BASE:-http://host.docker.internal:18081/v1}
+      # 只用 GET 讀資料；會改資料的動作經 A2A 交給報價單 Agent
+      BACKEND_API: http://backend:8080/api/v1
+      QUOTATION_AGENT_URL: http://agent:8080/a2a/quotation_agent
+      OKF_BUNDLE: /knowledge/ezstore
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      APP_URL: http://localhost:8502
+      CONVERSION_JOURNAL: /state/conversions.sqlite3
+    volumes:
+      # 知識庫唯讀掛載：在本機簽核或修改條目，不用重建映像
+      - ./knowledge/ezstore:/knowledge/ezstore:ro
+      - advisor-state:/state
+    ports:
+      # 只開給本機：網頁介面和 A2A 端點都沒有登入機制，A2A 還能請報價單 Agent 改資料
+      - "127.0.0.1:8502:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      agent:
+        condition: service_healthy
+      backend:
+        condition: service_started
+
+volumes:
+  advisor-state:

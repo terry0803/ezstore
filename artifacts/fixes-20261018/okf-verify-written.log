@@ -1,0 +1,38 @@
+D:\筆電2\資料探勘第一次作業\ezstore\advisor\.venv\Lib\site-packages\google\adk\features\_feature_decorator.py:71: UserWarning: [EXPERIMENTAL] feature FeatureName.PLUGGABLE_AUTH is enabled.
+  check_feature_enabled()
+Failed to configure mTLS using AsyncAuthorizedSession: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+D:\筆電2\資料探勘第一次作業\ezstore\advisor\.venv\Lib\site-packages\google\adk\tools\mcp_tool\mcp_toolset.py:407: UserWarning: [EXPERIMENTAL] feature FeatureName._MCP_GRACEFUL_ERROR_HANDLING is enabled.
+  session = await self._mcp_session_manager.create_session(
+D:\筆電2\資料探勘第一次作業\ezstore\advisor\.venv\Lib\site-packages\google\adk\features\_feature_decorator.py:71: UserWarning: [EXPERIMENTAL] feature FeatureName.BASE_AUTHENTICATED_TOOL is enabled.
+  check_feature_enabled()
+[通過] system/customer-levels
+    vip：條目 0.8、原始碼 0.80、API 0.8
+    standard：條目 0.9、原始碼 0.90、API 0.9
+    new：條目 1.0、原始碼 1.00、API 1
+[通過] system/pricing-formula
+    原始碼找到 7/7 段公式與規則
+    API 的品項單價與小計和公式不符：0 筆
+[通過] system/quotations-table
+    models/quotation.go 欄位 14/14
+    種子報價單完整覆蓋：12/12
+    總價不一致：['QT-20260115-001']
+    利潤不一致：['QT-20260115-001', 'QT-20260120-001', 'QT-20260210-001', 'QT-20260218-001', 'QT-20260325-001', 'QT-20260326-001', 'QT-20260328-001']
+    利潤率不一致（ROUND_HALF_UP，小數 4 位）：['QT-20260115-001', 'QT-20260120-001', 'QT-20260205-001', 'QT-20260210-001', 'QT-20260218-001', 'QT-20260305-001', 'QT-20260325-001', 'QT-20260326-001', 'QT-20260328-001']
+[通過] system/orders-table
+    seed 有 10 筆訂單，7 筆關聯報價單；條目列 7 筆
+[通過] system/backend-api
+    routes.go 找到 10/10 條路由
+    清單格式正確
+[通過] system/mcp-tools
+    MCP 工具：adjust_total_price, convert_to_order, duplicate_quotation, get_quotation, list_customer_quotations, update_pricing_factor
+    二分法與報價因子上限相符
+[通過] system/quotation-agent
+    agent card：quotation_agent，skill 6 個，例句相符
+[通過] computations/price-change-impact
+    用 12 張報價單的目前總價反推，報價因子與利潤不符：無
+[通過] glossary/pricing-factor
+    QT-20260330-001 因子 0.95、定價 650、單價 617.5
+[通過] glossary/profit-rate
+    QT-20260325-001 重算 總價 211560、成本 143500、利潤 68060；壓到 180000 利潤 36506.60、毛利率 0.2028
+
+通過 10／10

@@ -2,13 +2,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { quotationApi } from '../api/quotationApi';
 import StatusBadge from '../components/shared/StatusBadge';
+import ErrorMessage from '../components/shared/ErrorMessage';
 
 export default function QuotationDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { data: quotation, isLoading } = useQuery({
+  const { data: quotation, isLoading, error } = useQuery({
     queryKey: ['quotation', id],
     queryFn: () => quotationApi.get(Number(id)),
   });
@@ -28,6 +29,17 @@ export default function QuotationDetailPage() {
       navigate(`/quotations/${newQuotation.id}/edit`);
     },
   });
+
+  if (error) {
+    return (
+      <div>
+        <ErrorMessage error={error} action="讀取報價單" />
+        <button onClick={() => navigate('/quotations')} className="px-4 py-2 border rounded-lg hover:bg-gray-50">
+          返回列表
+        </button>
+      </div>
+    );
+  }
 
   if (isLoading || !quotation) {
     return <div className="text-center py-8 text-gray-500">載入中...</div>;
@@ -71,6 +83,8 @@ export default function QuotationDetailPage() {
         </div>
       </div>
 
+      <ErrorMessage error={publishMutation.error} action="發佈" />
+      <ErrorMessage error={duplicateMutation.error} action="複製" />
       <div className="space-y-6">
         <div className="bg-white p-6 rounded-lg shadow grid grid-cols-2 gap-4">
           <div>

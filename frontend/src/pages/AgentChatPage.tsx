@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { createSession, sendMessageSSE } from '../api/agentApi';
+import { createSession, sendMessageSSE, SessionExpiredError } from '../api/agentApi';
 
 interface ChatMessage {
   role: 'user' | 'agent';
@@ -16,6 +16,7 @@ export default function AgentChatPage() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const composing = useRef(false);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -66,6 +67,9 @@ export default function AgentChatPage() {
           setLoading(false);
         },
         (err: Error) => {
+          if (err instanceof SessionExpiredError) {
+            setSessionId(null);
+          }
           // Remove the empty agent message on error
           setMessages(prev => {
             const last = prev[prev.length - 1];
@@ -85,6 +89,7 @@ export default function AgentChatPage() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (composing.current || e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return;
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -169,6 +174,8 @@ export default function AgentChatPage() {
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
+          onCompositionStart={() => { composing.current = true; }}
+          onCompositionEnd={() => { composing.current = false; }}
           placeholder="輸入您的指令..."
           disabled={loading}
           className="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"

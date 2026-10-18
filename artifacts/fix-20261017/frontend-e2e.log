@@ -1,0 +1,398 @@
+Disposable E2E project: ezstore-e2e-c062e830426e4aef89aac5f20f3b5294
+ Image ezstore-e2e-frontend:local Building 
+ Image ezstore-e2e-runner:local Building 
+ Image ezstore-e2e-backend:local Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 1.69kB 0.0s done
+#1 DONE 0.0s
+
+#2 [frontend internal] load build definition from Dockerfile
+#2 transferring dockerfile: 311B done
+#2 DONE 0.0s
+
+#3 [e2e internal] load build definition from Dockerfile
+#3 transferring dockerfile: 604B done
+#3 DONE 0.0s
+
+#4 [backend internal] load build definition from Dockerfile
+#4 transferring dockerfile: 398B 0.0s done
+#4 DONE 0.0s
+
+#5 [auth] library/nginx:pull token for registry-1.docker.io
+#5 DONE 0.0s
+
+#6 [auth] library/golang:pull token for registry-1.docker.io
+#6 DONE 0.0s
+
+#7 [auth] oven/bun:pull token for registry-1.docker.io
+#7 DONE 0.0s
+
+#8 [auth] library/alpine:pull token for registry-1.docker.io
+#8 DONE 0.0s
+
+#9 [e2e internal] load metadata for mcr.microsoft.com/playwright:v1.63.0-noble
+#9 DONE 0.2s
+
+#10 [backend internal] load metadata for docker.io/library/alpine:3.24
+#10 ...
+
+#11 [e2e internal] load .dockerignore
+#11 transferring context: 2B done
+#11 DONE 0.0s
+
+#12 [e2e internal] load build context
+#12 transferring context: 282B done
+#12 DONE 0.0s
+
+#13 [e2e 1/6] FROM mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+#13 resolve mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27 0.0s done
+#13 DONE 0.0s
+
+#14 [e2e 4/6] RUN npm install --save-dev @playwright/test@1.63.0
+#14 CACHED
+
+#15 [e2e 5/6] COPY playwright.config.ts ./
+#15 CACHED
+
+#16 [e2e 2/6] WORKDIR /app
+#16 CACHED
+
+#17 [e2e 3/6] COPY package.json bun.lock ./
+#17 CACHED
+
+#18 [e2e 6/6] COPY e2e/ ./e2e/
+#18 CACHED
+
+#19 [e2e] exporting to image
+#19 exporting layers done
+#19 exporting manifest sha256:202010102a23288a921925c5bfb57dfda4c89b4be0c05f2650d592aefa9f489f 0.0s done
+#19 exporting config sha256:c4469a9fadb968aa51de9d5c370f589c91cce910b20fad1750041a73086b03e1 0.0s done
+#19 exporting attestation manifest sha256:58937b4a1facf35c0443c684929bba6ebb5b91d744457dd1ca18c9ea1c98803f 0.0s done
+#19 exporting manifest list sha256:7b6ccfe94160efd5fc57fd4e63a2f474678436df323567b35e01c5842c59f8d4 0.0s done
+#19 naming to docker.io/library/ezstore-e2e-runner:local done
+#19 unpacking to docker.io/library/ezstore-e2e-runner:local 0.0s done
+#19 DONE 0.2s
+
+#20 [backend internal] load metadata for docker.io/library/golang:1.25-alpine
+#20 ...
+
+#21 [e2e] resolving provenance for metadata file
+#21 DONE 0.0s
+
+#22 [frontend internal] load metadata for docker.io/library/nginx:alpine
+#22 ...
+
+#23 [frontend internal] load metadata for docker.io/oven/bun:1.4
+#23 DONE 1.2s
+
+#10 [backend internal] load metadata for docker.io/library/alpine:3.24
+#10 DONE 1.2s
+
+#22 [frontend internal] load metadata for docker.io/library/nginx:alpine
+#22 DONE 1.2s
+
+#11 [frontend internal] load .dockerignore
+#11 CACHED
+
+#20 [backend internal] load metadata for docker.io/library/golang:1.25-alpine
+#20 DONE 1.2s
+
+#24 [backend internal] load .dockerignore
+#24 transferring context: 2B done
+#24 DONE 0.0s
+
+#25 [backend internal] load build context
+#25 DONE 0.0s
+
+#26 [frontend internal] load build context
+#26 transferring context: 108.59kB 0.0s done
+#26 DONE 0.0s
+
+#27 [frontend builder 1/6] FROM docker.io/oven/bun:1.4@sha256:ec06c3b6cea04192ae6770c434f668ca41d343ad19fa6472216c7b48be39c598
+#27 resolve docker.io/oven/bun:1.4@sha256:ec06c3b6cea04192ae6770c434f668ca41d343ad19fa6472216c7b48be39c598 0.0s done
+#27 DONE 0.1s
+
+#28 [frontend stage-1 1/3] FROM docker.io/library/nginx:alpine@sha256:892bb2152464f0c5d8972593a5f5afaf8054552580b699d95f8ff4af08c2d33d
+#28 resolve docker.io/library/nginx:alpine@sha256:892bb2152464f0c5d8972593a5f5afaf8054552580b699d95f8ff4af08c2d33d 0.0s done
+#28 DONE 0.1s
+
+#29 [frontend builder 3/6] COPY package.json bun.lock ./
+#29 CACHED
+
+#30 [frontend builder 2/6] WORKDIR /app
+#30 CACHED
+
+#31 [frontend builder 4/6] RUN bun install --frozen-lockfile
+#31 CACHED
+
+#32 [frontend builder 6/6] RUN bun run build
+#32 CACHED
+
+#33 [frontend stage-1 2/3] COPY --from=builder /app/dist /usr/share/nginx/html
+#33 CACHED
+
+#34 [frontend builder 5/6] COPY . .
+#34 CACHED
+
+#35 [frontend stage-1 3/3] COPY nginx.conf /etc/nginx/conf.d/default.conf
+#35 CACHED
+
+#36 [frontend] exporting to image
+#36 exporting layers done
+#36 exporting manifest sha256:885910d692187515e6359570033943e6c92282c278cb476a2efd77c5c6b7a5c9
+#36 ...
+
+#37 [backend builder 1/6] FROM docker.io/library/golang:1.25-alpine@sha256:1ae0735f00daffa3aaf1363a5184c0d2dc55c78e3db4ec70241cdac97bf84b59
+#37 resolve docker.io/library/golang:1.25-alpine@sha256:1ae0735f00daffa3aaf1363a5184c0d2dc55c78e3db4ec70241cdac97bf84b59 0.1s done
+#37 DONE 0.1s
+
+#38 [backend stage-1 1/5] FROM docker.io/library/alpine:3.24@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
+#38 resolve docker.io/library/alpine:3.24@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 0.1s done
+#38 DONE 0.1s
+
+#25 [backend internal] load build context
+#25 transferring context: 1.57kB done
+#25 DONE 0.0s
+
+#39 [backend stage-1 3/5] WORKDIR /app
+#39 CACHED
+
+#40 [backend builder 2/6] WORKDIR /app
+#40 CACHED
+
+#41 [backend builder 3/6] COPY go.mod go.sum ./
+#41 CACHED
+
+#42 [backend builder 5/6] COPY . .
+#42 CACHED
+
+#43 [backend builder 6/6] RUN CGO_ENABLED=0 go build -o ezstore-api .
+#43 CACHED
+
+#44 [backend builder 4/6] RUN go mod download
+#44 CACHED
+
+#45 [backend stage-1 4/5] COPY --from=builder /app/ezstore-api .
+#45 CACHED
+
+#46 [backend stage-1 2/5] RUN apk add --no-cache ca-certificates
+#46 CACHED
+
+#47 [backend stage-1 5/5] COPY --from=builder /app/docs ./docs
+#47 CACHED
+
+#36 [frontend] exporting to image
+#36 exporting manifest sha256:885910d692187515e6359570033943e6c92282c278cb476a2efd77c5c6b7a5c9 0.0s done
+#36 exporting config sha256:cb13893fa2cbc21678e646c0faebe41ecb8ce42cc05165fcd323c36f855a9aa4 0.0s done
+#36 exporting attestation manifest sha256:a3a343bcc521bdc96915495d5db4e0418be069c6b0ddb3da3afeab1166471789 0.0s done
+#36 exporting manifest list sha256:3bf1ffa8ba0922a9922238e648f473a4d1d14152e4f13f785bdabf314b18f33a
+#36 exporting manifest list sha256:3bf1ffa8ba0922a9922238e648f473a4d1d14152e4f13f785bdabf314b18f33a 0.0s done
+#36 naming to docker.io/library/ezstore-e2e-frontend:local 0.0s done
+#36 unpacking to docker.io/library/ezstore-e2e-frontend:local 0.0s done
+#36 DONE 0.2s
+
+#48 [backend] exporting to image
+#48 exporting layers done
+#48 exporting manifest sha256:9bfbdad882fc14337b682702fccf4285dfab754797aec90f4f3f6c32e2f3e8fa 0.0s done
+#48 exporting config sha256:e0d777e1735d40d828cc85b81eb8e697118e542c888aa4c48f4141902bd51219 0.0s done
+#48 exporting attestation manifest sha256:471b8a9f6d91ca8482ed8493b2e2b7f594f2148297532d5008c773fa8333c33a 0.0s done
+#48 exporting manifest list sha256:27360d3f938215bbc7e799239d31b1c2a1158853f3f4f1276dad712f21b907e7 0.0s done
+#48 naming to docker.io/library/ezstore-e2e-backend:local done
+#48 unpacking to docker.io/library/ezstore-e2e-backend:local 0.0s done
+#48 DONE 0.2s
+
+#49 [frontend] resolving provenance for metadata file
+#49 DONE 0.1s
+
+#50 [backend] resolving provenance for metadata file
+#50 DONE 0.0s
+ Image ezstore-e2e-frontend:local Built 
+ Image ezstore-e2e-backend:local Built 
+ Image ezstore-e2e-runner:local Built 
+ Network ezstore-e2e-c062e830426e4aef89aac5f20f3b5294_default Creating 
+ Network ezstore-e2e-c062e830426e4aef89aac5f20f3b5294_default Creating 
+ Volume ezstore-e2e-c062e830426e4aef89aac5f20f3b5294_testdata Creating 
+ Volume ezstore-e2e-c062e830426e4aef89aac5f20f3b5294_testdata Creating 
+ Volume ezstore-e2e-c062e830426e4aef89aac5f20f3b5294_testdata Created 
+ Volume ezstore-e2e-c062e830426e4aef89aac5f20f3b5294_testdata Created 
+ Network ezstore-e2e-c062e830426e4aef89aac5f20f3b5294_default Created 
+ Network ezstore-e2e-c062e830426e4aef89aac5f20f3b5294_default Created 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-db-1 Creating 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-db-1 Created 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-backend-1 Creating 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-backend-1 Created 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-frontend-1 Creating 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-frontend-1 Created 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-db-1 Starting 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-db-1 Started 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-db-1 Waiting 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-db-1 Healthy 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-backend-1 Starting 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-backend-1 Started 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-backend-1 Waiting 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-backend-1 Healthy 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-frontend-1 Starting 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-frontend-1 Started 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-frontend-1 Waiting 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-db-1 Waiting 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-backend-1 Waiting 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-backend-1 Healthy 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-db-1 Healthy 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-frontend-1 Healthy 
+BEGIN
+TRUNCATE TABLE
+TRUNCATE TABLE
+psql:/scripts/seed-test-data.sql:17: NOTICE:  truncate cascades to table "order_items"
+TRUNCATE TABLE
+psql:/scripts/seed-test-data.sql:18: NOTICE:  truncate cascades to table "quotation_items"
+psql:/scripts/seed-test-data.sql:18: NOTICE:  truncate cascades to table "orders"
+psql:/scripts/seed-test-data.sql:18: NOTICE:  truncate cascades to table "order_items"
+TRUNCATE TABLE
+psql:/scripts/seed-test-data.sql:20: NOTICE:  truncate cascades to table "quotations"
+psql:/scripts/seed-test-data.sql:20: NOTICE:  truncate cascades to table "orders"
+psql:/scripts/seed-test-data.sql:20: NOTICE:  truncate cascades to table "quotation_items"
+psql:/scripts/seed-test-data.sql:20: NOTICE:  truncate cascades to table "order_items"
+TRUNCATE TABLE
+TRUNCATE TABLE
+ALTER SEQUENCE
+ALTER SEQUENCE
+ALTER SEQUENCE
+ALTER SEQUENCE
+ALTER SEQUENCE
+ALTER SEQUENCE
+INSERT 0 15
+ setval 
+--------
+     15
+(1 row)
+
+INSERT 0 20
+ setval 
+--------
+     20
+(1 row)
+
+INSERT 0 1
+INSERT 0 6
+DELETE 1
+INSERT 0 1
+INSERT 0 5
+UPDATE 1
+INSERT 0 1
+INSERT 0 3
+UPDATE 1
+INSERT 0 1
+INSERT 0 5
+UPDATE 1
+INSERT 0 1
+INSERT 0 4
+UPDATE 1
+INSERT 0 1
+INSERT 0 3
+UPDATE 1
+INSERT 0 1
+INSERT 0 3
+UPDATE 1
+INSERT 0 1
+INSERT 0 3
+UPDATE 1
+INSERT 0 1
+INSERT 0 3
+UPDATE 1
+INSERT 0 1
+INSERT 0 3
+UPDATE 1
+INSERT 0 1
+INSERT 0 3
+UPDATE 1
+INSERT 0 1
+INSERT 0 1
+UPDATE 1
+ setval 
+--------
+     12
+(1 row)
+
+ setval 
+--------
+     42
+(1 row)
+
+INSERT 0 1
+INSERT 0 5
+INSERT 0 1
+INSERT 0 5
+INSERT 0 1
+INSERT 0 5
+INSERT 0 1
+INSERT 0 3
+INSERT 0 1
+INSERT 0 3
+INSERT 0 1
+INSERT 0 4
+INSERT 0 1
+INSERT 0 3
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+ setval 
+--------
+     10
+(1 row)
+
+ setval 
+--------
+     31
+(1 row)
+
+COMMIT
+=== 資料集載入完成 ===
+
+  entity  | total |                                                                                 detail                                                                                 
+----------+-------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 報價單   |    12 | draft, published
+ 報價明細 |    41 | 
+ 客戶     |    15 | new, standard, vip
+ 產品     |    20 | 中華電信, 京瓷辦公設備, 利百代文具, 台灣微軟, 台達電子, 合勤科技, 大同電線電纜, 愛普生台灣, 明基電通, 永豐餘造紙, 理想牌事務機, 訊連科技, 趨勢科技, 飛塔資安, 鼎新電腦
+ 訂單     |    10 | cancelled, completed, confirmed, pending
+ 訂單明細 |    31 | 
+(6 rows)
+
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-e2e-run-1b9185e81438 Creating 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-e2e-run-1b9185e81438 Created 
+
+Running 12 tests using 3 workers
+
+  ✓   3 [chromium] › e2e/agent.spec.ts:4:3 › Agent Chat UI › should render chat page with welcome message (303ms)
+  ✓   1 [chromium] › e2e/ezstore.spec.ts:4:3 › Dashboard › should display summary cards with correct icons (379ms)
+  ✓   2 [chromium] › e2e/quotation-form.spec.ts:3:1 › editing notes preserves a four-decimal pricing factor accepted by the API (451ms)
+  ✓   4 [chromium] › e2e/agent.spec.ts:17:3 › Agent Chat UI › should have agent link in sidebar navigation (243ms)
+  ✓   5 [chromium] › e2e/ezstore.spec.ts:29:3 › Customer Management › should display fictional company names (197ms)
+  ✓   7 [chromium] › e2e/ezstore.spec.ts:46:3 › Product Management › should display product list (188ms)
+  ✓   6 [chromium] › e2e/agent.spec.ts:28:3 › Agent Chat UI › should show user message in chat after typing and sending (252ms)
+  ✓   8 [chromium] › e2e/ezstore.spec.ts:58:3 › Quotation Management › should display list and view detail (304ms)
+  ✓   9 [chromium] › e2e/agent.spec.ts:47:3 › Agent Chat UI › recovers once when an Agent restart invalidates the browser session (271ms)
+  ✓  10 [chromium] › e2e/ezstore.spec.ts:91:3 › Order Management › should only have view button, no edit or delete (179ms)
+  ✓  11 [chromium] › e2e/ezstore.spec.ts:109:3 › Order Management › should display read-only detail page (250ms)
+  ✓  12 [chromium] › e2e/ezstore.spec.ts:137:3 › API Health Check › should return ok (16ms)
+
+  12 passed (2.3s)
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-frontend-1 Stopping 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-frontend-1 Stopped 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-frontend-1 Removing 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-frontend-1 Removed 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-backend-1 Stopping 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-backend-1 Stopped 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-backend-1 Removing 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-backend-1 Removed 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-db-1 Stopping 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-db-1 Stopped 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-db-1 Removing 
+ Container ezstore-e2e-c062e830426e4aef89aac5f20f3b5294-db-1 Removed 
+ Volume ezstore-e2e-c062e830426e4aef89aac5f20f3b5294_testdata Removing 
+ Network ezstore-e2e-c062e830426e4aef89aac5f20f3b5294_default Removing 
+ Volume ezstore-e2e-c062e830426e4aef89aac5f20f3b5294_testdata Removed 
+ Network ezstore-e2e-c062e830426e4aef89aac5f20f3b5294_default Removed 

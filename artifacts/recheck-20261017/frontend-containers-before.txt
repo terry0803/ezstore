@@ -1,0 +1,6 @@
+ezstore-advisor-1|3873fa965a4b|ezstore-advisor:local
+ezstore-agent-1|d78c0250197b|ezstore-agent:local
+ezstore-frontend-1|f19f211e3ed3|ezstore-frontend:local
+ezstore-mcp-server-1|f908fc4031e5|ezstore-mcp-server:local
+ezstore-backend-1|a7799bc0e547|ezstore-backend:local
+ezstore-db-1|d6a2837889c1|postgres:16-alpine

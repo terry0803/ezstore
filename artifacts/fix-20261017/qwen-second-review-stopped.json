@@ -1,0 +1,1058 @@
+{
+  "model": "openai/qwen3.5-9b",
+  "isolated_backend": "http://127.0.0.1:58080/api/v1",
+  "results": [
+    {
+      "case": "a_read",
+      "passed": true,
+      "seconds": 20.3,
+      "turns": [
+        {
+          "app": "quotation_agent",
+          "session_id": "91fc8ec3-bb4a-41c7-a588-5c0527298e34",
+          "user": "查詢報價單 QT-20260330-001",
+          "reply": "報價單編號: QT-20260330-001\n客戶: 魔女宅急便股份有限公司\n客戶等級: new\n報價因子: 0.95\n總價: 6175\n利潤: 2375 (利潤率: 0.3846)\n狀態: draft\n備註: 測試用草稿 - 可供刪除測試\n品項:\n  1. A4影印紙 80磅 (5包/箱) — 單價: 617.5, 數量: 10, 小計: 6175\n系統連結: http://localhost:53000/quotations/12",
+          "events": [
+            {
+              "invocationId": "e-a002288d-9a56-469b-9335-496e97e2e25b",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {
+                  "last_user_text": "查詢報價單 QT-20260330-001",
+                  "clarify_source_text": ""
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "classify"
+              },
+              "output": "待補的前一輪操作：無\n使用者這一句：查詢報價單 QT-20260330-001",
+              "nodeInfo": {
+                "path": "quotation_agent@1/load_context@1",
+                "outputFor": [
+                  "quotation_agent@1/load_context@1"
+                ]
+              },
+              "id": "58638b4f-b4ab-4851-b2c9-511542163b4a",
+              "timestamp": 1792219816.1335623
+            },
+            {
+              "modelVersion": "qwen3.5-9b",
+              "content": {
+                "parts": [
+                  {
+                    "text": "{\n  \"intent\": \"get_quotation\",\n  \"quotation_number\": \"QT-20260330-001\",\n  \"customer_name\": \"\",\n  \"new_pricing_factor\": null,\n  \"target_total_price\": null\n}"
+                  }
+                ],
+                "role": "model"
+              },
+              "partial": false,
+              "finishReason": "STOP",
+              "usageMetadata": {
+                "cachedContentTokenCount": 386,
+                "candidatesTokenCount": 63,
+                "promptTokenCount": 428,
+                "totalTokenCount": 491
+              },
+              "invocationId": "e-a002288d-9a56-469b-9335-496e97e2e25b",
+              "author": "classify_intent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": {
+                "intent": "get_quotation",
+                "quotation_number": "QT-20260330-001",
+                "customer_name": ""
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/classify_intent@1",
+                "outputFor": [
+                  "quotation_agent@1/classify_intent@1"
+                ]
+              },
+              "id": "9faf376d-c0e7-49c4-a0aa-4b8d97da902b",
+              "timestamp": 1792219817.354583
+            },
+            {
+              "invocationId": "e-a002288d-9a56-469b-9335-496e97e2e25b",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {
+                  "pending_intent": null
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "get_quotation"
+              },
+              "output": {
+                "quotation_number": "QT-20260330-001"
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/route@1",
+                "outputFor": [
+                  "quotation_agent@1/route@1"
+                ]
+              },
+              "id": "cf69041a-4dbc-4054-93fb-d784106b4294",
+              "timestamp": 1792219832.9346793
+            },
+            {
+              "invocationId": "e-a002288d-9a56-469b-9335-496e97e2e25b",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "報價單編號: QT-20260330-001\n客戶: 魔女宅急便股份有限公司\n客戶等級: new\n報價因子: 0.95\n總價: 6175\n利潤: 2375 (利潤率: 0.3846)\n狀態: draft\n備註: 測試用草稿 - 可供刪除測試\n品項:\n  1. A4影印紙 80磅 (5包/箱) — 單價: 617.5, 數量: 10, 小計: 6175\n系統連結: http://localhost:53000/quotations/12",
+              "nodeInfo": {
+                "path": "quotation_agent@1/get_quotation@1",
+                "outputFor": [
+                  "quotation_agent@1/get_quotation@1"
+                ]
+              },
+              "id": "41baac0b-6136-4e8f-a44b-d6739a70e80a",
+              "timestamp": 1792219836.1069508
+            },
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "報價單編號: QT-20260330-001\n客戶: 魔女宅急便股份有限公司\n客戶等級: new\n報價因子: 0.95\n總價: 6175\n利潤: 2375 (利潤率: 0.3846)\n狀態: draft\n備註: 測試用草稿 - 可供刪除測試\n品項:\n  1. A4影印紙 80磅 (5包/箱) — 單價: 617.5, 數量: 10, 小計: 6175\n系統連結: http://localhost:53000/quotations/12"
+                  }
+                ],
+                "role": "model"
+              },
+              "invocationId": "e-a002288d-9a56-469b-9335-496e97e2e25b",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/respond@1"
+              },
+              "id": "df5a7db6-32cc-4653-891c-8ee8e8fcc9b4",
+              "timestamp": 1792219836.1079392
+            },
+            {
+              "invocationId": "e-a002288d-9a56-469b-9335-496e97e2e25b",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "報價單編號: QT-20260330-001\n客戶: 魔女宅急便股份有限公司\n客戶等級: new\n報價因子: 0.95\n總價: 6175\n利潤: 2375 (利潤率: 0.3846)\n狀態: draft\n備註: 測試用草稿 - 可供刪除測試\n品項:\n  1. A4影印紙 80磅 (5包/箱) — 單價: 617.5, 數量: 10, 小計: 6175\n系統連結: http://localhost:53000/quotations/12",
+              "nodeInfo": {
+                "path": "quotation_agent@1/respond@1",
+                "outputFor": [
+                  "quotation_agent@1/respond@1",
+                  "quotation_agent@1"
+                ]
+              },
+              "id": "b123e205-0906-4a2c-b3d9-e757a1abf14b",
+              "timestamp": 1792219836.1081095
+            }
+          ]
+        }
+      ],
+      "database_checks": [
+        {
+          "type": "no_write",
+          "before_after_sha256": "65582bbf070aceb7ad56b75d7d4777eabe79848c8a28ee324aac83cc2fbc243e"
+        }
+      ]
+    },
+    {
+      "case": "a_customer_list",
+      "passed": true,
+      "seconds": 8.75,
+      "turns": [
+        {
+          "app": "quotation_agent",
+          "session_id": "c926e9a5-299a-4f02-8bf6-eb8c007e4502",
+          "user": "列出客戶「魔女宅急便股份有限公司」的所有報價單",
+          "reply": "客戶「魔女宅急便股份有限公司」的報價單清單（共 1 筆）：\n- QT-20260330-001 | 總價: 6175 | 狀態: draft | 連結: http://localhost:53000/quotations/12",
+          "events": [
+            {
+              "invocationId": "e-b7141e21-5a32-4fc9-afa5-9a4fbfb87ec6",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {
+                  "last_user_text": "列出客戶「魔女宅急便股份有限公司」的所有報價單",
+                  "clarify_source_text": ""
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "classify"
+              },
+              "output": "待補的前一輪操作：無\n使用者這一句：列出客戶「魔女宅急便股份有限公司」的所有報價單",
+              "nodeInfo": {
+                "path": "quotation_agent@1/load_context@1",
+                "outputFor": [
+                  "quotation_agent@1/load_context@1"
+                ]
+              },
+              "id": "dc751f49-5d1c-42b5-8dce-7cd21f2dcbf4",
+              "timestamp": 1792219836.274489
+            },
+            {
+              "modelVersion": "qwen3.5-9b",
+              "content": {
+                "parts": [
+                  {
+                    "text": "{\n  \"intent\": \"list_customer_quotations\",\n  \"quotation_number\": \"\",\n  \"customer_name\": \"魔女宅急便股份有限公司\",\n  \"new_pricing_factor\": null,\n  \"target_total_price\": null\n}"
+                  }
+                ],
+                "role": "model"
+              },
+              "partial": false,
+              "finishReason": "STOP",
+              "usageMetadata": {
+                "cachedContentTokenCount": 386,
+                "candidatesTokenCount": 55,
+                "promptTokenCount": 423,
+                "totalTokenCount": 478
+              },
+              "invocationId": "e-b7141e21-5a32-4fc9-afa5-9a4fbfb87ec6",
+              "author": "classify_intent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": {
+                "intent": "list_customer_quotations",
+                "quotation_number": "",
+                "customer_name": "魔女宅急便股份有限公司"
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/classify_intent@1",
+                "outputFor": [
+                  "quotation_agent@1/classify_intent@1"
+                ]
+              },
+              "id": "e933bb66-77db-4a34-805c-ca08d81d5ef8",
+              "timestamp": 1792219836.275786
+            },
+            {
+              "invocationId": "e-b7141e21-5a32-4fc9-afa5-9a4fbfb87ec6",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {
+                  "pending_intent": null
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "list_customer_quotations"
+              },
+              "output": {
+                "customer_name": "魔女宅急便股份有限公司"
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/route@1",
+                "outputFor": [
+                  "quotation_agent@1/route@1"
+                ]
+              },
+              "id": "b4f792b0-8e5d-4c16-bb40-36a081f1153b",
+              "timestamp": 1792219844.617292
+            },
+            {
+              "invocationId": "e-b7141e21-5a32-4fc9-afa5-9a4fbfb87ec6",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "客戶「魔女宅急便股份有限公司」的報價單清單（共 1 筆）：\n- QT-20260330-001 | 總價: 6175 | 狀態: draft | 連結: http://localhost:53000/quotations/12",
+              "nodeInfo": {
+                "path": "quotation_agent@1/list_customer_quotations@1",
+                "outputFor": [
+                  "quotation_agent@1/list_customer_quotations@1"
+                ]
+              },
+              "id": "ea67f48b-2f9a-4708-9c72-ba04f45eaa4c",
+              "timestamp": 1792219844.7264307
+            },
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "客戶「魔女宅急便股份有限公司」的報價單清單（共 1 筆）：\n- QT-20260330-001 | 總價: 6175 | 狀態: draft | 連結: http://localhost:53000/quotations/12"
+                  }
+                ],
+                "role": "model"
+              },
+              "invocationId": "e-b7141e21-5a32-4fc9-afa5-9a4fbfb87ec6",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/respond@1"
+              },
+              "id": "5e347dd4-964f-41d4-8c1e-4896d2c2a7fb",
+              "timestamp": 1792219844.7318552
+            },
+            {
+              "invocationId": "e-b7141e21-5a32-4fc9-afa5-9a4fbfb87ec6",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "客戶「魔女宅急便股份有限公司」的報價單清單（共 1 筆）：\n- QT-20260330-001 | 總價: 6175 | 狀態: draft | 連結: http://localhost:53000/quotations/12",
+              "nodeInfo": {
+                "path": "quotation_agent@1/respond@1",
+                "outputFor": [
+                  "quotation_agent@1/respond@1",
+                  "quotation_agent@1"
+                ]
+              },
+              "id": "08fdb447-58f5-4b8a-87ad-7a10f43dd79b",
+              "timestamp": 1792219844.7329469
+            }
+          ]
+        }
+      ],
+      "database_checks": [
+        {
+          "type": "no_write",
+          "before_after_sha256": "65582bbf070aceb7ad56b75d7d4777eabe79848c8a28ee324aac83cc2fbc243e"
+        }
+      ]
+    },
+    {
+      "case": "a_duplicate",
+      "passed": true,
+      "seconds": 14.86,
+      "turns": [
+        {
+          "app": "quotation_agent",
+          "session_id": "13b303cc-fb7f-41d9-811c-b8ec8f11964e",
+          "user": "複製報價單 QT-20260330-001",
+          "reply": "已成功複製報價單。\n原始報價單: QT-20260330-001 — http://localhost:53000/quotations/12\n新報價單: QT-20261017-001 — http://localhost:53000/quotations/13",
+          "events": [
+            {
+              "invocationId": "e-218106df-af12-4981-bb54-5d8190d13fe4",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {
+                  "last_user_text": "複製報價單 QT-20260330-001",
+                  "clarify_source_text": ""
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "classify"
+              },
+              "output": "待補的前一輪操作：無\n使用者這一句：複製報價單 QT-20260330-001",
+              "nodeInfo": {
+                "path": "quotation_agent@1/load_context@1",
+                "outputFor": [
+                  "quotation_agent@1/load_context@1"
+                ]
+              },
+              "id": "abef8a42-0a34-4ff7-918a-8e9d259dbf98",
+              "timestamp": 1792219845.173321
+            },
+            {
+              "modelVersion": "qwen3.5-9b",
+              "content": {
+                "parts": [
+                  {
+                    "text": "{\n  \"intent\": \"duplicate_quotation\",\n  \"quotation_number\": \"QT-20260330-001\",\n  \"customer_name\": \"\",\n  \"new_pricing_factor\": null,\n  \"target_total_price\": null\n}"
+                  }
+                ],
+                "role": "model"
+              },
+              "partial": false,
+              "finishReason": "STOP",
+              "usageMetadata": {
+                "cachedContentTokenCount": 386,
+                "candidatesTokenCount": 62,
+                "promptTokenCount": 428,
+                "totalTokenCount": 490
+              },
+              "invocationId": "e-218106df-af12-4981-bb54-5d8190d13fe4",
+              "author": "classify_intent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": {
+                "intent": "duplicate_quotation",
+                "quotation_number": "QT-20260330-001",
+                "customer_name": ""
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/classify_intent@1",
+                "outputFor": [
+                  "quotation_agent@1/classify_intent@1"
+                ]
+              },
+              "id": "f68fb0b6-cc1c-427e-b519-92d1c5eacfa2",
+              "timestamp": 1792219845.1784623
+            },
+            {
+              "invocationId": "e-218106df-af12-4981-bb54-5d8190d13fe4",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {
+                  "pending_intent": null
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "duplicate_quotation"
+              },
+              "output": {
+                "quotation_number": "QT-20260330-001"
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/route@1",
+                "outputFor": [
+                  "quotation_agent@1/route@1"
+                ]
+              },
+              "id": "b88bfeb3-d676-46d0-97b4-ad043d75b15c",
+              "timestamp": 1792219859.5411437
+            },
+            {
+              "invocationId": "e-218106df-af12-4981-bb54-5d8190d13fe4",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "已成功複製報價單。\n原始報價單: QT-20260330-001 — http://localhost:53000/quotations/12\n新報價單: QT-20261017-001 — http://localhost:53000/quotations/13",
+              "nodeInfo": {
+                "path": "quotation_agent@1/duplicate_quotation@1",
+                "outputFor": [
+                  "quotation_agent@1/duplicate_quotation@1"
+                ]
+              },
+              "id": "f8cd9e4c-4e63-474a-b556-ee71f4aef974",
+              "timestamp": 1792219859.610782
+            },
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "已成功複製報價單。\n原始報價單: QT-20260330-001 — http://localhost:53000/quotations/12\n新報價單: QT-20261017-001 — http://localhost:53000/quotations/13"
+                  }
+                ],
+                "role": "model"
+              },
+              "invocationId": "e-218106df-af12-4981-bb54-5d8190d13fe4",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/respond@1"
+              },
+              "id": "6799f138-9e70-4e8f-b0ac-9a1eeb421c02",
+              "timestamp": 1792219859.613573
+            },
+            {
+              "invocationId": "e-218106df-af12-4981-bb54-5d8190d13fe4",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "已成功複製報價單。\n原始報價單: QT-20260330-001 — http://localhost:53000/quotations/12\n新報價單: QT-20261017-001 — http://localhost:53000/quotations/13",
+              "nodeInfo": {
+                "path": "quotation_agent@1/respond@1",
+                "outputFor": [
+                  "quotation_agent@1/respond@1",
+                  "quotation_agent@1"
+                ]
+              },
+              "id": "cfe58b70-39cd-42cf-bb46-d8195bbe6169",
+              "timestamp": 1792219859.614117
+            }
+          ]
+        }
+      ],
+      "database_checks": [
+        {
+          "type": "quotes",
+          "new_id": 13,
+          "original_records_unchanged": true,
+          "actual_total": "6175",
+          "actual_factor": "0.95",
+          "expected_total": null,
+          "expected_factor": 0.95
+        }
+      ]
+    },
+    {
+      "case": "a_factor",
+      "passed": true,
+      "seconds": 11.75,
+      "turns": [
+        {
+          "app": "quotation_agent",
+          "session_id": "5823f12d-6d9a-4817-8249-5d994497fa60",
+          "user": "將 QT-20260330-001 的報價因子改為 1.5",
+          "reply": "已成功修改報價因子。\n原始報價單: QT-20260330-001（未修改） — http://localhost:53000/quotations/12\n新報價單: QT-20261017-002\n報價因子: 0.95 → 1.5\n總價: 6175 → 9750\n系統連結: http://localhost:53000/quotations/14",
+          "events": [
+            {
+              "invocationId": "e-2421a851-07d4-4794-aebd-5c5cbf5a9294",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {
+                  "last_user_text": "將 QT-20260330-001 的報價因子改為 1.5",
+                  "clarify_source_text": ""
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "classify"
+              },
+              "output": "待補的前一輪操作：無\n使用者這一句：將 QT-20260330-001 的報價因子改為 1.5",
+              "nodeInfo": {
+                "path": "quotation_agent@1/load_context@1",
+                "outputFor": [
+                  "quotation_agent@1/load_context@1"
+                ]
+              },
+              "id": "0ee83721-2957-4aa8-8b08-53ead022afbe",
+              "timestamp": 1792219860.0475025
+            },
+            {
+              "modelVersion": "qwen3.5-9b",
+              "content": {
+                "parts": [
+                  {
+                    "text": "{\n  \"intent\": \"update_pricing_factor\",\n  \"quotation_number\": \"QT-20260330-001\",\n  \"customer_name\": \"\",\n  \"new_pricing_factor\": 1.5,\n  \"target_total_price\": null\n}"
+                  }
+                ],
+                "role": "model"
+              },
+              "partial": false,
+              "finishReason": "STOP",
+              "usageMetadata": {
+                "cachedContentTokenCount": 386,
+                "candidatesTokenCount": 66,
+                "promptTokenCount": 435,
+                "totalTokenCount": 501
+              },
+              "invocationId": "e-2421a851-07d4-4794-aebd-5c5cbf5a9294",
+              "author": "classify_intent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": {
+                "intent": "update_pricing_factor",
+                "quotation_number": "QT-20260330-001",
+                "customer_name": "",
+                "new_pricing_factor": 1.5
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/classify_intent@1",
+                "outputFor": [
+                  "quotation_agent@1/classify_intent@1"
+                ]
+              },
+              "id": "6b13313a-68d0-4c25-909e-c991205179b5",
+              "timestamp": 1792219860.0522344
+            },
+            {
+              "invocationId": "e-2421a851-07d4-4794-aebd-5c5cbf5a9294",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {
+                  "pending_intent": null
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "update_pricing_factor"
+              },
+              "output": {
+                "quotation_number": "QT-20260330-001",
+                "new_pricing_factor": 1.5
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/route@1",
+                "outputFor": [
+                  "quotation_agent@1/route@1"
+                ]
+              },
+              "id": "29df7dca-c279-4512-b17e-bca425dc9452",
+              "timestamp": 1792219871.288959
+            },
+            {
+              "invocationId": "e-2421a851-07d4-4794-aebd-5c5cbf5a9294",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "已成功修改報價因子。\n原始報價單: QT-20260330-001（未修改） — http://localhost:53000/quotations/12\n新報價單: QT-20261017-002\n報價因子: 0.95 → 1.5\n總價: 6175 → 9750\n系統連結: http://localhost:53000/quotations/14",
+              "nodeInfo": {
+                "path": "quotation_agent@1/update_pricing_factor@1",
+                "outputFor": [
+                  "quotation_agent@1/update_pricing_factor@1"
+                ]
+              },
+              "id": "edf7da96-cbeb-4ff3-93b0-6ebf33461384",
+              "timestamp": 1792219871.3747323
+            },
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "已成功修改報價因子。\n原始報價單: QT-20260330-001（未修改） — http://localhost:53000/quotations/12\n新報價單: QT-20261017-002\n報價因子: 0.95 → 1.5\n總價: 6175 → 9750\n系統連結: http://localhost:53000/quotations/14"
+                  }
+                ],
+                "role": "model"
+              },
+              "invocationId": "e-2421a851-07d4-4794-aebd-5c5cbf5a9294",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/respond@1"
+              },
+              "id": "9d07b36e-6d17-408d-b399-66a955870522",
+              "timestamp": 1792219871.377398
+            },
+            {
+              "invocationId": "e-2421a851-07d4-4794-aebd-5c5cbf5a9294",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "已成功修改報價因子。\n原始報價單: QT-20260330-001（未修改） — http://localhost:53000/quotations/12\n新報價單: QT-20261017-002\n報價因子: 0.95 → 1.5\n總價: 6175 → 9750\n系統連結: http://localhost:53000/quotations/14",
+              "nodeInfo": {
+                "path": "quotation_agent@1/respond@1",
+                "outputFor": [
+                  "quotation_agent@1/respond@1",
+                  "quotation_agent@1"
+                ]
+              },
+              "id": "30360c27-2e5b-435a-8e9b-4b997e3dc6c0",
+              "timestamp": 1792219871.3781614
+            }
+          ]
+        }
+      ],
+      "database_checks": [
+        {
+          "type": "quotes",
+          "new_id": 14,
+          "original_records_unchanged": true,
+          "actual_total": "9750",
+          "actual_factor": "1.5",
+          "expected_total": null,
+          "expected_factor": 1.5
+        }
+      ]
+    },
+    {
+      "case": "a_total",
+      "passed": true,
+      "seconds": 12.97,
+      "turns": [
+        {
+          "app": "quotation_agent",
+          "session_id": "7d714ef8-6fc3-4e64-ba6a-7432cac85adb",
+          "user": "將 QT-20260330-001 總價改成 7500",
+          "reply": "已透過二分法調整報價因子使總價逼近目標值（迭代 20 次）。\n原始報價單: QT-20260330-001（未修改） — http://localhost:53000/quotations/12\n新報價單: QT-20261017-003\n報價因子: 1.1538\n目標總價: 7500.0\n實際總價: 7499.7\n注意: 已達最大迭代次數，實際總價與目標仍有差距（報價因子搜尋範圍 0.01–5.0）。\n系統連結: http://localhost:53000/quotations/15",
+          "events": [
+            {
+              "invocationId": "e-7b36b96e-e5a2-44ca-8caa-059a3e028ecd",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {
+                  "last_user_text": "將 QT-20260330-001 總價改成 7500",
+                  "clarify_source_text": ""
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "classify"
+              },
+              "output": "待補的前一輪操作：無\n使用者這一句：將 QT-20260330-001 總價改成 7500",
+              "nodeInfo": {
+                "path": "quotation_agent@1/load_context@1",
+                "outputFor": [
+                  "quotation_agent@1/load_context@1"
+                ]
+              },
+              "id": "36223146-91d4-4c27-88c1-527dd9b5f738",
+              "timestamp": 1792219871.7930202
+            },
+            {
+              "modelVersion": "qwen3.5-9b",
+              "content": {
+                "parts": [
+                  {
+                    "text": "{\n  \"intent\": \"adjust_total_price\",\n  \"quotation_number\": \"QT-20260330-001\",\n  \"customer_name\": \"\",\n  \"new_pricing_factor\": null,\n  \"target_total_price\": 7500\n}"
+                  }
+                ],
+                "role": "model"
+              },
+              "partial": false,
+              "finishReason": "STOP",
+              "usageMetadata": {
+                "cachedContentTokenCount": 386,
+                "candidatesTokenCount": 67,
+                "promptTokenCount": 435,
+                "totalTokenCount": 502
+              },
+              "invocationId": "e-7b36b96e-e5a2-44ca-8caa-059a3e028ecd",
+              "author": "classify_intent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": {
+                "intent": "adjust_total_price",
+                "quotation_number": "QT-20260330-001",
+                "customer_name": "",
+                "target_total_price": 7500.0
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/classify_intent@1",
+                "outputFor": [
+                  "quotation_agent@1/classify_intent@1"
+                ]
+              },
+              "id": "8b370f0d-7d71-44da-8986-fe11e12221ea",
+              "timestamp": 1792219871.7985027
+            },
+            {
+              "invocationId": "e-7b36b96e-e5a2-44ca-8caa-059a3e028ecd",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {
+                  "pending_intent": null
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "adjust_total_price"
+              },
+              "output": {
+                "quotation_number": "QT-20260330-001",
+                "target_total_price": 7500.0
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/route@1",
+                "outputFor": [
+                  "quotation_agent@1/route@1"
+                ]
+              },
+              "id": "a2c13d45-8369-47ed-be86-372872bc7b82",
+              "timestamp": 1792219883.7976172
+            },
+            {
+              "invocationId": "e-7b36b96e-e5a2-44ca-8caa-059a3e028ecd",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "已透過二分法調整報價因子使總價逼近目標值（迭代 20 次）。\n原始報價單: QT-20260330-001（未修改） — http://localhost:53000/quotations/12\n新報價單: QT-20261017-003\n報價因子: 1.1538\n目標總價: 7500.0\n實際總價: 7499.7\n注意: 已達最大迭代次數，實際總價與目標仍有差距（報價因子搜尋範圍 0.01–5.0）。\n系統連結: http://localhost:53000/quotations/15",
+              "nodeInfo": {
+                "path": "quotation_agent@1/adjust_total_price@1",
+                "outputFor": [
+                  "quotation_agent@1/adjust_total_price@1"
+                ]
+              },
+              "id": "b1aec383-e14d-47fb-82fc-a5a2ccdc21f2",
+              "timestamp": 1792219884.2919025
+            },
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "已透過二分法調整報價因子使總價逼近目標值（迭代 20 次）。\n原始報價單: QT-20260330-001（未修改） — http://localhost:53000/quotations/12\n新報價單: QT-20261017-003\n報價因子: 1.1538\n目標總價: 7500.0\n實際總價: 7499.7\n注意: 已達最大迭代次數，實際總價與目標仍有差距（報價因子搜尋範圍 0.01–5.0）。\n系統連結: http://localhost:53000/quotations/15"
+                  }
+                ],
+                "role": "model"
+              },
+              "invocationId": "e-7b36b96e-e5a2-44ca-8caa-059a3e028ecd",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/respond@1"
+              },
+              "id": "003902db-4e9b-4961-adfa-8e50e8a13af4",
+              "timestamp": 1792219884.2959778
+            },
+            {
+              "invocationId": "e-7b36b96e-e5a2-44ca-8caa-059a3e028ecd",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "已透過二分法調整報價因子使總價逼近目標值（迭代 20 次）。\n原始報價單: QT-20260330-001（未修改） — http://localhost:53000/quotations/12\n新報價單: QT-20261017-003\n報價因子: 1.1538\n目標總價: 7500.0\n實際總價: 7499.7\n注意: 已達最大迭代次數，實際總價與目標仍有差距（報價因子搜尋範圍 0.01–5.0）。\n系統連結: http://localhost:53000/quotations/15",
+              "nodeInfo": {
+                "path": "quotation_agent@1/respond@1",
+                "outputFor": [
+                  "quotation_agent@1/respond@1",
+                  "quotation_agent@1"
+                ]
+              },
+              "id": "cf0c251d-08a6-43bb-be85-1a10cb05879d",
+              "timestamp": 1792219884.2971141
+            }
+          ]
+        }
+      ],
+      "database_checks": [
+        {
+          "type": "quotes",
+          "new_id": 15,
+          "original_records_unchanged": true,
+          "actual_total": "7499.7",
+          "actual_factor": "1.1538",
+          "expected_total": 7500,
+          "expected_factor": null
+        }
+      ]
+    },
+    {
+      "case": "a_total_chinese_unit",
+      "passed": false,
+      "error": "請提供目標總價（大於 0 的數字，例如 8000），我才能幫你修改報價單總價。\n目前已知：報價單編號：QT-20260330-001",
+      "seconds": 13.58,
+      "turns": [
+        {
+          "app": "quotation_agent",
+          "session_id": "4dac9beb-b7d0-48f4-a629-f66b86e20bd9",
+          "user": "將 QT-20260330-001 總價改成 18 萬",
+          "reply": "請提供目標總價（大於 0 的數字，例如 8000），我才能幫你修改報價單總價。\n目前已知：報價單編號：QT-20260330-001",
+          "events": [
+            {
+              "invocationId": "e-a12b6fd1-caf8-4cde-bd29-2822a15eb837",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {
+                  "last_user_text": "將 QT-20260330-001 總價改成 18 萬",
+                  "clarify_source_text": ""
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "classify"
+              },
+              "output": "待補的前一輪操作：無\n使用者這一句：將 QT-20260330-001 總價改成 18 萬",
+              "nodeInfo": {
+                "path": "quotation_agent@1/load_context@1",
+                "outputFor": [
+                  "quotation_agent@1/load_context@1"
+                ]
+              },
+              "id": "e7b83b84-ac50-4eba-b590-366cb84bb1c7",
+              "timestamp": 1792219884.770253
+            },
+            {
+              "modelVersion": "qwen3.5-9b",
+              "content": {
+                "parts": [
+                  {
+                    "text": "{\n  \"intent\": \"adjust_total_price\",\n  \"quotation_number\": \"QT-20260330-001\",\n  \"customer_name\": \"\",\n  \"new_pricing_factor\": null,\n  \"target_total_price\": 180000\n}"
+                  }
+                ],
+                "role": "model"
+              },
+              "partial": false,
+              "finishReason": "STOP",
+              "usageMetadata": {
+                "cachedContentTokenCount": 386,
+                "candidatesTokenCount": 69,
+                "promptTokenCount": 435,
+                "totalTokenCount": 504
+              },
+              "invocationId": "e-a12b6fd1-caf8-4cde-bd29-2822a15eb837",
+              "author": "classify_intent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": {
+                "intent": "adjust_total_price",
+                "quotation_number": "QT-20260330-001",
+                "customer_name": "",
+                "target_total_price": 180000.0
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/classify_intent@1",
+                "outputFor": [
+                  "quotation_agent@1/classify_intent@1"
+                ]
+              },
+              "id": "25e0059c-e8d5-4d71-90b7-96a94efd8b12",
+              "timestamp": 1792219884.7756052
+            },
+            {
+              "invocationId": "e-a12b6fd1-caf8-4cde-bd29-2822a15eb837",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {
+                  "pending_intent": {
+                    "intent": "adjust_total_price",
+                    "quotation_number": "QT-20260330-001",
+                    "customer_name": null,
+                    "new_pricing_factor": null,
+                    "target_total_price": null
+                  }
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "clarify"
+              },
+              "output": {
+                "operation": "adjust_total_price",
+                "missing": [
+                  "target_total_price"
+                ],
+                "invalid": [],
+                "fields": {
+                  "quotation_number": "QT-20260330-001",
+                  "customer_name": null,
+                  "new_pricing_factor": null,
+                  "target_total_price": null
+                }
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/route@1",
+                "outputFor": [
+                  "quotation_agent@1/route@1"
+                ]
+              },
+              "id": "b18cb9b9-5f6b-4f77-ae14-c7eeeb3cacdb",
+              "timestamp": 1792219897.8939717
+            },
+            {
+              "invocationId": "e-a12b6fd1-caf8-4cde-bd29-2822a15eb837",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "請提供目標總價（大於 0 的數字，例如 8000），我才能幫你修改報價單總價。\n目前已知：報價單編號：QT-20260330-001",
+              "nodeInfo": {
+                "path": "quotation_agent@1/clarify@1",
+                "outputFor": [
+                  "quotation_agent@1/clarify@1"
+                ]
+              },
+              "id": "da955b96-45e0-4986-9e34-170da45fbfc9",
+              "timestamp": 1792219897.896912
+            },
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "請提供目標總價（大於 0 的數字，例如 8000），我才能幫你修改報價單總價。\n目前已知：報價單編號：QT-20260330-001"
+                  }
+                ],
+                "role": "model"
+              },
+              "invocationId": "e-a12b6fd1-caf8-4cde-bd29-2822a15eb837",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/respond@1"
+              },
+              "id": "7a354ca9-3c2d-4e72-ba6f-917c18e77367",
+              "timestamp": 1792219897.8993843
+            },
+            {
+              "invocationId": "e-a12b6fd1-caf8-4cde-bd29-2822a15eb837",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "請提供目標總價（大於 0 的數字，例如 8000），我才能幫你修改報價單總價。\n目前已知：報價單編號：QT-20260330-001",
+              "nodeInfo": {
+                "path": "quotation_agent@1/respond@1",
+                "outputFor": [
+                  "quotation_agent@1/respond@1",
+                  "quotation_agent@1"
+                ]
+              },
+              "id": "741cece0-7075-40a8-8641-14cea2eb7c39",
+              "timestamp": 1792219897.9004676
+            }
+          ]
+        }
+      ],
+      "database_checks": []
+    }
+  ]
+}

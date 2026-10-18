@@ -1,0 +1,15 @@
+
+Running 10 tests using 2 workers
+
+  ✓   1 [chromium] › e2e/review-regressions.spec.ts:12:1 › zero cost yields full profit and a 100 percent margin (281ms)
+  ✓   2 [chromium] › e2e/agent.spec.ts:4:3 › Agent Chat UI › should render chat page with welcome message (272ms)
+  ✓   4 [chromium] › e2e/agent.spec.ts:17:3 › Agent Chat UI › should have agent link in sidebar navigation (257ms)
+  ✓   5 [chromium] › e2e/agent.spec.ts:28:3 › Agent Chat UI › should show user message in chat after typing and sending (210ms)
+  ✓   3 [chromium] › e2e/review-regressions.spec.ts:22:1 › a late customer default cannot overwrite the latest selection (777ms)
+  ✓   6 [chromium] › e2e/review-regressions.spec.ts:38:1 › manual factor survives a pending customer default response (768ms)
+  ✓   7 [chromium] › e2e/review-regressions.spec.ts:52:1 › dependency failure is visible, blocks saving, and can be retried (1.7s)
+  ✓   8 [chromium] › e2e/review-regressions.spec.ts:66:1 › factor failure is visible and manual recovery enables saving (211ms)
+  ✓   9 [chromium] › e2e/review-regressions.spec.ts:78:1 › both option lists include record 101 from the second page (173ms)
+  ✓  10 [chromium] › e2e/review-regressions.spec.ts:94:1 › empty successful SSE displays uncertain-result warning (215ms)
+
+  10 passed (5.1s)

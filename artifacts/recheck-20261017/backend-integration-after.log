@@ -1,0 +1,52 @@
+?   	github.com/cshliu/ezstore/backend	[no test files]
+?   	github.com/cshliu/ezstore/backend/config	[no test files]
+?   	github.com/cshliu/ezstore/backend/docs	[no test files]
+?   	github.com/cshliu/ezstore/backend/handlers	[no test files]
+?   	github.com/cshliu/ezstore/backend/middleware	[no test files]
+?   	github.com/cshliu/ezstore/backend/models	[no test files]
+?   	github.com/cshliu/ezstore/backend/repositories	[no test files]
+?   	github.com/cshliu/ezstore/backend/routes	[no test files]
+=== RUN   TestDatabaseQuotationCustomerUpdate
+--- PASS: TestDatabaseQuotationCustomerUpdate (0.08s)
+=== RUN   TestDatabaseOrderCustomerUpdate
+--- PASS: TestDatabaseOrderCustomerUpdate (0.08s)
+=== RUN   TestDatabaseConcurrentQuotationUpdatesReplaceItems
+--- PASS: TestDatabaseConcurrentQuotationUpdatesReplaceItems (0.40s)
+=== RUN   TestDatabaseConcurrentOrderUpdatesReplaceItems
+--- PASS: TestDatabaseConcurrentOrderUpdatesReplaceItems (0.44s)
+=== RUN   TestDatabaseStaleDraftCannotUndoPublish
+--- PASS: TestDatabaseStaleDraftCannotUndoPublish (0.14s)
+=== RUN   TestDatabaseStaleDraftCannotDeleteAfterPublish
+--- PASS: TestDatabaseStaleDraftCannotDeleteAfterPublish (0.12s)
+=== RUN   TestDatabaseRepeatedConversionRemainsAllowed
+--- PASS: TestDatabaseRepeatedConversionRemainsAllowed (0.08s)
+=== RUN   TestQuotationRejectsNonPositiveFactorBeforeDatabase
+--- PASS: TestQuotationRejectsNonPositiveFactorBeforeDatabase (0.00s)
+=== RUN   TestOrderRejectsNegativePriceBeforeDatabase
+--- PASS: TestOrderRejectsNegativePriceBeforeDatabase (0.00s)
+=== RUN   TestOrderZeroPriceIsValid
+--- PASS: TestOrderZeroPriceIsValid (0.00s)
+=== RUN   TestOrderRejectsCrossCustomerQuotationBeforeWrite
+--- PASS: TestOrderRejectsCrossCustomerQuotationBeforeWrite (0.00s)
+=== RUN   TestOrderQuotationValidation
+--- PASS: TestOrderQuotationValidation (0.00s)
+=== RUN   TestCreateWithRetry_RetriesOnDuplicateKey
+--- PASS: TestCreateWithRetry_RetriesOnDuplicateKey (0.00s)
+=== RUN   TestCreateWithRetry_GivesUpAfterMaxRetries
+--- PASS: TestCreateWithRetry_GivesUpAfterMaxRetries (0.00s)
+=== RUN   TestCreateWithRetry_DoesNotRetryOtherErrors
+--- PASS: TestCreateWithRetry_DoesNotRetryOtherErrors (0.00s)
+=== RUN   TestIsDuplicateKey
+--- PASS: TestIsDuplicateKey (0.00s)
+=== RUN   TestComputeTotals
+--- PASS: TestComputeTotals (0.00s)
+=== RUN   TestComputeTotals_MultipleItems
+--- PASS: TestComputeTotals_MultipleItems (0.00s)
+=== RUN   TestComputeTotals_ZeroTotal
+--- PASS: TestComputeTotals_ZeroTotal (0.00s)
+=== RUN   TestDuplicateNotesFormat
+--- PASS: TestDuplicateNotesFormat (0.00s)
+=== RUN   TestDefaultPricingFactor
+--- PASS: TestDefaultPricingFactor (0.00s)
+PASS
+ok  	github.com/cshliu/ezstore/backend/services	1.340s

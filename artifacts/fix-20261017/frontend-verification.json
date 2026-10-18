@@ -1,0 +1,64 @@
+{
+  "verified_at": "2026-10-17T07:07:50.3257058Z",
+  "e2e": {
+    "command": "scripts/test-e2e.ps1",
+    "cleanup_verified": true,
+    "project": "ezstore-e2e-c062e830426e4aef89aac5f20f3b5294",
+    "passed": 12,
+    "failed": 0,
+    "seconds": 2.3
+  },
+  "frontend_unit": {
+    "command": "node --test tests/regressions.test.mjs tests/dev-proxy.test.mjs",
+    "failed": 0,
+    "passed": 7
+  },
+  "production_build": {
+    "command": "bun run build",
+    "isolated_workspace": true,
+    "modules": 150,
+    "passed": true,
+    "bun": "1.4.3",
+    "vite": "8.3.1",
+    "node": "24.19.0"
+  },
+  "model_api_calls": 0,
+  "main_database_writes": 0,
+  "main_containers_unchanged": true,
+  "configured_model": "gemini-3.5-flash-lite",
+  "model_max_attempts": 1,
+  "model_settings_checked": [
+    ".env",
+    "agent/.env",
+    "advisor/.env",
+    ".env.example",
+    "agent/.env.example",
+    "advisor/.env.example"
+  ],
+  "documentation_checked": [
+    "README.md",
+    "README.zh-TW.md",
+    "agent/README.md",
+    "advisor/README.md"
+  ],
+  "logs": {
+    "frontend-unit.log": {
+      "sha256": "c8780b1f93f04f2f8807b4f0cdeff6bf42d5c82be8c508e3c059c07597fe0b05",
+      "bytes": 644
+    },
+    "frontend-build.log": {
+      "sha256": "efc969b3ecbbefa382326ebba9e65539eefb80cd94bd4dd3076a2416be43cbe9",
+      "bytes": 390
+    },
+    "frontend-e2e.log": {
+      "sha256": "d5d52933718339f3e62165b51848ae30c8ab2894bd497a2bd8295e24e0f95f2f",
+      "bytes": 15463
+    }
+  },
+  "_embedded_log_integrity": {
+    "representation": "original UTF-8 log bytes with CRLF line endings",
+    "scope": "Embedded log_sha256, or logs.*.sha256 and logs.*.bytes, retain the original run values.",
+    "committed_files": "Log text was normalized to LF for Git. Use evidence-manifest.json for current committed byte sizes and SHA-256.",
+    "verification": "To check the retained original values, normalize CRLF to LF, then convert LF to CRLF before calculating bytes and SHA-256. No test result or original hash was changed."
+  }
+}

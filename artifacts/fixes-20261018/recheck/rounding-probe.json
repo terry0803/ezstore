@@ -1,0 +1,108 @@
+{
+  "isolated_backend": "http://127.0.0.1:58080/api/v1",
+  "request": {
+    "customer_id": 14,
+    "pricing_factor": "0.3333",
+    "notes": "isolated recheck: monetary rounding",
+    "items": [
+      {
+        "product_id": 6,
+        "quantity": 3
+      }
+    ]
+  },
+  "created": {
+    "id": 16,
+    "created_at": "2026-10-18T05:16:54.912049Z",
+    "updated_at": "2026-10-18T05:16:54.912049Z",
+    "deleted_at": null,
+    "quotation_number": "QT-20261018-004",
+    "customer_id": 14,
+    "customer": {
+      "id": 14,
+      "created_at": "2026-03-10T06:15:00Z",
+      "updated_at": "2026-03-30T03:00:00Z",
+      "deleted_at": null,
+      "name": "魔女宅急便股份有限公司",
+      "tax_id": "15345678",
+      "contact_name": "阿琪",
+      "contact_phone": "07-3368888",
+      "contact_email": "kiki@witch-delivery.example",
+      "address": "高雄市前鎮區掃帚街88號",
+      "level": "new",
+      "credit_score": 50
+    },
+    "customer_level": "new",
+    "pricing_factor": "0.3333",
+    "total_price": "649.94",
+    "profit_amount": "-490.07",
+    "profit_rate": "-0.754",
+    "status": "draft",
+    "notes": "isolated recheck: monetary rounding",
+    "items": [
+      {
+        "id": 67,
+        "created_at": "2026-10-18T05:16:54.913338Z",
+        "updated_at": "2026-10-18T05:16:54.913338Z",
+        "deleted_at": null,
+        "quotation_id": 16,
+        "product_id": 6,
+        "product_name": "A4影印紙 80磅 (5包/箱)",
+        "product_cost": "380",
+        "list_price": "650",
+        "unit_price": "216.65",
+        "quantity": 3,
+        "subtotal": "649.94"
+      }
+    ]
+  },
+  "stored": {
+    "id": 16,
+    "created_at": "2026-10-18T05:16:54.912049Z",
+    "updated_at": "2026-10-18T05:16:54.912049Z",
+    "deleted_at": null,
+    "quotation_number": "QT-20261018-004",
+    "customer_id": 14,
+    "customer": {
+      "id": 14,
+      "created_at": "2026-03-10T06:15:00Z",
+      "updated_at": "2026-03-30T03:00:00Z",
+      "deleted_at": null,
+      "name": "魔女宅急便股份有限公司",
+      "tax_id": "15345678",
+      "contact_name": "阿琪",
+      "contact_phone": "07-3368888",
+      "contact_email": "kiki@witch-delivery.example",
+      "address": "高雄市前鎮區掃帚街88號",
+      "level": "new",
+      "credit_score": 50
+    },
+    "customer_level": "new",
+    "pricing_factor": "0.3333",
+    "total_price": "649.94",
+    "profit_amount": "-490.07",
+    "profit_rate": "-0.754",
+    "status": "draft",
+    "notes": "isolated recheck: monetary rounding",
+    "items": [
+      {
+        "id": 67,
+        "created_at": "2026-10-18T05:16:54.913338Z",
+        "updated_at": "2026-10-18T05:16:54.913338Z",
+        "deleted_at": null,
+        "quotation_id": 16,
+        "product_id": 6,
+        "product_name": "A4影印紙 80磅 (5包/箱)",
+        "product_cost": "380",
+        "list_price": "650",
+        "unit_price": "216.65",
+        "quantity": 3,
+        "subtotal": "649.94"
+      }
+    ]
+  },
+  "unit_price_times_quantity": "649.95",
+  "stored_subtotal": "649.94",
+  "difference": "-0.01",
+  "consistent": false
+}

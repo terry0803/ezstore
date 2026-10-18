@@ -1,0 +1,122 @@
+BEGIN
+TRUNCATE TABLE
+TRUNCATE TABLE
+psql:/scripts/seed-test-data.sql:17: NOTICE:  truncate cascades to table "order_items"
+TRUNCATE TABLE
+psql:/scripts/seed-test-data.sql:18: NOTICE:  truncate cascades to table "quotation_items"
+psql:/scripts/seed-test-data.sql:18: NOTICE:  truncate cascades to table "orders"
+psql:/scripts/seed-test-data.sql:18: NOTICE:  truncate cascades to table "order_items"
+TRUNCATE TABLE
+TRUNCATE TABLE
+psql:/scripts/seed-test-data.sql:20: NOTICE:  truncate cascades to table "quotations"
+psql:/scripts/seed-test-data.sql:20: NOTICE:  truncate cascades to table "orders"
+psql:/scripts/seed-test-data.sql:20: NOTICE:  truncate cascades to table "quotation_items"
+psql:/scripts/seed-test-data.sql:20: NOTICE:  truncate cascades to table "order_items"
+TRUNCATE TABLE
+ALTER SEQUENCE
+ALTER SEQUENCE
+ALTER SEQUENCE
+ALTER SEQUENCE
+ALTER SEQUENCE
+ALTER SEQUENCE
+INSERT 0 15
+ setval 
+--------
+     15
+(1 row)
+
+INSERT 0 20
+ setval 
+--------
+     20
+(1 row)
+
+INSERT 0 1
+INSERT 0 6
+DELETE 1
+INSERT 0 1
+INSERT 0 5
+UPDATE 1
+INSERT 0 1
+INSERT 0 3
+UPDATE 1
+INSERT 0 1
+INSERT 0 5
+UPDATE 1
+INSERT 0 1
+INSERT 0 4
+UPDATE 1
+INSERT 0 1
+INSERT 0 3
+UPDATE 1
+INSERT 0 1
+INSERT 0 3
+UPDATE 1
+INSERT 0 1
+INSERT 0 3
+UPDATE 1
+INSERT 0 1
+INSERT 0 3
+UPDATE 1
+INSERT 0 1
+INSERT 0 3
+UPDATE 1
+INSERT 0 1
+INSERT 0 3
+UPDATE 1
+INSERT 0 1
+INSERT 0 1
+UPDATE 1
+ setval 
+--------
+     12
+(1 row)
+
+ setval 
+--------
+     42
+(1 row)
+
+INSERT 0 1
+INSERT 0 5
+INSERT 0 1
+INSERT 0 5
+INSERT 0 1
+INSERT 0 5
+INSERT 0 1
+INSERT 0 3
+INSERT 0 1
+INSERT 0 3
+INSERT 0 1
+INSERT 0 4
+INSERT 0 1
+INSERT 0 3
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+ setval 
+--------
+     10
+(1 row)
+
+ setval 
+--------
+     31
+(1 row)
+
+COMMIT
+=== 資料集載入完成 ===
+
+  entity  | total |                                                                                 detail                                                                                 
+----------+-------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 報價單   |    12 | draft, published
+ 報價明細 |    41 | 
+ 客戶     |    15 | new, standard, vip
+ 產品     |    20 | 中華電信, 京瓷辦公設備, 利百代文具, 台灣微軟, 台達電子, 合勤科技, 大同電線電纜, 愛普生台灣, 明基電通, 永豐餘造紙, 理想牌事務機, 訊連科技, 趨勢科技, 飛塔資安, 鼎新電腦
+ 訂單     |    10 | cancelled, completed, confirmed, pending
+ 訂單明細 |    31 | 
+(6 rows)
+

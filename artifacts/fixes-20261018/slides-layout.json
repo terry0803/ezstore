@@ -1,0 +1,146 @@
+[
+  {
+    "version": "before",
+    "slide": 1,
+    "width": 1278,
+    "height": 718,
+    "scrollHeight": 718,
+    "text": "資料探勘與知識開發 第一次作業\n\nEZStore 報價 Agent\n與議價顧問 Agent\n\nADK Graph WorkflowA2AOKF 知識庫可信賴度評鑑\n\nM11509108\n\n1 / 9"
+  },
+  {
+    "version": "before",
+    "slide": 2,
+    "width": 1278,
+    "height": 718,
+    "scrollHeight": 718,
+    "text": "作業項目\n項目\t做了什麼\t狀態\n依講者 spec 的第一個 Agent（70%）\t報價單 Agent，六個操作與程式護欄\t完成\n自己發想的第二個 Agent（30%）\t議價顧問：查規則、試算毛利率、判斷核准\t完成\nA2A 應用（+20）\t議價顧問用 A2A 請報價單 Agent 改價、轉訂單\t完成\nOKF 建立知識（+20）\tknowledge/ezstore，17 個條目，給議價顧問用\t完成\nPPT 的回家作業\t完整版評鑑 LAB 與一頁可信賴度報告\t完成\n\n全部在本機 Docker 執行；程式預設保留講義模型。歷史 LAB 用 Qwen，自我驗收曾用 Gemini 3.1 Flash-Lite；本輪模型與結果見最新自檢報告\n\n2 / 9"
+  },
+  {
+    "version": "before",
+    "slide": 3,
+    "width": 1278,
+    "height": 718,
+    "scrollHeight": 718,
+    "text": "系統架構\n業務\n業務\nChat UI\n:3000\nADK 網頁介面\n:8502\n報價單 Agent\nquotation_agent\n議價顧問 Agent\npricing_advisor\nMCP Server\nGo 後端\nPostgreSQL\nOKF 知識庫\nknowledge/ezstore\nA2A（JSON-RPC）\nMCP\nGET（只讀）\n讀\n課程提供\n\n後端、前端 Chat UI、MCP 的 6 個工具、資料庫與測試資料；三個受限制資料夾恢復課程基底，保護邏輯放在 Agent 層\n\n我寫的\n\nagent/、advisor/、knowledge/ezstore、docker-compose 的 agent 與 advisor 服務、評鑑題庫\n\n3 / 9"
+  },
+  {
+    "version": "before",
+    "slide": 4,
+    "width": 1278,
+    "height": 718,
+    "scrollHeight": 718,
+    "text": "第一個 Agent：報價單 Agent\nSTART → load_context\n→ classify_intent（LLM）→ route\n  ├ get_quotation / list_customer_quotations\n  ├ duplicate_quotation / update_pricing_factor\n  ├ adjust_total_price / convert_to_order\n  ├ clarify（追問）\n  └ off_topic（程式拒答）\n→ respond（Chat UI 只顯示這裡）\n\n只有分類節點呼叫 LLM，工具、參數、追問、拒答由程式決定\n修改類先複製再改，原單不動\n操作結果附純文字連結；追問與拒答除外\n缺編號會追問，下一句補上接著做\nA2A 回覆只帶 respond 的文字，agent card 六個操作各一個 skill\n4 / 9"
+  },
+  {
+    "version": "before",
+    "slide": 5,
+    "width": 1278,
+    "height": 718,
+    "scrollHeight": 718,
+    "text": "第二個 Agent：議價顧問\n1. 聽懂與查規則\n\nLLM 判斷意圖、挑知識條目。回答政策時，數字要出自條目、每一級規則都要講到，不然改列程式產生的規則摘要\n\n2. 試算與判斷\n\n改價數字只能來自知識庫指定的計算程式，驗證程式檢查五件事才顯示。依毛利率與報價因子下限判斷核准層級\n\n3. 交給報價單 Agent\n\n明確指令且通過檢查才經 A2A 改價；需核准只產生申請文字。成本、牌價或客戶等級變更時停止。改完重讀核對；結果不明不自動重送\n\n核准門檻是作業示範用的虛構規則，EZStore 本身沒有核准流程\n\n5 / 9"
+  },
+  {
+    "version": "before",
+    "slide": 6,
+    "width": 1278,
+    "height": 718,
+    "scrollHeight": 718,
+    "text": "A2A\n兩個 Agent 都有 A2A 端點與 agent card\n議價顧問先讀 card，確認名稱與 skill，再送 message，等 task completed\n經 nginx 連時，JSON-RPC 送回取得 card 的位址\n外部 client → 議價顧問 → 報價單 Agent，兩層串接\n沒用 ADK RemoteA2aAgent：它要求 https 或 loopback，Docker 內部的 http://agent:8080 不行\n> 幫我把 QT-20260325-001 的總價改成 200000\n重新試算：毛利率 28.25%，業務可直接調整\n（經 A2A 交給報價單 Agent，task 3e2ec63c，completed）\n原始報價單: QT-20260325-001（未修改）\n新報價單: QT-20261016-001\n報價因子: 0.7751  實際總價: 199975.8\n改完後核對（從後端重新讀）：毛利率 28.24%\n原單的報價因子還是 0.8200\n\n6 / 9"
+  },
+  {
+    "version": "before",
+    "slide": 7,
+    "width": 1278,
+    "height": 718,
+    "scrollHeight": 718,
+    "text": "OKF 知識庫\nknowledge/ezstore/\n  index.md        okf_version: \"0.2\"\n  log.md\n  system/         系統事實 7 個（機器驗證）\n  policies/       規則 5 個（1 個作廢、1 個過期）\n  computations/   Attested Computation\n  playbooks/      議價流程\n  glossary/       名詞 2 個（機器驗證）\n  references/     計算程式、執行說明、驗證程式\n\nokf validate：照規格 §11 檢查，0 error\nokf verify：對原始碼與執行中的系統，10/10 通過，寫入 process:okf-verify\n規則要人看過，okf sign 簽核後變成人工審核\n作廢的不拿來判斷，過期的不套用\n計算程式和驗證程式都登記 sha256，被改過或沒登記都不執行\nverify 找到測試資料有 9 張報價單的利潤和品項不一致；資料是課程給的沒改，條目列出這幾張，verify 核對清單和資料一致\n7 / 9"
+  },
+  {
+    "version": "before",
+    "slide": 8,
+    "width": 1278,
+    "height": 718,
+    "scrollHeight": 718,
+    "text": "可信賴度評鑑\n項目\t結果\nguardrails（離題 2、多輪 2、查無資料 1）\t品質 4.8、連結 1.0、拒答／操作 1.0\nactions（六個操作）\t品質 5.0、連結 1.0、拒答／操作 1.0；原單沒動，三張複製單\n查無資料被判失敗\t修兩條評分規則後 0 → 1\n穩定性（同一份跑兩次）\tguardrails 4 題跑兩次，每題四個指標都相同\n破壞測試（連結改 Markdown）\t連結、拒答／操作六題全部 0；品質分 4.83 沒變\n自我驗收 grade_agent.py\t97.1／100（Gemini 3.1 Flash-Lite 評審）；後端核對 25 分全拿\n議價顧問題庫（7 題）\t歷史品質 4.71；依據措辭 7／7；阻擋措辭 7／7（不是資料庫安全率）\n\n本頁是舊版歷史結果，不代表本輪修改通過。最新功能與資料一致性驗證見 reports/嚴格規格自檢.html\n\n8 / 9"
+  },
+  {
+    "version": "before",
+    "slide": 9,
+    "width": 1278,
+    "height": 718,
+    "scrollHeight": 718,
+    "text": "還沒覆蓋的風險\n評審和被評的是同一個模型，可能偏寬\n提示注入只測了規則清單裡的句型，英文或混在單號裡的寫法沒有題目\n已做並行與斷線測試；結果不明的轉單持久保留，不會因等待或重啟而自動放行\n改總價的二分法停在第 20 次，結果不一定剛好等於目標\n限制：老師基底的 UI／MCP 仍有邊界問題；未修改基底，不宣稱所有情境安全\n\n程式碼：github.com/terry0803/ezstore（feature/ezstore-agent-develop）\n\n9 / 9"
+  },
+  {
+    "version": "current",
+    "slide": 1,
+    "width": 1278,
+    "height": 718,
+    "scrollHeight": 718,
+    "text": "資料探勘與知識開發 第一次作業\n\nEZStore 報價 Agent\n與議價顧問 Agent\n\nADK Graph WorkflowA2AOKF 知識庫可信賴度評鑑\n\nM11509108\n\n1 / 9"
+  },
+  {
+    "version": "current",
+    "slide": 2,
+    "width": 1278,
+    "height": 718,
+    "scrollHeight": 718,
+    "text": "作業項目\n項目\t做了什麼\t狀態\n依講者 spec 的第一個 Agent（70%）\t報價單 Agent，六個操作與程式護欄\t基底有修補\n自己發想的第二個 Agent（30%）\t議價顧問：查規則、試算毛利率、判斷核准\t完成\nA2A 應用（+20）\t議價顧問用 A2A 請報價單 Agent 改價、轉訂單\t完成\nOKF 建立知識（+20）\tknowledge/ezstore，17 個條目，給議價顧問用\t完成\nPPT 的回家作業\t當前版自我驗收與一頁報告；正式雲端評分待環境\t見報告\n\n全部在本機 Docker 執行；程式預設保留講義模型。歷史 LAB 用 Qwen，自我驗收曾用 Gemini 3.1 Flash-Lite；本輪模型與結果見最新自檢報告\n\n2 / 9"
+  },
+  {
+    "version": "current",
+    "slide": 3,
+    "width": 1278,
+    "height": 718,
+    "scrollHeight": 718,
+    "text": "系統架構\n業務\n業務\nChat UI\n:3000\nADK 網頁介面\n:8502\n報價單 Agent\nquotation_agent\n議價顧問 Agent\npricing_advisor\nMCP Server\nGo 後端\nPostgreSQL\nOKF 知識庫\nknowledge/ezstore\nA2A（JSON-RPC）\nMCP\nGET（只讀）\n讀\n課程提供\n\n後端、前端 Chat UI、MCP 的 6 個工具、資料庫與測試資料；保留六工具與操作流程；另依使用者要求修補 UI、因子驗證及查詢分頁，與講師基底有差異\n\n我寫的\n\nagent/、advisor/、knowledge/ezstore、docker-compose 的 agent 與 advisor 服務、評鑑題庫\n\n3 / 9"
+  },
+  {
+    "version": "current",
+    "slide": 4,
+    "width": 1278,
+    "height": 718,
+    "scrollHeight": 718,
+    "text": "第一個 Agent：報價單 Agent\nSTART → load_context\n→ classify_intent（LLM）→ route\n  ├ get_quotation / list_customer_quotations\n  ├ duplicate_quotation / update_pricing_factor\n  ├ adjust_total_price / convert_to_order\n  ├ clarify（追問）\n  └ off_topic（程式拒答）\n→ respond（Chat UI 只顯示這裡）\n\n只有分類節點呼叫 LLM，工具、參數、追問、拒答由程式決定\n修改類先複製再改，原單不動\n操作結果附純文字連結；追問與拒答除外\n缺編號會追問，下一句補上接著做\nA2A 回覆只帶 respond 的文字，agent card 六個操作各一個 skill\n4 / 9"
+  },
+  {
+    "version": "current",
+    "slide": 5,
+    "width": 1278,
+    "height": 718,
+    "scrollHeight": 718,
+    "text": "第二個 Agent：議價顧問\n1. 聽懂與查規則\n\nLLM 判斷意圖、挑知識條目。回答政策時，數字要出自條目、每一級規則都要講到，不然改列程式產生的規則摘要\n\n2. 試算與判斷\n\n改價數字只能來自知識庫指定的計算程式，驗證程式檢查五件事才顯示。依毛利率與報價因子下限判斷核准層級\n\n3. 交給報價單 Agent\n\n明確指令且通過檢查才經 A2A 改價；需核准只產生申請文字。成本、牌價或客戶等級變更時停止。改完重讀核對；結果不明不自動重送\n\n核准門檻是作業示範用的虛構規則，EZStore 本身沒有核准流程\n\n5 / 9"
+  },
+  {
+    "version": "current",
+    "slide": 6,
+    "width": 1278,
+    "height": 718,
+    "scrollHeight": 718,
+    "text": "A2A\n兩個 Agent 都有 A2A 端點與 agent card\n議價顧問先讀 card，確認名稱與 skill，再送 message，等 task completed\n經 nginx 連時，JSON-RPC 送回取得 card 的位址\n外部 client → 議價顧問 → 報價單 Agent，兩層串接\n沒用 ADK RemoteA2aAgent：它要求 https 或 loopback，Docker 內部的 http://agent:8080 不行\n> 幫我把 QT-20260325-001 的總價改成 200000\n重新試算：毛利率 28.25%，業務可直接調整\n（經 A2A 交給報價單 Agent，task 3e2ec63c，completed）\n原始報價單: QT-20260325-001（未修改）\n新報價單: QT-20261016-001\n報價因子: 0.7751  實際總價: 199975.8\n改完後核對（從後端重新讀）：毛利率 28.24%\n原單的報價因子還是 0.8200\n\n6 / 9"
+  },
+  {
+    "version": "current",
+    "slide": 7,
+    "width": 1278,
+    "height": 718,
+    "scrollHeight": 718,
+    "text": "OKF 知識庫\nknowledge/ezstore/\n  index.md        okf_version: \"0.2\"\n  log.md\n  system/         系統事實 7 個（機器驗證）\n  policies/       規則 5 個（1 個作廢、1 個過期）\n  computations/   Attested Computation\n  playbooks/      議價流程\n  glossary/       名詞 2 個（機器驗證）\n  references/     計算程式、執行說明、驗證程式\n\nokf validate：照規格 §11 檢查，0 error\nokf verify：對原始碼與執行中的系統，10/10 通過，寫入 process:okf-verify\n規則要人看過，okf sign 簽核後變成人工審核\n作廢的不拿來判斷，過期的不套用\n計算程式和驗證程式都登記 sha256，被改過或沒登記都不執行\nverify 找到測試資料有 9 張報價單的利潤和品項不一致；資料是課程給的沒改，條目列出這幾張，verify 核對清單和資料一致\n7 / 9"
+  },
+  {
+    "version": "current",
+    "slide": 8,
+    "width": 1278,
+    "height": 718,
+    "scrollHeight": 718,
+    "text": "本輪可信賴度評鑑\n項目\t結果\n原 student-suite 本地自我驗收\t95.0／100；Agent 與評審均為 Qwen3.5 9B\n原單、複製單與訂單的後端核對\t25／25；原單未改、三張複製單、因子 1.5、訂單關聯\n真實模型＋資料逐筆比對\t整合 30／30；護欄 19／19\n程式與介面測試\tPython 549 項＋4 子測試；Go 11 項；瀏覽器 17 項\nOKF\t17 條目；validate 0 錯誤／0 警告；機器驗證 10／10\n尚未完成的外部驗證\tGemini 每日額度 429；教師正式託管評分缺 GCP／ADC\n\n本地分數不是教師正式成績；同模型評審可能誤判。最新證據見 reports/修正與完整自檢_20261018.html；歷史 LAB 保留於歷史報告\n\n8 / 9"
+  },
+  {
+    "version": "current",
+    "slide": 9,
+    "width": 1278,
+    "height": 718,
+    "scrollHeight": 718,
+    "text": "還沒覆蓋的風險\n評審和被評的是同一個模型，可能偏寬\n提示注入只測了規則清單裡的句型，英文或混在單號裡的寫法沒有題目\n已做並行與斷線測試；結果不明的轉單持久保留，不會因等待或重啟而自動放行\n改總價的二分法停在第 20 次，結果不一定剛好等於目標\n本輪修補已知 UI／MCP 問題，需揭露基底差異；分步寫入與外部併發仍不保證原子性\n\n本輪修改在本機，尚未推送；繳交前需確認提交版本與測試證據一致\n\n9 / 9"
+  }
+]

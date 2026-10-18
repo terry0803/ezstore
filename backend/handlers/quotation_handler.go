@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/cshliu/ezstore/backend/middleware"
 	"github.com/cshliu/ezstore/backend/services"
@@ -32,8 +33,7 @@ func NewQuotationHandler(service *services.QuotationService) *QuotationHandler {
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /api/v1/quotations [get]
 func (h *QuotationHandler) List(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	page, pageSize := listPagination(c)
 	status := c.Query("status")
 	customerID, _ := strconv.ParseUint(c.Query("customer_id"), 10, 32)
 	quotationNumber := c.Query("quotation_number")
@@ -212,7 +212,20 @@ func (h *QuotationHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	if err := h.Service.Delete(uint(id)); err != nil {
+	var expected []time.Time
+	if stamp, present := c.GetQuery("expected_updated_at"); present {
+		version, err := time.Parse(time.RFC3339Nano, stamp)
+		if err != nil {
+			middleware.ErrorResponse(c, http.StatusBadRequest, "INVALID_VERSION", "無效的副本版本")
+			return
+		}
+		expected = append(expected, version)
+	}
+	if err := h.Service.Delete(uint(id), expected...); err != nil {
+		if err.Error() == "報價單已關聯訂單，不可刪除" {
+			middleware.ErrorResponse(c, http.StatusConflict, "CONFLICT", err.Error())
+			return
+		}
 		if err.Error() == "已發佈的報價單不可刪除" {
 			middleware.ErrorResponse(c, http.StatusForbidden, "FORBIDDEN", err.Error())
 			return

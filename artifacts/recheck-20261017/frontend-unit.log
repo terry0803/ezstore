@@ -1,0 +1,15 @@
+✔ Vite forwards Agent POST requests and SSE through the configured rewrite (496.2653ms)
+✔ IME candidate confirmation does not send or cancel composition (2.4488ms)
+✔ normal Enter still sends once; Shift+Enter does not send (0.2154ms)
+✔ zero cost retains revenue as profit (0.2533ms)
+✔ zero unit price retains the cost as a loss (0.1429ms)
+✔ normal pricing and unselected products retain their expected totals (0.1933ms)
+✔ development Agent requests reach ADK with the prefix removed (0.2413ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 886.0802

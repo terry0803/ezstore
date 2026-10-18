@@ -1,0 +1,34 @@
+
+Running 17 tests using 3 workers
+
+  ✓   3 [chromium] › e2e/agent.spec.ts:4:3 › Agent Chat UI › should render chat page with welcome message (241ms)
+  ✓   2 [chromium] › e2e/ezstore.spec.ts:4:3 › Dashboard › should display summary cards with correct icons (283ms)
+  ✓   1 [chromium] › e2e/review-regressions.spec.ts:12:1 › zero cost yields full profit and a 100 percent margin (298ms)
+  ✓   4 [chromium] › e2e/agent.spec.ts:17:3 › Agent Chat UI › should have agent link in sidebar navigation (219ms)
+  ✓   5 [chromium] › e2e/ezstore.spec.ts:29:3 › Customer Management › should display fictional company names (190ms)
+  ✓   6 [chromium] › e2e/review-regressions.spec.ts:22:1 › a late customer default cannot overwrite the latest selection (257ms)
+  ✓   8 [chromium] › e2e/ezstore.spec.ts:46:3 › Product Management › should display product list (189ms)
+  ✓   7 [chromium] › e2e/agent.spec.ts:28:3 › Agent Chat UI › should show user message in chat after typing and sending (255ms)
+  ✓   9 [chromium] › e2e/review-regressions.spec.ts:37:1 › manual factor survives a pending customer default response (251ms)
+  ✓  10 [chromium] › e2e/ezstore.spec.ts:58:3 › Quotation Management › should display list and view detail (319ms)
+  ✓  12 [chromium] › e2e/ezstore.spec.ts:91:3 › Order Management › should only have view button, no edit or delete (169ms)
+  ✓  13 [chromium] › e2e/ezstore.spec.ts:109:3 › Order Management › should display read-only detail page (253ms)
+  ✓  14 [chromium] › e2e/ezstore.spec.ts:137:3 › API Health Check › should return ok (18ms)
+  ✓  11 [chromium] › e2e/review-regressions.spec.ts:50:1 › dependency failure is visible, blocks saving, and can be retried (1.6s)
+  ✓  15 [chromium] › e2e/review-regressions.spec.ts:64:1 › factor failure is visible and manual recovery enables saving (185ms)
+  ✓  16 [chromium] › e2e/review-regressions.spec.ts:76:1 › both option lists include record 101 from the second page (189ms)
+  ✓  17 [chromium] › e2e/review-regressions.spec.ts:92:1 › empty successful SSE displays uncertain-result warning (233ms)
+
+  17 passed (3.8s)
+
+Running 7 tests using 1 worker
+
+  ✓  1 [chromium] › e2e/review-regressions.spec.ts:12:1 › zero cost yields full profit and a 100 percent margin (205ms)
+  ✓  2 [chromium] › e2e/review-regressions.spec.ts:22:1 › a late customer default cannot overwrite the latest selection (686ms)
+  ✓  3 [chromium] › e2e/review-regressions.spec.ts:38:1 › manual factor survives a pending customer default response (705ms)
+  ✓  4 [chromium] › e2e/review-regressions.spec.ts:52:1 › dependency failure is visible, blocks saving, and can be retried (1.6s)
+  ✓  5 [chromium] › e2e/review-regressions.spec.ts:66:1 › factor failure is visible and manual recovery enables saving (187ms)
+  ✓  6 [chromium] › e2e/review-regressions.spec.ts:78:1 › both option lists include record 101 from the second page (178ms)
+  ✓  7 [chromium] › e2e/review-regressions.spec.ts:94:1 › empty successful SSE displays uncertain-result warning (208ms)
+
+  7 passed (4.4s)

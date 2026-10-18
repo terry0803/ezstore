@@ -1,0 +1,8 @@
+[
+  "ezstore-frontend-1|1a0578540265|ezstore-frontend:local",
+  "ezstore-advisor-1|1b987b488a29|ezstore-advisor:local",
+  "ezstore-agent-1|e251dd99f248|ezstore-agent:local",
+  "ezstore-mcp-server-1|cc07e963c284|ezstore-mcp-server:local",
+  "ezstore-backend-1|a2e410c1d30d|ezstore-backend:local",
+  "ezstore-db-1|d6a2837889c1|postgres:16-alpine"
+]

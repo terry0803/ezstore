@@ -47,7 +47,17 @@ func (r *CustomerRepository) Create(customer *models.Customer) error {
 }
 
 func (r *CustomerRepository) Update(customer *models.Customer) error {
-	return r.DB.Save(customer).Error
+	// A conditional UPDATE must never fall back to INSERT: a concurrent soft
+	// delete may win while this request waits for the row lock. Include zero
+	// values, but never overwrite identity or deletion metadata from an old read.
+	result := r.DB.Model(customer).Select("*").Omit("id", "created_at", "deleted_at").Updates(customer)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected != 1 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
 func (r *CustomerRepository) Delete(id uint) error {

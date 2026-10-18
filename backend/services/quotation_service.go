@@ -33,12 +33,7 @@ func NewQuotationService(repo *repositories.QuotationRepository, customerRepo *r
 }
 
 func (s *QuotationService) List(page, pageSize int, status string, customerID uint, quotationNumber string) ([]models.Quotation, int64, error) {
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
+	page, pageSize = NormalizePagination(page, pageSize)
 	return s.Repo.List(page, pageSize, status, customerID, quotationNumber)
 }
 
@@ -47,6 +42,10 @@ func (s *QuotationService) GetByID(id uint) (*models.Quotation, error) {
 }
 
 func (s *QuotationService) Create(input *QuotationCreateInput) (*models.Quotation, error) {
+	if err := validatePricingFactor(input.PricingFactor); err != nil {
+		return nil, err
+	}
+	input.PricingFactor = input.PricingFactor.Round(4)
 	customer, err := s.CustomerRepo.GetByID(input.CustomerID)
 	if err != nil {
 		return nil, errors.New("客戶不存在")
@@ -67,6 +66,9 @@ func (s *QuotationService) Create(input *QuotationCreateInput) (*models.Quotatio
 	quotation.Items = items
 
 	s.computeTotals(quotation)
+	if err := checkProfitRate(quotation); err != nil {
+		return nil, err
+	}
 
 	if err := createWithRetry(s.generateNumber, func(n string) { quotation.QuotationNumber = n }, func() error { return s.Repo.Create(quotation) }); err != nil {
 		return nil, err
@@ -76,6 +78,10 @@ func (s *QuotationService) Create(input *QuotationCreateInput) (*models.Quotatio
 }
 
 func (s *QuotationService) Update(id uint, input *QuotationCreateInput) (*models.Quotation, error) {
+	if err := validatePricingFactor(input.PricingFactor); err != nil {
+		return nil, err
+	}
+	input.PricingFactor = input.PricingFactor.Round(4)
 	existing, err := s.Repo.GetByID(id)
 	if err != nil {
 		return nil, err
@@ -102,12 +108,34 @@ func (s *QuotationService) Update(id uint, input *QuotationCreateInput) (*models
 	existing.Items = items
 
 	s.computeTotals(existing)
+	if err := checkProfitRate(existing); err != nil {
+		return nil, err
+	}
 
 	if err := s.Repo.Update(existing); err != nil {
 		return nil, err
 	}
 
 	return s.Repo.GetByID(existing.ID)
+}
+
+// Match decimal(5,4): reject invalid values before any database mutation.
+func validatePricingFactor(value decimal.Decimal) error {
+	// Round first, like the agent and MCP do: 9.99994 is stored as 9.9999.
+	rounded := value.Round(4)
+	if !value.IsPositive() || rounded.GreaterThan(decimal.RequireFromString("9.9999")) || rounded.IsZero() {
+		return errors.New("報價因子必須大於 0、最多 9.9999，且小數四位捨入後不可為 0")
+	}
+	return nil
+}
+
+// profit_rate is decimal(5,4) too: a very small factor makes the rate fall
+// below -9.9999 and PostgreSQL would answer with a raw overflow error.
+func checkProfitRate(q *models.Quotation) error {
+	if q.ProfitRate.Round(4).Abs().GreaterThan(decimal.RequireFromString("9.9999")) {
+		return errors.New("報價因子太低，利潤率超出可儲存的範圍（-9.9999 到 9.9999）")
+	}
+	return nil
 }
 
 func (s *QuotationService) Publish(id uint) (*models.Quotation, error) {
@@ -127,7 +155,10 @@ func (s *QuotationService) Publish(id uint) (*models.Quotation, error) {
 	return s.Repo.GetByID(id)
 }
 
-func (s *QuotationService) Delete(id uint) error {
+func (s *QuotationService) Delete(id uint, expectedUpdatedAt ...time.Time) error {
+	if len(expectedUpdatedAt) > 0 {
+		return s.Repo.DeleteDraftIfUnchanged(id, expectedUpdatedAt[0])
+	}
 	quotation, err := s.Repo.GetByID(id)
 	if err != nil {
 		return err
@@ -172,6 +203,9 @@ func (s *QuotationService) Duplicate(id uint) (*models.Quotation, error) {
 	}
 
 	s.computeTotals(newQuotation)
+	if err := checkProfitRate(newQuotation); err != nil {
+		return nil, err
+	}
 
 	if err := createWithRetry(s.generateNumber, func(n string) { newQuotation.QuotationNumber = n }, func() error { return s.Repo.Create(newQuotation) }); err != nil {
 		return nil, err
@@ -193,7 +227,9 @@ func (s *QuotationService) buildItems(inputs []QuotationItemInput, pricingFactor
 			return nil, errors.New("數量必須大於 0")
 		}
 
-		unitPrice := product.ListPrice.Mul(pricingFactor)
+		// Round the unit once, before quantity multiplication, to match decimal(12,2).
+		// Otherwise PostgreSQL rounds unit/subtotal independently and they disagree.
+		unitPrice := product.ListPrice.Mul(pricingFactor).Round(2)
 		quantity := decimal.NewFromInt(int64(input.Quantity))
 		subtotal := unitPrice.Mul(quantity)
 
@@ -233,11 +269,11 @@ func (s *QuotationService) computeTotals(q *models.Quotation) {
 
 // generateNumber 產生 QT-YYYYMMDD-NNN；offset 用於撞號重試時往後推序號。
 func (s *QuotationService) generateNumber(offset int64) (string, error) {
-	count, err := s.Repo.CountToday()
+	today := businessDate(time.Now())
+	count, err := s.Repo.CountForDate(today)
 	if err != nil {
 		return "", err
 	}
-	today := time.Now().Format("20060102")
 	return fmt.Sprintf("QT-%s-%03d", today, count+1+offset), nil
 }
 

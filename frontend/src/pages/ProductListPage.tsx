@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { productApi } from '../api/productApi';
+import ErrorMessage from '../components/shared/ErrorMessage';
 import DataTable from '../components/shared/DataTable';
 import Pagination from '../components/shared/Pagination';
 import ConfirmDialog from '../components/shared/ConfirmDialog';
@@ -25,7 +26,7 @@ export default function ProductListPage() {
   const [search, setSearch] = useState('');
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ['products', page, search],
     queryFn: () => productApi.list(page, 20, search),
   });
@@ -36,6 +37,7 @@ export default function ProductListPage() {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       setDeleteId(null);
     },
+    onError: () => setDeleteId(null),
   });
 
   const columnsWithActions: Column<Product>[] = columns.map(col => {
@@ -51,7 +53,7 @@ export default function ProductListPage() {
               編輯
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); setDeleteId(product.id); }}
+              onClick={(e) => { e.stopPropagation(); deleteMutation.reset(); setDeleteId(product.id); }}
               className="text-red-600 hover:text-red-800 text-sm"
             >
               刪除
@@ -85,8 +87,11 @@ export default function ProductListPage() {
         />
       </div>
 
-      <DataTable columns={columnsWithActions} data={data?.data ?? []} loading={isLoading} />
-      <Pagination page={page} pageSize={20} total={data?.total ?? 0} onPageChange={setPage} />
+      <ErrorMessage error={error} action="讀取產品清單" />
+      {error && <button onClick={() => void refetch()} disabled={isFetching} className="mb-4 text-blue-600">重新載入資料</button>}
+      <ErrorMessage error={deleteMutation.error} action="刪除產品" />
+      {!error && <DataTable columns={columnsWithActions} data={data?.data ?? []} loading={isLoading} />}
+      {!error && <Pagination page={page} pageSize={20} total={data?.total ?? 0} onPageChange={setPage} />}
 
       <ConfirmDialog
         open={deleteId !== null}

@@ -1,9 +1,11 @@
-import { useEffect } from 'react';
+import { useCallback } from 'react';
+import FormRefreshGuard, { useFormRefreshGuard } from '../components/shared/FormRefreshGuard';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { customerApi } from '../api/customerApi';
 import type { Customer } from '../types';
+import ErrorMessage, { apiErrorMessage } from '../components/shared/ErrorMessage';
 
 type FormData = Omit<Customer, 'id' | 'created_at' | 'updated_at'>;
 
@@ -13,34 +15,51 @@ export default function CustomerFormPage() {
   const queryClient = useQueryClient();
   const isEdit = !!id;
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, reset, formState: { errors, isDirty } } = useForm<FormData>({
     defaultValues: { level: 'standard', credit_score: 0 },
   });
 
-  const { data: customer } = useQuery({
+  const { data: customer, error: loadError, isPending, refetch, isFetching } = useQuery({
     queryKey: ['customer', id],
     queryFn: () => customerApi.get(Number(id)),
     enabled: isEdit,
   });
 
-  useEffect(() => {
-    if (customer) reset(customer);
-  }, [customer, reset]);
+  const applyRecord = useCallback((value: NonNullable<typeof customer>) => {
+    reset(value);
+  }, [reset]);
+  const refresh = useFormRefreshGuard(id, customer, isDirty, applyRecord);
 
   const mutation = useMutation({
     mutationFn: (data: FormData) =>
       isEdit ? customerApi.update(Number(id), data) : customerApi.create(data),
-    onSuccess: () => {
+    onSuccess: (saved) => {
+      // 編輯頁和詳情頁用 ['customer', id] 快取 30 秒；先換成剛存好的資料，馬上重開才不會看到舊值、存回舊值
+      queryClient.setQueryData(['customer', String(saved.id)], saved);
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       navigate('/customers');
     },
   });
 
+  // Do not expose an editable empty form when the record could not be read.
+  if (isEdit && (isPending || !customer)) {
+    return <div>
+      <h2 className="text-2xl font-bold mb-6">編輯客戶</h2>
+      <ErrorMessage error={loadError} action="讀取客戶" />
+      {!loadError && <p>載入中...</p>}
+      {loadError && <button onClick={() => void refetch()} disabled={isFetching} className="text-blue-600 mr-4">重新載入資料</button>}
+      <button onClick={() => navigate('/customers')}>返回列表</button>
+    </div>;
+  }
+
   return (
     <div className="max-w-2xl">
       <h2 className="text-2xl font-bold mb-6">{isEdit ? '編輯客戶' : '新增客戶'}</h2>
 
-      <form onSubmit={handleSubmit(data => mutation.mutate(data))} className="space-y-4 bg-white p-6 rounded-lg shadow">
+      <ErrorMessage error={loadError} action="重新讀取資料" />
+      {loadError && <button type="button" onClick={() => void refetch()} disabled={isFetching} className="text-blue-600 mb-4">重新載入資料</button>}
+      <FormRefreshGuard {...refresh} />
+      <form onSubmit={handleSubmit(data => { if (!refresh.conflict && !loadError) mutation.mutate(data); })} className="space-y-4 bg-white p-6 rounded-lg shadow">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">客戶名稱 *</label>
           <input {...register('name', { required: '請輸入客戶名稱' })} className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
@@ -90,11 +109,11 @@ export default function CustomerFormPage() {
         </div>
 
         {mutation.error && (
-          <p className="text-red-500 text-sm">{(mutation.error as Error).message}</p>
+          <p className="text-red-500 text-sm">{apiErrorMessage(mutation.error)}</p>
         )}
 
         <div className="flex gap-2 pt-4">
-          <button type="submit" disabled={mutation.isPending} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+          <button type="submit" disabled={mutation.isPending || refresh.conflict || !!loadError} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
             {mutation.isPending ? '儲存中...' : '儲存'}
           </button>
           <button type="button" onClick={() => navigate('/customers')} className="px-4 py-2 border rounded-lg hover:bg-gray-50">

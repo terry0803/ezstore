@@ -1,0 +1,35 @@
+{
+  "at": "2026-10-18T16:34:53",
+  "results": [
+    {
+      "case": "backend_negative_unit_price",
+      "passed": true,
+      "note": "400 {\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"訂單單價不可為負數\"}}"
+    },
+    {
+      "case": "backend_cross_customer_quotation",
+      "passed": true,
+      "note": "quotation QT-20260330-001 (customer 14): 400 {\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"關聯報價單與訂單必須屬於同一客戶\"}}"
+    },
+    {
+      "case": "mcp_factor_10_no_draft",
+      "passed": true,
+      "note": "{\"content\": [{\"type\": \"text\", \"text\": \"Error executing tool update_pricing_factor: 報價因子最多 9.9999（後端只存到小數 4 位），沒有建立副本\"}], \"isError\": true}"
+    },
+    {
+      "case": "advisor_polite_price_request_executes",
+      "passed": true,
+      "note": "重新試算：毛利率 28.25%，業務可直接調整，試算驗證通過。\n（經 A2A 交給報價單 Agent，task f8fa9bab，狀態 completed）\n已透過二分法調整報價因子使總價逼近目標值（迭代 20 次）。\n原始報價單: QT-20260325-001（未修改） — http://localhost:3000/quotations/9\n新報價單: QT-20261018-001\n報價因"
+    },
+    {
+      "case": "advisor_polite_convert_request_executes",
+      "passed": true,
+      "note": "QT-20260301-001 轉訂單檢查：可以轉\n- 報價單轉訂單規則：符合（未驗證）\n系統連結：http://localhost:3000/quotations/6\n（經 A2A 交給報價單 Agent，task e8da3463，狀態 completed）\n已成功將報價單轉換為訂單。\n報價單: QT-20260301-001（未修改） — http://localhost:3000/quot"
+    },
+    {
+      "case": "advisor_feasibility_question_only_checks",
+      "passed": true,
+      "note": "QT-20260325-001（神盾局科技股份有限公司，vip，草稿）改成 190000 的試算：\n- 報價因子 0.8200 → 0.7364\n- 總價 211560.00 → 189991.20（報價因子取到小數 4 位）\n- 毛利率 32.17% → 24.47%（利潤 46491.20）\n判斷：需業務主管核准\n- 改價核准層級（2026 年版）：改價後毛利率 24.47% → 需業務主管核"
+    }
+  ]
+}

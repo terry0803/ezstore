@@ -3,9 +3,11 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { orderApi } from '../api/orderApi';
 import type { OrderCreateInput } from '../api/orderApi';
+import { allOptions } from '../api/allOptions';
 import { customerApi } from '../api/customerApi';
 import { productApi } from '../api/productApi';
 import type { Customer, Product } from '../types';
+import { apiErrorMessage } from '../components/shared/ErrorMessage';
 
 interface ItemRow {
   product_id: number;
@@ -23,24 +25,30 @@ export default function OrderFormPage() {
   const [notes, setNotes] = useState('');
   const [items, setItems] = useState<ItemRow[]>([{ product_id: 0, unit_price: 0, quantity: 1 }]);
 
-  const { data: customersData } = useQuery({
-    queryKey: ['customers', 1, 100],
-    queryFn: () => customerApi.list(1, 100),
+  const customersQuery = useQuery({
+    queryKey: ['customers', 'order-options'],
+    queryFn: () => allOptions(customerApi.list),
+    retry: 1,
   });
 
-  const { data: productsData } = useQuery({
-    queryKey: ['products', 1, 100],
-    queryFn: () => productApi.list(1, 100),
+  const productsQuery = useQuery({
+    queryKey: ['products', 'order-options'],
+    queryFn: () => allOptions(productApi.list),
+    retry: 1,
   });
 
-  const { data: order } = useQuery({
+  const orderQuery = useQuery({
     queryKey: ['order', id],
     queryFn: () => orderApi.get(Number(id)),
     enabled: isEdit,
   });
 
-  const customers: Customer[] = customersData?.data ?? [];
-  const products: Product[] = productsData?.data ?? [];
+  const order = orderQuery.data;
+  const customers: Customer[] = customersQuery.data ?? [];
+  const products: Product[] = productsQuery.data ?? [];
+  const dataLoading = customersQuery.isPending || productsQuery.isPending || (isEdit && orderQuery.isPending);
+  const dataError = customersQuery.error || productsQuery.error || (isEdit ? orderQuery.error : null);
+  const dataUnavailable = dataLoading || !!dataError;
 
   useEffect(() => {
     if (order) {
@@ -72,7 +80,9 @@ export default function OrderFormPage() {
   const mutation = useMutation({
     mutationFn: (data: OrderCreateInput) =>
       isEdit ? orderApi.update(Number(id), data) : orderApi.create(data),
-    onSuccess: () => {
+    onSuccess: (saved) => {
+      // 詳情頁用 ['order', id] 快取 30 秒；先換成剛存好的資料，馬上點開才不會看到舊值
+      queryClient.setQueryData(['order', String(saved.id)], saved);
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       navigate('/orders');
     },
@@ -80,6 +90,7 @@ export default function OrderFormPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (dataUnavailable || mutation.isPending) return;
     mutation.mutate({
       customer_id: customerId,
       notes,
@@ -95,7 +106,17 @@ export default function OrderFormPage() {
     <div>
       <h2 className="text-2xl font-bold mb-6">{isEdit ? '編輯訂單' : '新增訂單'}</h2>
 
+      {dataLoading && <p role="status">載入訂單所需資料中...</p>}
+      {dataError && <div role="alert" className="mb-4 text-red-600">
+        讀取訂單所需資料失敗：{apiErrorMessage(dataError)}
+        <button type="button" className="ml-3 underline" onClick={() => {
+          void customersQuery.refetch();
+          void productsQuery.refetch();
+          if (isEdit) void orderQuery.refetch();
+        }}>重試</button>
+      </div>}
       <form onSubmit={handleSubmit} className="space-y-6">
+        <fieldset disabled={dataUnavailable || mutation.isPending} className="space-y-6">
         <div className="bg-white p-6 rounded-lg shadow space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">客戶 *</label>
@@ -196,12 +217,14 @@ export default function OrderFormPage() {
           </div>
         </div>
 
+        </fieldset>
+
         {mutation.error && (
-          <p className="text-red-500 text-sm">{(mutation.error as Error).message}</p>
+          <p className="text-red-500 text-sm">{apiErrorMessage(mutation.error)}</p>
         )}
 
         <div className="flex gap-2">
-          <button type="submit" disabled={mutation.isPending} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+          <button type="submit" disabled={dataUnavailable || mutation.isPending} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
             {mutation.isPending ? '儲存中...' : '儲存'}
           </button>
           <button type="button" onClick={() => navigate('/orders')} className="px-4 py-2 border rounded-lg hover:bg-gray-50">

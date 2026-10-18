@@ -1,0 +1,20 @@
+[
+  {
+    "app": "pricing_advisor",
+    "user": "QT-20260325-001 先不要壓價了",
+    "reply": "好，已經取消，這次沒有修改任何資料。",
+    "passed": true
+  },
+  {
+    "app": "pricing_advisor",
+    "user": "不用轉單了，QT-20260301-001",
+    "reply": "好，已經取消，這次沒有修改任何資料。",
+    "passed": true
+  },
+  {
+    "app": "quotation_agent",
+    "user": "QT-20260330-001 先不要改價了",
+    "reply": "好，已經取消，這次沒有修改任何資料。要做別的操作再跟我說。",
+    "passed": true
+  }
+]

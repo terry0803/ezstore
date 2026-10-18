@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { quotationApi } from '../api/quotationApi';
 import DataTable from '../components/shared/DataTable';
+import ErrorMessage from '../components/shared/ErrorMessage';
 import Pagination from '../components/shared/Pagination';
 import ConfirmDialog from '../components/shared/ConfirmDialog';
 import StatusBadge from '../components/shared/StatusBadge';
@@ -14,9 +15,15 @@ export default function QuotationListPage() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
+  const duplicateInFlight = useRef(false);
+  const mounted = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['quotations', page, statusFilter],
     queryFn: () => quotationApi.list(page, 20, statusFilter),
   });
@@ -27,15 +34,26 @@ export default function QuotationListPage() {
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
       setDeleteId(null);
     },
+    // 失敗也關掉確認框，讓下面的錯誤訊息看得到
+    onError: () => setDeleteId(null),
   });
 
   const duplicateMutation = useMutation({
     mutationFn: (id: number) => quotationApi.duplicate(id),
     onSuccess: (newQuotation) => {
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
-      navigate(`/quotations/${newQuotation.id}/edit`);
+      // A response arriving after the user left must not replace their page.
+      if (mounted.current) navigate(`/quotations/${newQuotation.id}/edit`);
     },
+    onSettled: () => { duplicateInFlight.current = false; },
   });
+
+  const duplicate = (id: number) => {
+    // The ref closes the gap before React renders isPending, including dblclick.
+    if (duplicateInFlight.current) return;
+    duplicateInFlight.current = true;
+    duplicateMutation.mutate(id);
+  };
 
   const columns: Column<Quotation>[] = [
     { key: 'quotation_number', title: '報價單編號' },
@@ -53,8 +71,9 @@ export default function QuotationListPage() {
           查看
         </button>
         <button
-          onClick={(e) => { e.stopPropagation(); duplicateMutation.mutate(q.id); }}
-          className="text-purple-600 hover:text-purple-800 text-sm"
+          onClick={(e) => { e.stopPropagation(); duplicate(q.id); }}
+          disabled={duplicateMutation.isPending}
+          className="text-purple-600 hover:text-purple-800 text-sm disabled:opacity-50"
         >
           複製
         </button>
@@ -102,6 +121,9 @@ export default function QuotationListPage() {
         </select>
       </div>
 
+      <ErrorMessage error={error} action="讀取報價單清單" />
+      <ErrorMessage error={deleteMutation.error} action="刪除報價單" />
+      <ErrorMessage error={duplicateMutation.error} action="複製報價單" />
       <DataTable columns={columns} data={data?.data ?? []} loading={isLoading} />
       <Pagination page={page} pageSize={20} total={data?.total ?? 0} onPageChange={setPage} />
 

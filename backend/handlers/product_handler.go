@@ -31,8 +31,7 @@ func NewProductHandler(service *services.ProductService) *ProductHandler {
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /api/v1/products [get]
 func (h *ProductHandler) List(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	page, pageSize := listPagination(c)
 	search := c.Query("search")
 
 	products, total, err := h.Service.List(page, pageSize, search)

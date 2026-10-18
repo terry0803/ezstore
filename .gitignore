@@ -8,6 +8,7 @@ __pycache__/
 .venv/
 .pytest_cache/
 .ruff_cache/
+.state/
 agent/artifacts/
 artifacts/
 # uv.lock 需提交（Docker build 使用 --frozen）
@@ -63,3 +64,17 @@ playwright-report/
 
 # Claude
 .claude/
+
+# Commit the selected root fix/recheck evidence bundles; agent/ and advisor/
+# eval artifacts and the machine-specific test Compose file stay local.
+!/artifacts/
+/artifacts/*
+!/artifacts/fix-20261017/
+!/artifacts/fix-20261017/**
+/artifacts/fix-20261017/compose.test.yml
+/artifacts/fix-20261017/compose.gemini-test.yml
+!/artifacts/recheck-20261017/
+!/artifacts/recheck-20261017/**
+/artifacts/recheck-20261017/compose*.yml
+!/artifacts/fixes-20261018/
+!/artifacts/fixes-20261018/**

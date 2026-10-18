@@ -1,0 +1,14 @@
+[
+  {
+    "slide": 10,
+    "text": "課前準備：三樣工具、一把金鑰、一次 fork\n必要工具\nDocker Desktop：一鍵啟動整套系統\nuv：Python 環境與套件\ngoogle-agents-cli：uv tool install google-agents-cli\nAI coding 工具：Claude Code / Antigravity / Codex 擇一\n模型憑證\nGoogle AI Studio API key（免費方案即可）\n填在根目錄 .env 的 GEMINI_API_KEY\n有 GCP 的人可改 Vertex AI：gcloud auth application-default login\n沒有金鑰系統也能啟動，只有對話會失敗\n取得專案\nFork cshliu77/ezstore（保持「只複製 default branch」）\ndefault branch 是 workshop-start：沒有 agent/\ngit clone 自己的 fork\ncp .env.example .env\n驗證安裝（上課前跑完這三行）\ndocker --version && docker compose version    uv --version    agents-cli --version\ndocker compose up -d → 開 http://localhost:3000 看到報價單系統首頁；http://localhost:3000/agent 在做出 Agent 前顯示錯誤是正常的\n10"
+  },
+  {
+    "slide": 17,
+    "text": "自動評分：學生自我驗收與助教評分用同一支程式\npython3 scripts/grading/grade_agent.py --suite scripts/grading/student-suite.json\n流程：agents-cli eval 在本機啟動學生的 Agent → 每題由 LLM 評審＋程式規則打分 → 查後端 API 核對原單未改、複製單與訂單存在 → 加權成 0–100 分 → report.md\n群組（學生 suite）\n題庫\n題目分\n後端核對分\nguardrails\nspec 釘住的三題：兩題離題、一題多輪追問\n30\n0\nactions\n六個操作各一題\n25\n25：原單未動 10、≥3 張複製單 5、複製單因子 1.5 5、訂單關聯 5\nextra\n查無資料、要求 Markdown\n20\n0\n97.8\n參考解答：學生 suite\n98.8\n參考解答：助教 suite\n破壞測試\n把連結改成 Markdown：guardrails＋extra 從 50 分掉到 33.6，證明指標抓得到。\n助教評分（題庫不進版控，放在助教本機）：\n正向 13 題換句型、換報價單、中文數字、多輪、英文句；反向 14 題離題、提示注入、Markdown 要求、查無資料、缺欄位、因子 0、不可達總價；各 50 分。評分用的指標設定獨立於學生自己的 eval_config，建議 --runs 2 取平均。\n17"
+  },
+  {
+    "slide": 20,
+    "text": "注意須知：這些坑已經填好或要提醒\n金鑰與憑證\nGEMINI_API_KEY 只放 .env；Vertex 的 ADC 會過期，重跑 gcloud auth application-default login\nPort 8010\n本機 Agent 連 MCP 要用 http://localhost:8010/mcp（compose 對外開的埠；8000 常被別的服務佔用）\n重灌 seed\n操作類評鑑會新增複製單與訂單，每次跑之前先重灌 seed 才準\n單號撞號已修\n並行建單撞唯一索引的後端問題已加重試；學員用新映像或本機建置都不會遇到\n不可改的資料夾\nmcp_server/、frontend/、backend/ 不能動；助教會 git diff 檢查\nFork 只複製 default\ndefault branch 是 workshop-start；main 上有完成版，學員不該去看\nApp 名稱與節點\nADK App 必須叫 quotation_agent、要有 respond 節點，Chat UI 與評分都依賴它\nLLM 會浮動\n分類器偶爾漏抓句尾編號；評分用 --runs 2 平均，程式判定與後端核對占一半以上\nPlaywright 版本\ne2e 映像與 @playwright/test 用同一個 ARG 釘版，升級只改一個數字\n20"
+  }
+]

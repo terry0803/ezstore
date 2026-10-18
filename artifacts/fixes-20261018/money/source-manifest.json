@@ -1,0 +1,11 @@
+{
+  "backend/services/quotation_service.go": "23f7871e2553698dcdcc5995974e8b7ffd5c79f38bd34fd1c9101d707e919662",
+  "backend/services/order_service.go": "6b5b493d843b6a99c42da375c2f5c5586840fd0bf2fb1c8b5643a5c4e01d0ecf",
+  "agent/quotation_agent/preflight.py": "1063ec90d080fdf985637fd0af2921149f069e781517cfb7b01d36d143768e7f",
+  "advisor/pricing_advisor/agent.py": "f65e6f63f1ee0c244e748c72a84ab3cf2f3c08af7acb7e14e33ef19f67cc1819",
+  "advisor/pricing_advisor/policies.py": "6ee44a8d0bf8caaaacc1a5b2a6f6152505ad94369b80583e3cbde4fdf567d9ad",
+  "advisor/pricing_advisor/okf_verify.py": "8ba4d813b89e5c1c731e2539ac7526fd57dc1e33c03648610808539a765cc2c7",
+  "frontend/src/pages/QuotationFormPage.tsx": "c5e5bdadfea24d6897d1f77d62e90096c9a4945f10bc0457c7fe20ef5afcbf62",
+  "knowledge/ezstore/references/computations/price_change_impact.py": "599f7193e7e7af8e0de65de23d27df524b5eb4d501d4684d3fc54b83415ece82",
+  "scripts/verify_money_precision.py": "4df097b05c344f2e61403b3e826a6fb4ace1bcc75271461b3c150c2c552c94be"
+}

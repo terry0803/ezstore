@@ -10,6 +10,13 @@ const AGENT_BASE = '/agent-api';
 /** Workflow 中負責產生最終回覆的節點名稱（見 agent/quotation_agent/agent.py）。 */
 const RESPONSE_NODE = 'respond';
 
+export class SessionExpiredError extends Error {
+  constructor() {
+    super('對話已失效（Agent 可能已重新啟動）。這次指令沒有執行；下一次送出會建立新對話，請重新提供完整單號與要求。');
+    this.name = 'SessionExpiredError';
+  }
+}
+
 export interface AgentMessage {
   role: 'user' | 'agent';
   content: string;
@@ -89,6 +96,14 @@ export async function sendMessageSSE(
     });
 
     if (!resp.ok) {
+      // A missing session is rejected before execution. Do not retry messages
+      // automatically: the previous conversation's context has been lost.
+      if (resp.status === 404) {
+        const body = await resp.json().catch(() => null);
+        if (typeof body?.detail === 'string' && /^Session not found(?::|$)/i.test(body.detail)) {
+          throw new SessionExpiredError();
+        }
+      }
       throw new Error(`Agent request failed: ${resp.status}`);
     }
 
@@ -139,6 +154,9 @@ export async function sendMessageSSE(
       }
     }
 
+    if (!accumulated.trim()) {
+      throw new Error('Agent 未回傳最終回覆，操作結果尚未確認。請先查詢單據，再決定是否重試。');
+    }
     onDone();
   } catch (err) {
     onError(err instanceof Error ? err : new Error(String(err)));

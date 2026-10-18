@@ -1,0 +1,29 @@
+<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>四項問題修正與驗證 — 2026-10-18</title>
+<style>body{font:17px/1.8 system-ui,sans-serif;margin:0;background:#f3f6fa;color:#203047}main{max-width:960px;margin:32px auto;padding:36px;background:white;border-radius:16px}h1{font-size:30px}h2{font-size:22px;margin-top:30px}a{color:#165ac1}td,th{padding:12px;text-align:left;border-bottom:1px solid #dce3ec;vertical-align:top}table{border-collapse:collapse;width:100%}.ok{background:#e8f5ed;padding:16px;border-radius:8px}code{background:#eef2f7;padding:3px 5px}</style>
+<main><h1>四項問題修正與驗證</h1><p>2026-10-18 · EZStore 作業</p>
+<p class="ok">再次審查確認的四項漏洞已修正，對應重現情境與相關回歸測試通過。新版已部署到本機；測試寫入只在隔離資料庫進行。</p>
+<h2>修正結果</h2><table><tr><th>問題</th><th>處理與驗證</th></tr>
+<tr><td>「先不要執行」仍改價</td><td>兩個 Agent 共用相同的暫緩判斷，優先於模型分類與待補操作。暫緩條件作用於整段要求，不再依賴同一子句內出現改價動詞；清除待補與確認狀態。新增 96 個路由測試，涵蓋 8 種暫緩說法、不同模型分類及先前待補狀態。真實 Gemini 對兩個 Agent 都回覆取消、無新增或修改資料；另外兩個明確改價請求正常完成，包括 A2A。</td></tr>
+<tr><td>報價換客戶破壞既有訂單關聯</td><td>報價更新鎖定主列後，若要換客戶且已有有效訂單關聯，就拒絕並提示另建報價。訂單建立與重新連結也在同一交易取得報價鎖、重查客戶，避免先驗證後被另一個請求改壞。測試包含既有關聯、建立訂單競態、重新連結競態，且兩種先後順序都驗證；同客戶的一般編輯仍可完成。</td></tr>
+<tr><td>並行發佈與刪除可刪掉已發佈報價</td><td>普通 Delete 在交易內鎖定報價，重新檢查當下狀態後才刪除。發佈先完成的交錯測試：發佈 200、刪除 403，最終單據仍 published、明細未變；一般草稿刪除仍回 204。</td></tr>
+<tr><td>並行訂單更新混入兩份明細</td><td>先取得訂單主列鎖，再刪除及重建明細、儲存總價，不寫回過期狀態。實際 PostgreSQL 與 HTTP 測試：兩次更新都成功，最後只留一份明細，訂單總價 300、明細加總 300，未再產生總價 300／明細 500 的情況。</td></tr></table>
+<h2>測試</h2><ul>
+<li>Python：Agent 456、Advisor 403、MCP 35、scripts 17，共 911 項通過；另 4 個子測試通過。</li>
+<li>Go：目前來源的 go test ./... 與 go vet ./... 通過。</li>
+<li>瀏覽器：41 項 Playwright 測試通過。本輪未改前端程式。</li>
+<li>真實隔離資料庫：新增 7 項關聯／並行情境，另重跑前輪 3 項儲存回歸，全部通過。</li>
+<li>Gemini Flash-Lite：4 個情境通過；2 個暫緩指令無寫入，2 個明確要求正常執行。</li>
+<li>MCP：4 項真實資料庫故障注入通過；明確拒絕會補償清理，回應遺失不重送或盲目刪除。失效 session 測試仍回 404 且未寫入。</li>
+<li>git diff --check 與使用者授權修正範圍檢查通過；兩個 Agent 的 write_intent.py 逐位元組一致。</li></ul>
+<h2>程式碼與重跑方式</h2>
+<p>寫入防護：agent/quotation_agent/write_intent.py、agent.py；advisor/pricing_advisor/write_intent.py、agent.py。回歸案例在兩個 Agent 的 tests/unit/test_review_regressions.py。</p>
+<p>資料庫修正：backend/repositories/quotation_repo.go、order_repo.go。整合測試腳本 <code>scripts/verify_concurrency_regressions.py --output 結果.json</code> 與 <code>scripts/verify_storage_regressions.py --output 結果.json</code> 固定使用隔離服務 58080 與 ezstore-fix-check-db-1；需先啟動隔離環境。</p>
+<h2>證據</h2><p>本輪證據目錄：<code>C:/Users/terry/Documents/Codex/2026-09-18/https-gamma-app-docs-unit-2/work/ezstore_four_fixes_20261018</code>。</p>
+<ul><li><a href="file:///C:/Users/terry/Documents/Codex/2026-09-18/https-gamma-app-docs-unit-2/work/ezstore_four_fixes_20261018/concurrency-results.json">7 項關聯與並行測試結果</a></li>
+<li><a href="file:///C:/Users/terry/Documents/Codex/2026-09-18/https-gamma-app-docs-unit-2/work/ezstore_four_fixes_20261018/gemini-results.json">Gemini 完整回覆與寫入差異</a></li>
+<li><a href="file:///C:/Users/terry/Documents/Codex/2026-09-18/https-gamma-app-docs-unit-2/work/ezstore_four_fixes_20261018/fault-results.json">MCP 故障注入</a></li>
+<li><a href="file:///C:/Users/terry/Documents/Codex/2026-09-18/https-gamma-app-docs-unit-2/work/ezstore_four_fixes_20261018/main-verification.json">正式資料與部署映像核對</a></li>
+<li><a href="file:///C:/Users/terry/Documents/Codex/2026-09-18/https-gamma-app-docs-unit-2/work/ezstore_four_fixes_20261018/verification-summary.json">測試統計</a></li></ul>
+<h2>範圍</h2><p>本輪依使用者授權修正四項問題，保留第一個 Agent 六項動作及第二個 Agent 的議價、A2A、OKF 流程。後端與老師原版仍存在已記錄的使用者授權差異；通過 --allow-user-fixes 不等於老師核准修改基底。</p>
+<p>結果確認上述重現案例與回歸情境通過，不宣稱涵蓋所有自然語句及所有可能並行時序。正式資料完整核對未變，仍為 15 客戶、20 產品、12 報價、10 訂單；隔離測試服務完成後停止。</p></main></html>

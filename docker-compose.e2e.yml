@@ -1,0 +1,71 @@
+# Standalone disposable UI test stack. Do not merge with the main Compose files.
+# scripts/test-e2e.ps1 supplies a unique project name and an empty env file.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ezstore
+      POSTGRES_PASSWORD: disposable-test-only
+      POSTGRES_DB: ezstore
+    volumes:
+      - testdata:/var/lib/postgresql/data
+      - ./scripts:/scripts:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ezstore"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  backend:
+    image: ezstore-e2e-backend:local
+    pull_policy: never
+    build: ./backend
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_USER: ezstore
+      DB_PASSWORD: disposable-test-only
+      DB_NAME: ezstore
+      GIN_MODE: release
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/health"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  frontend:
+    image: ezstore-e2e-frontend:local
+    pull_policy: never
+    build: ./frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/health"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  e2e:
+    image: ezstore-e2e-runner:local
+    pull_policy: never
+    build:
+      context: ./frontend
+      dockerfile: e2e/Dockerfile
+    environment:
+      BASE_URL: http://frontend:80
+      API_URL: http://backend:8080
+    depends_on:
+      frontend:
+        condition: service_healthy
+
+volumes:
+  testdata:
+
+# No host ports, host services, credentials, model servers, or outbound access.
+networks:
+  default:
+    internal: true

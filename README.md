@@ -1,5 +1,7 @@
 # EZStore
 
+This version retains the six instructor operations and Agent architecture, with explicitly disclosed user-requested fixes in backend, frontend and MCP. Those trees differ from instructor baseline `09f6588`; this does not imply instructor approval. `python scripts/check_assignment.py` reports strict differences; `--allow-user-fixes` permits only the documented repair files. See [current status, deviations and latest results](reports/目前狀態.md).
+
 > A lightweight B2B quotation and order management system.
 
 [中文版](README.zh-TW.md)
@@ -38,8 +40,15 @@ ezstore/
 ├── scripts/
 │   └── seed-test-data.sql      # Idempotent test dataset (TRUNCATE + INSERT)
 ├── .env.example                # GEMINI_API_KEY and agent settings (copy to .env)
-├── agent/                      # ★ LAB deliverable — not in this branch. Build it from agent-spec-prompt.md
-│                               #   (agents-cli scaffold → ADK 2.x graph Workflow → connect to mcp_server)
+├── agent/                      # Quotation agent (ADK 2.x graph Workflow → mcp_server); see agent/README.md
+│   ├── quotation_agent/        #   agent.py (Workflow, Intent, nodes), fast_api_app.py (ADK + A2A routes)
+│   ├── tests/                  #   unit / integration (offline) and eval datasets + metrics
+│   └── Dockerfile, pyproject.toml, uv.lock
+├── advisor/                    # Pricing advisor (second agent, calls the quotation agent over A2A); see advisor/README.md
+│   ├── pricing_advisor/        #   agent.py, okf.py (bundle reader), policies.py, computation.py, a2a_client.py, okf_cli.py
+│   └── tests/, scripts/        #   offline tests; demo dialogue and A2A demo
+├── knowledge/ezstore/          # OKF v0.2 bundle: system, policies, computations, playbooks, glossary, references
+├── docker-compose.advisor.yml  # Adds the advisor service (published on :8502)
 ├── mcp_server/
 │   ├── Dockerfile
 │   ├── pyproject.toml           # mcp>=2.2, httpx (+ uv.lock)
@@ -66,7 +75,7 @@ ezstore/
     │   ├── types/index.ts      # TypeScript type definitions
     │   ├── App.tsx             # Router + QueryClientProvider
     │   └── main.tsx            # React entry point
-    └── e2e/                    # Playwright E2E tests (planned)
+    └── e2e/                    # Playwright E2E tests
 ```
 
 ### Prerequisites
@@ -141,40 +150,40 @@ swag --version            # swag version v1.x+
 **API key (required for the AI Agent, everything else runs without it):**
 
 ```bash
-cp .env.example .env      # then fill in GEMINI_API_KEY from https://aistudio.google.com/apikey
+cp .env.example .env      # then fill in GEMINI_API_KEY: https://aistudio.google.com/apikey
 ```
 
-**Option A — Use pre-built images from GHCR (default, no build required):**
+**Start (build from local source, both agents included):**
 
 ```bash
-docker compose up -d
+docker compose -p ezstore -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.advisor.yml up -d --build
 ```
 
-**Option B — Build from local source code:**
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
-```
+On Windows, `.\scripts\start-homework.ps1` does the same (`-SkipBuild` to skip the build, `-Action Status|Restart|Logs`). Plain `docker compose up -d` pulls the workshop's GHCR images, which do not contain this homework. After editing `.env`, run `up -d` again; a plain restart does not pick up new settings.
 
 **Load test data:**
 
 ```bash
-docker compose exec db psql -U ezstore -f /scripts/seed-test-data.sql
+docker compose -p ezstore exec db psql -U ezstore -f /scripts/seed-test-data.sql
 ```
+
+The seed runs `TRUNCATE` and then inserts the fixtures, so the data returns to the initial 12 quotations and 10 orders. Demos and evals add copies and orders; reseed before rerunning them.
 
 | Service | URL |
 |---------|-----|
 | Frontend | http://localhost:3000 |
+| AI Assistant (Chat UI) | http://localhost:3000/agent |
 | Backend API | http://localhost:8080/api/v1 |
 | Swagger UI | http://localhost:8080/swagger/index.html |
 | Health Check | http://localhost:8080/health |
 
 **Run E2E tests (verify the deployment is working):**
 
-```bash
-docker compose exec db psql -U ezstore -f /scripts/seed-test-data.sql
-docker compose run --rm e2e
+```powershell
+.\scripts\test-e2e.ps1            # add -SkipBuild to reuse the built test images
 ```
+
+The script starts a throwaway database and services (project `ezstore-e2e-<random>`), seeds it, runs the UI and API tests, and removes everything including the volume. The main services and data are not touched. On macOS/Linux use `pwsh -File scripts/test-e2e.ps1`.
 
 ### Development Mode
 
@@ -210,10 +219,10 @@ cd backend
 go test ./... -v -cover
 ```
 
-**Load test dataset** (idempotent — safe to run repeatedly):
+**Load test dataset** (clears and reinserts; rerunning gives the same data):
 
 ```bash
-docker compose exec db psql -U ezstore -f /scripts/seed-test-data.sql
+docker compose -p ezstore exec db psql -U ezstore -f /scripts/seed-test-data.sql
 ```
 
 The seed data includes: 15 customers (5 VIP + 6 Standard + 4 New), 20 products, 12 quotations (8 published + 4 draft), 10 orders (3 pending + 3 confirmed + 2 completed + 2 cancelled).
@@ -254,29 +263,30 @@ profit_rate  = profit ÷ total_price
 
 ### AI Agent
 
-> **This branch (`workshop-start`) is the lab starting point.** The backend, frontend Chat UI, MCP Server and database are provided; the `agent/` service is what you build by feeding `agent-spec-prompt.md` to your AI coding tool. The description below is the target you are building toward.
-
-EZStore includes a natural-language quotation assistant built with Google ADK 2.x. The agent is a **graph Workflow**: only one node calls the LLM (intent classification); tool selection, argument passing, clarification and refusal are all deterministic program logic.
+EZStore includes a natural-language quotation assistant in `agent/`, built with Google ADK 2.11. The agent is a **graph Workflow**: only one node calls the LLM (intent classification). Tool selection, arguments, clarification and refusal are all deterministic code.
 
 **Architecture:**
 
 ```
 User → React Chat UI → nginx /agent-api → Agent (ADK FastAPI, port 8080) → MCP Server (port 8000) → Backend REST API
                                                │                                  Streamable HTTP
-                                          Gemini 3.8 Flash                        (mcp Python SDK 2.x)
-                                        (AI Studio API key)
+                                     classify_intent model                       (mcp Python SDK 2.x)
+                         Gemini 3.8 Flash (AI Studio key / Vertex AI)
+                         or a local OpenAI-compatible model (AGENT_MODEL=openai/..., via LiteLLM)
 
 Workflow graph (agent/quotation_agent/agent.py):
 
-  START → load_context → classify_intent (LLM, output_schema=Intent) → route
-            ├─ get_quotation / list_customer_quotations / duplicate_quotation
-            ├─ update_pricing_factor / adjust_total_price / convert_to_order    ← each calls one MCP tool
-            ├─ clarify     (missing fields → ask, keep state.pending_intent)
-            └─ off_topic   (fixed refusal, decided by code)
-          all → respond    (emit text + update state.chat_history)
+  START → load_context ──(no credentials)──────────────────────────────┐
+            │                                                           │
+            └─(classify)→ classify_intent (LlmAgent, output_schema=Intent) → route
+                            ├─ get_quotation / list_customer_quotations / duplicate_quotation
+                            ├─ update_pricing_factor / adjust_total_price / convert_to_order   ← each calls one MCP tool
+                            ├─ clarify    (missing or invalid field → "請提供…", keeps state.pending_intent)
+                            └─ off_topic  (refusal decided by code)
+                          all → respond   (the only node the Chat UI shows)
 ```
 
-Every user message re-runs the graph from `START`; cross-turn memory lives in session state (`chat_history`, `pending_intent`), so a user can answer a clarification question in the next message.
+Every user message re-runs the graph from `START`. Cross-turn memory is the session state `pending_intent`. When the state is empty but the previous assistant turn was a clarification (for example a conversation history seeded by an eval case), `load_context` hands the previous user message to the classifier so the request still continues.
 
 **Capabilities:**
 
@@ -290,33 +300,76 @@ Every user message re-runs the graph from `START`; cross-turn memory lives in se
 | Convert to order | Create an order from the quotation's customer and items, linked via `quotation_id`; the quotation itself is untouched |
 
 **Key design:**
-- All modifications use **copy-on-write** — the original quotation is never changed
-- All responses include **plain-text system links** to the quotation/order detail pages
-- Off-topic requests are **refused by code**, missing fields trigger a **clarification turn**
-- Agent runs even without an API key (chat returns a clear error), so `docker compose up` never fails on a missing key
+- All modifications use **copy-on-write**: the original quotation is never changed, and the MCP tool's reply (which says so) is shown as is
+- All replies carry **plain-text system links** to the quotation/order pages, never Markdown links
+- The quotation number is taken from the user's text by a regex, not from the LLM; pricing factor and target total must be greater than 0
+- Off-topic requests are **refused by code**: the classifier's `off_topic` intent plus rules for prompt injection and customer/product create-update-delete requests. Missing fields trigger a **clarification turn**
+- The agent starts without any credentials (chat replies with a setup message), so `docker compose up` never fails on a missing key
+
+**Environment variables:**
+
+The default model follows the course spec: `gemini-3.8-flash`. To save quota, tests set `AGENT_MODEL=gemini-3.1-flash-lite` in `.env`, the cheapest model this account can call (`gemini-2.5-flash-lite` is closed to new users). Compose reads the root `.env`; running inside `agent/` or `advisor/` reads that folder's `.env`.
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `GEMINI_API_KEY` | — | AI Studio key (root `.env` for Compose, `agent/.env` for local runs) |
+| `GOOGLE_GENAI_USE_VERTEXAI`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` | —, —, `global` | Use Vertex AI instead of an AI Studio key |
+| `AGENT_MODEL` | `gemini-3.8-flash` | Model for `classify_intent`. A value starting with `openai/` (e.g. `openai/qwen3.5-9b`) switches to an OpenAI-compatible API |
+| `MODEL_MAX_ATTEMPTS` | `6` | Maximum attempts per Gemini call (429 is retried with backoff); set 1 when quota is tight |
+| `LOCAL_LLM_BASE` | Compose: `http://host.docker.internal:18081/v1`; local: `http://127.0.0.1:18081/v1` | Endpoint for `openai/` models |
+| `MCP_URL` | Compose: `http://mcp-server:8000/mcp`; local: `http://localhost:8010/mcp` | MCP Server |
+| `FRONTEND_URL`, `ALLOW_ORIGINS` | `http://localhost:3000` | Links in tool replies, CORS |
+| `JUDGE_MODEL` | `AGENT_MODEL` | Judge model for the eval metrics in `agent/tests/eval` |
 
 **Local development:**
 
 ```bash
-# MCP Server (port 8010 to avoid clashing with other local services)
-cd mcp_server && uv sync
-BACKEND_URL=http://localhost:8080 MCP_PORT=8010 uv run python server.py
+# Whole system; mcp-server is published on :8010 for locally running agents
+docker compose -p ezstore -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.advisor.yml up -d --build
 
-# Agent (in another terminal)
-cd agent && cp .env.example .env    # fill GEMINI_API_KEY, set MCP_URL=http://localhost:8010/mcp
+cd agent && cp .env.example .env    # fill GEMINI_API_KEY; MCP_URL=http://localhost:8010/mcp
                                     # or Vertex AI: GOOGLE_GENAI_USE_VERTEXAI=true + GOOGLE_CLOUD_PROJECT after `gcloud auth application-default login`
-uv sync --group dev
-agents-cli playground               # web UI
-agents-cli run "我要查詢報價單，報價單編號：QT-20260330-001"
-
-# Tests
-uv run pytest tests/unit -q                       # no LLM, no MCP
-MCP_URL=http://localhost:8010/mcp uv run pytest tests/integration -q   # offline graph tests (+ LLM tests when key is set)
-agents-cli eval run --dataset tests/eval/datasets/quotation-actions.json    # 6 action cases (creates data; reseed before rerun)
-agents-cli eval run --dataset tests/eval/datasets/quotation-guardrails.json # 2 refusals + 1 multi-turn clarification
+uv sync --group dev --extra eval
+agents-cli playground               # web UI on http://127.0.0.1:8501 with --port 8501
 ```
 
-Trustworthiness evaluation labs for learners: [eval-lab-quick.md](eval-lab-quick.md) (25 min, in class) and [eval-lab.md](eval-lab.md) (60–90 min, full version).
+**Tests and evaluation:**
+
+```bash
+cd agent
+uv run pytest tests/unit tests/integration -q   # no API key; the classifier is faked, MCP tests skip when :8010 is down
+agents-cli eval run                              # smoke dataset tests/eval/datasets/basic-dataset.json
+agents-cli eval run --dataset tests/eval/datasets/quotation-actions.json     # 6 action cases (writes data; reseed before rerunning)
+agents-cli eval run --dataset tests/eval/datasets/quotation-guardrails.json  # 2 refusals + 1 multi-turn clarification
+cd .. && python3 scripts/grading/grade_agent.py --suite scripts/grading/student-suite.json   # 0–100 self-acceptance score
+```
+
+The four metrics in `agent/tests/eval/eval_config.yaml` use custom functions with AI Studio or local-model adapters. This does not remove the installed CLI’s own evaluation requirements:
+- The tested cloud prompt-metric path in `agents-cli` v1.10.0 stopped because it could not resolve a GCP project. That path also needs authorized cloud credentials, such as ADC. This does not make every evaluation cloud-only or imply a course requirement to purchase cloud services: the workshop allows AI Studio API keys, and the TA uses a private grading suite. See `scripts/local_eval/README.md` for the distinction.
+- A local model served with a single slot needs `agents-cli eval run --concurrency 1`.
+
+Trustworthiness evaluation labs for learners: [eval-lab-quick.md](eval-lab-quick.md) (25 min, in class) and [eval-lab.md](eval-lab.md) (60–90 min, full version). Results of the full lab for this agent and the one-page report: [reports/可信賴度報告.md](reports/可信賴度報告.md) (Chinese).
+
+### Second Agent: Pricing Advisor (A2A + OKF knowledge)
+
+`advisor/` adds a second agent (app name `pricing_advisor`) for sales staff. When a customer asks for a lower price or wants an order, it reads the company rules in the OKF knowledge bundle `knowledge/ezstore/`, runs the bundle's sanctioned computation to get the new margin, decides whether a manager has to approve, and only then hands the change to the quotation agent over A2A. Design and usage: [advisor/README.md](advisor/README.md).
+
+```
+Sales → ADK web UI (:8502/dev-ui) or an A2A client
+        → Pricing advisor ──reads──→ OKF bundle knowledge/ezstore
+             │  └─ GET ──→ Backend REST API
+             └─ A2A (JSON-RPC) ──→ Quotation agent (/a2a/quotation_agent) ── MCP ──→ Backend
+```
+
+- **A2A**: both agents serve A2A from `fast_api_app.py`; each agent card lists its skills (one per operation for the quotation agent). A2A replies carry only the `respond` node's text, the same text the Chat UI shows. After a change, the advisor re-reads the result from the backend to check it.
+- **OKF**: the bundle follows Open Knowledge Format v0.2 with 17 concepts (system facts, pricing and order rules, an Attested Computation, a negotiation playbook, glossary). `uv run okf validate` checks conformance, `uv run okf verify` checks system facts against the source code and the running system and records `process:okf-verify`, `uv run okf viz` writes the graph viewer `knowledge/ezstore/viz.html`.
+- The approval thresholds in `knowledge/ezstore/policies/` are demo rules made up for this homework; EZStore itself has no approval process.
+
+```bash
+docker compose -p ezstore -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.advisor.yml up -d --build
+```
+
+A2A demo: `cd advisor && uv run python scripts/a2a_demo.py` (external client → pricing advisor → quotation agent; it writes data, so reseed first).
 
 ### License
 
@@ -370,14 +423,17 @@ HTTP Request → Handler (Gin) → Service (business logic) → Repository (GORM
 | Page components | `frontend/src/pages/*.tsx` |
 | Shared components | `frontend/src/components/shared/*.tsx` |
 | Agent workflow graph | `agent/quotation_agent/agent.py` (`Workflow`, `Intent`, node functions) |
-| Agent prompts / fixed replies | `agent/quotation_agent/prompts.py` |
+| Agent classifier instruction / fixed replies | `agent/quotation_agent/agent.py` (`CLASSIFIER_INSTRUCTION`, `REFUSAL_TEXT`, `clarify`) |
 | Agent FastAPI app | `agent/quotation_agent/fast_api_app.py` |
-| Agent eval | `agent/tests/eval/eval_config.yaml`, `agent/tests/eval/datasets/*.json` |
+| Agent eval | `agent/tests/eval/eval_config.yaml`, `agent/tests/eval/datasets/*.json`, metric files `agent/tests/eval/*.py` |
 | MCP Server (6 tools, mcp 2.x `MCPServer`) | `mcp_server/server.py` |
 | Agent Chat UI | `frontend/src/pages/AgentChatPage.tsx` |
 | Agent API client | `frontend/src/api/agentApi.ts` |
 | Docker orchestration | `docker-compose.yml` |
 | Test dataset | `scripts/seed-test-data.sql` |
+| Pricing advisor workflow | `advisor/pricing_advisor/agent.py` |
+| OKF knowledge bundle | `knowledge/ezstore/` (tools: `advisor/pricing_advisor/okf_cli.py`) |
+| Price-change computation (Attested Computation) | `knowledge/ezstore/computations/price-change-impact.md`, `references/computations/price_change_impact.py` |
 
 ### Database Schema Summary
 
@@ -477,9 +533,8 @@ Default pricing factors: VIP → 0.80, Standard → 0.90, New → 1.00 (defined 
 
 ```bash
 # Full stack (Docker)
-docker compose up --build -d
-docker compose down -v                    # stop and remove volumes
-docker compose exec db psql -U ezstore -f /scripts/seed-test-data.sql
+docker compose -p ezstore -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.advisor.yml up -d --build
+docker compose -p ezstore -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.advisor.yml down  # stop; keep database volume
 
 # Backend
 cd backend
@@ -498,9 +553,9 @@ bun run build                             # production build → dist/
 cd mcp_server
 uv sync && BACKEND_URL=http://localhost:8080 MCP_PORT=8010 uv run python server.py
 
-# Agent (reads agent/.env: GEMINI_API_KEY, MCP_URL, AGENT_MODEL)
+# Agent (reads agent/.env: GEMINI_API_KEY, MCP_URL, AGENT_MODEL, LOCAL_LLM_BASE)
 cd agent
-uv sync --group dev
+uv sync --group dev --extra eval
 agents-cli playground                     # local web UI
 agents-cli run "我要查詢報價單，報價單編號：QT-20260330-001"
 uv run pytest tests/unit tests/integration -q
@@ -529,3 +584,5 @@ agents-cli eval run                       # LLM-judged eval over tests/eval/data
 
 **Adding a new entity:**
 Follow the existing pattern: model → repository → service → handler → route. Each entity has its own file in each layer. Reference `customer` as the simplest complete example.
+
+If Docker Desktop cannot mount the source drive on Windows, run `.\scripts\start-homework.ps1 -DockerBindCache "$env:LOCALAPPDATA\EZStore\docker-bind-cache"`. Each Start refreshes scripts and knowledge snapshots and builds the services while retaining the database. The selected cache path is remembered. After knowledge edits or a real human signature, run `-Action SyncKnowledge` and open a new conversation. Without a configured cache, direct mounts are used.
