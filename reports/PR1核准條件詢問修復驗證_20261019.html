@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-Hant"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>核准條件詢問修復驗證｜2026-10-19</title>
+<style>
+body{max-width:960px;margin:40px auto;padding:0 24px 48px;font:17px/1.8 system-ui,sans-serif;color:#203044;background:#f6f8fb}
+section{background:white;padding:20px 28px;margin:20px 0;border:1px solid #dce3ec;border-radius:12px}
+h1{font-size:30px}h2{font-size:22px}code{overflow-wrap:anywhere}table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:10px;border-bottom:1px solid #dce3ec}.ok{color:#176642;font-weight:700}
+</style>
+<h1>核准條件詢問修復驗證</h1>
+<p>2026-10-19｜針對版本 <code>312c52d</code> 的授權判斷缺陷</p>
+<section><h2>結果</h2>
+<p class="ok">已修復「詢問核准條件卻執行改價」，並更新兩個本機 Agent。</p>
+<p>原始句子：「幫我確認 QT-20260330-001 總價改成 8000 是否需要主管核准」。同一段離線重現程式確認舊版 <code>is_write_request</code> 回傳 true，修正後回傳 false；兩個套件的共用判斷檔逐位元一致。</p>
+<ul><li>「是否需要」「需要誰核准」「要不要簽核」「核准門檻」等詢問，在關鍵字補救及待補操作之前攔截，不受模型誤判成寫入影響。</li>
+<li>第一個 Agent 說明沒有操作，清除待補意圖及補件來源。</li>
+<li>議價顧問有唯一有效單號及明確正數總價時，只讀取資料試算核准條件；其餘情況查詢 OKF 規則。不能借用模型猜測或上一輪金額，兩條路徑都不委派 A2A 寫入。</li>
+<li>正常明確改價、複製及轉單請求仍可使用。聲稱「主管已核准」不等於系統驗證主管身分，也不豁免既有議價政策。</li></ul></section>
+<section><h2>測試證據</h2><table>
+<tr><th>範圍</th><th>結果</th></tr>
+<tr><td>第一個 Agent 單元／離線整合</td><td>822 通過</td></tr>
+<tr><td>議價顧問單元／離線整合</td><td>771 通過</td></tr>
+<tr><td>合計</td><td>1,593 通過；較上一輪新增 132 項</td></tr>
+<tr><td>完整 Workflow / session 回歸</td><td>7 個新增案例：假模型誤判寫入、待補複製、核准詢問與後續單號；第一個 Agent 無 MCP 呼叫，顧問詢問時無 A2A 委派</td></tr>
+<tr><td>本機服務</td><td>兩個新映像已部署，4 個變更程式來源雜湊一致，3 個 HTTP 健康／應用清單端點正常</td></tr>
+</table><p>測試命令（在各套件目錄）：<code>.venv/Scripts/python.exe -m pytest tests/unit tests/integration -q --tb=short</code>。</p>
+<p>回歸過程曾發現舊有「問誰核准」試算被新攔截降成一般規則問答，已保留唯讀試算功能，並重新通過顧問全套測試。Agent 的 ADK 實驗功能警告不影響測試結果。</p></section>
+<section><h2>資料與範圍</h2>
+<p>部署前後對客戶、產品、報價及訂單完整回應內容計算 SHA-256，比對一致：15 客戶、20 產品、12 報價、10 訂單。未建立測試單據。</p>
+<p>本輪僅修改兩個 Agent 的授權判斷、路由、測試及報告。未呼叫 Gemini 或本地模型；未重新執行未變更的 Go、MCP、前端瀏覽器及真實 A2A 寫入套件。主資料比對與服務健康檢查不等同於模型端到端驗證。</p>
+<p>結果證明本輪缺陷及列出的回歸情境通過，不代表涵蓋所有自然語句或不存在其他缺陷。</p></section>
+</html>

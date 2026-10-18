@@ -43,7 +43,7 @@ from .a2a_client import STOPPED_STATES, A2AError, QuotationAgentClient
 from .amounts import _NUMERIC_CHARS, parse_number_token
 from .backend import Backend, BackendError
 from .conversion_journal import ConversionJournal
-from .write_intent import has_execution_hold, has_negated_write, is_polite_request, is_price_confirmation, is_write_request, is_status_query
+from .write_intent import has_execution_hold, has_negated_write, is_polite_request, is_price_confirmation, is_write_request, is_status_query, is_approval_query
 from .computation import (
     ComputationError,
     attest_receipt,
@@ -592,6 +592,19 @@ def route(ctx: Context, node_input: Any):
     # 1. 程式拒答
     if _is_rule_refusal(text):
         return Event(output=REFUSAL_TEXT, route="off_topic", state={"pending": None, "last_check": None})
+    if is_approval_query(text):
+        # Use only fields explicitly supplied in this question, never model or
+        # pending-write values. Both destinations are read-only and cannot dispatch A2A.
+        numbers = list(dict.fromkeys(n.upper() for n in QUOTATION_NUMBER_RE.findall(text)))
+        target, _, ambiguous = _amount_from_text(text)
+        invalid_number = any(not QUOTATION_NUMBER_RE.fullmatch(token) for token in QUOTATION_TOKEN_RE.findall(text))
+        if (len(numbers) == 1 and not invalid_number and target is not None
+                and math.isfinite(target) and target > 0 and not ambiguous
+                and not re.search(r"因子|訂單|订单|複製|复制|\b(?:factor|order|copy|duplicate)\b", text, re.I)):
+            return Event(output={"quotation_number": numbers[0], "target_total": target},
+                         route="price_check", state={"pending": None, "last_check": None})
+        return Event(output={"question": text, "concept_ids": _keyword_concepts(_bundle(), text, limit=2)},
+                     route="policy_question", state={"pending": None, "last_check": None})
     if is_status_query(text):
         return Event(output="這是操作完成狀態的查詢；本次沒有執行複製、改價或轉單，也尚未核實先前操作是否完成。請到報價單／訂單清單確認。",
                      route="off_topic", state={"pending": None, "last_check": None})

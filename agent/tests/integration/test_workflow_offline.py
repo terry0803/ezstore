@@ -111,6 +111,23 @@ async def _ask(runner, session_id, text):
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("question", [
+    "幫我確認 QT-20260330-001 總價改成 8000 是否需要主管核准",
+    "幫我複製報價單 QT-20260330-001，需要誰核准",
+    "幫我把 QT-20260330-001 轉成訂單，要不要簽核",
+    "幫我把 QT-20260330-001 報價因子改為 1.5，是否需要主管核准",
+])
+async def test_approval_question_clears_pending_and_never_calls_mcp(runner, question):
+    session = await runner.session_service.create_session(app_name="quotation_agent", user_id="t")
+    await _ask(runner, session.id, "幫我複製報價單")
+    reply = await _ask(runner, session.id, question)
+    assert "沒有執行" in reply
+    assert agent_module.mcp_toolset.calls == []
+    await _ask(runner, session.id, "QT-20260330-001")
+    assert agent_module.mcp_toolset.calls == []
+
+
+@pytest.mark.asyncio
 async def test_off_topic_is_refused_without_tools(runner):
     session = await runner.session_service.create_session(
         app_name="quotation_agent", user_id="t"

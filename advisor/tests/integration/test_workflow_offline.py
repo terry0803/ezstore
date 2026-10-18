@@ -148,6 +148,23 @@ async def new_session(runner):
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("question", [
+    "幫我確認 QT-20260330-001 總價改成 8000 是否需要主管核准",
+    "幫我複製報價單 QT-20260330-001，需要誰核准",
+    "幫我把 QT-20260330-001 轉成訂單，要不要簽核",
+])
+async def test_approval_question_clears_pending_without_a2a(runner, question):
+    run, peer = runner
+    session = await new_session(run)
+    await ask(run, session, "幫我複製報價單")
+    reply = await ask(run, session, question)
+    assert ("試算" if "總價" in question else "知識庫") in reply
+    assert peer.requests == []
+    await ask(run, session, "QT-20260330-001")
+    assert len(peer.requests) == 1 and "查詢" in peer.requests[0]
+
+
+@pytest.mark.asyncio
 async def test_copy_missing_number_resumes_through_full_workflow(runner):
     run, peer = runner
     session = await new_session(run)

@@ -88,6 +88,25 @@ def is_status_query(text: str) -> bool:
     return bool(_STATUS_QUERY.search(unicodedata.normalize("NFKC", text)))
 
 
+_APPROVAL_TERM = r"(?:核准|核可|批准|審批|审批|審核|审核|簽核|签核|授權|授权|approval|authorization|authorisation)"
+_APPROVAL_QUERY = re.compile(
+    # Embedded questions remain questions without punctuation and even inside
+    # a polite request to confirm. A mere statement of prior approval is not one.
+    r"(?:是否|需不需要|需不需|要不要|須不須要|须不须要|用不用|誰|谁|何人|哪位|哪一位|哪個|哪个|確認|确认|請問|请问)"
+    r"[^，。；;,\n]*" + _APPROVAL_TERM
+    + r"|" + _APPROVAL_TERM + r"[^，。；;,\n]*(?:需要誰|需要谁|由誰|由谁|誰來|谁来|條件|条件|門檻|门槛)"
+    + r"|(?:哪些|什麼|什么)[^，。；;,\n]*" + _APPROVAL_TERM
+    + r"|" + _APPROVAL_TERM + r"[^，。；;,\n]*(?:[?？嗎吗呢])"
+    + r"|\b(?:does|do|is|who|whose|which|whether)\b[^\n.!;]*\b(?:approval|authorization|authorisation)\b",
+    re.IGNORECASE,
+)
+
+
+def is_approval_query(text: str) -> bool:
+    """Asking about approval conditions never authorizes a document write."""
+    return bool(_APPROVAL_QUERY.search(unicodedata.normalize("NFKC", text)))
+
+
 _ACTION = re.compile(
     r"複製|复制|改|調|调|變更|变更|變成|变成|設|设|轉|转|壓|压|降|殺|砍"
     r"|(?<![a-z])(?:copy|duplicate|clone|convert|turn|set|change|adjust|update)(?![a-z])|\bfrom\b.+\bto\b",
@@ -123,7 +142,7 @@ _CONFIRM = re.compile(
 
 def is_write_request(text: str) -> bool:
     text = _GREETING.sub("", unicodedata.normalize("NFKC", text).strip())
-    if has_execution_hold(text) or is_status_query(text) or has_negated_write(text):
+    if has_execution_hold(text) or is_status_query(text) or is_approval_query(text) or has_negated_write(text):
         return False
     if is_price_confirmation(text):
         return True
