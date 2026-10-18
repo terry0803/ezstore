@@ -8,7 +8,7 @@ mcp_tools: [get_quotation, list_customer_quotations, duplicate_quotation, update
 bisect: { low: 0.01, high: 5.0, max_iterations: 20, tolerance: 0.01 }
 generated: { by: claude-code/claude-opus-5-5, at: 2026-10-16T17:10:00Z }
 verified:
-  - { by: process:okf-verify, at: 2026-10-18T14:57:13Z }
+  - { by: process:okf-verify, at: 2026-10-18T15:38:00Z }
 status: stable
 stale_after: 2027-04-01T00:00:00Z
 sources:
@@ -50,3 +50,7 @@ Streamable HTTP，Compose 內部 `http://mcp-server:8000/mcp`，對本機開 `ht
 
 [^mcp-server]: MCP Server server.py
 [^local-mcp-fix]: 本地 mcp_server/server.py；修改範圍見 scripts/check_assignment.py，不代表講師已同意變更。
+
+## 本地修正：議價顧問的版本前提條件
+
+工具數仍為六個。`adjust_total_price` 增加可選 `approval` 參數：顧問提供核准快照與 attested computation 結果時，MCP 先以相同的 20 次二分法及逐項單價捨入驗證候選因子，再呼叫後端 `approved-price-copy` 原子建立最終副本，過程不寫入中間候選草稿。版本不符或核准資料錯誤即拒絕，絕不退回普通複製／更新流程。第一個 Agent 的一般改總價請求未帶此參數時，維持老師原有的先複製與最多 20 次二分法更新流程。來源：本地 `mcp_server/server.py` 與 `backend/services/approved_price.go`。

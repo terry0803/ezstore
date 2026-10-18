@@ -215,7 +215,14 @@ async def test_price_check_then_apply_needs_approval(runner):
 async def test_apply_price_goes_through_a2a(runner):
     run, peer = runner
     reply = await ask(run, await new_session(run), "幫我把 QT-20260325-001 的總價改成 200000")
-    assert peer.requests == ["我要修改報價單總價，報價單編號：QT-20260325-001，總價改為 200000"]
+    assert len(peer.requests) == 1
+    marker, payload = peer.requests[0].split('\n', 1)
+    assert marker == 'EZSTORE_APPROVED_PRICE_V1'
+    guarded = json.loads(payload)
+    assert guarded['quotation_number'] == 'QT-20260325-001'
+    assert guarded['target_total_price'] == 200000
+    assert guarded['approval']['source'] == SNAPSHOT['quotations']['QT-20260325-001']
+    assert guarded['approval']['factor'] == '0.7751'
     assert "經 A2A 交給報價單 Agent，task task-123" in reply
     assert "原始報價單: QT-20260325-001（未修改）" in reply
     assert "改完後核對（從後端重新讀 QT-20261017-001）：報價因子 0.7751" in reply

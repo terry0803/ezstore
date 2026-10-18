@@ -13,6 +13,7 @@
 
 from __future__ import annotations
 
+import json
 import math
 import os
 import re
@@ -580,6 +581,12 @@ async def _call_mcp_tool(ctx: Context, tool_name: str, args: dict[str, Any]) -> 
         prefix = "未送出操作：" if tool_name in _WRITE_TOOLS else ""
         return f"{prefix}報價單系統沒有提供 {tool_name} 工具，請聯絡管理員。"
 
+    if tool_name == "adjust_total_price" and "approval" in args:
+        raw = getattr(tool, "raw_mcp_tool", None)
+        schema = getattr(raw, "input_schema", None) or getattr(raw, "inputSchema", {})
+        if "approval" not in (schema or {}).get("properties", {}):
+            return "未送出操作：MCP 尚不支援核准版本，請更新服務後重新試算。"
+
     try:
         result = await tool.run_async(args=args, tool_context=ctx)
     except Exception:
@@ -599,6 +606,8 @@ async def _call_mcp_tool(ctx: Context, tool_name: str, args: dict[str, Any]) -> 
         if result.get("isError"):
             # MCP SDK 會在錯誤前面加英文前綴，使用者只需要看到中文原因
             text = re.sub(r"^Error executing tool \w+:\s*", "", text)
+            if "approval" in args and "APPROVAL_CHANGED" in text:
+                return f"操作失敗：{text}"
             if (tool_name in _WRITE_TOOLS and _PARTIAL_WRITE_RE.search(text)
                     and "本次改價未完成：" not in text):
                 # 逾時或斷線可能發生在複製之後（例如改總價二分到一半），新單可能已經建好
@@ -691,6 +700,23 @@ def _bare_answer(text: str, pending: dict, clarify_source: str) -> tuple[str, st
 def load_context(ctx: Context, node_input: Any):
     """整理使用者這一句、待補的前一輪操作與上一輪對話，交給 classify_intent。"""
     text = _content_text(node_input)
+    if text.startswith("EZSTORE_APPROVED_PRICE_"):
+        try:
+            marker, payload = text.split("\n", 1)
+            if marker != "EZSTORE_APPROVED_PRICE_V1":
+                raise ValueError("Unsupported approval protocol")
+            args = json.loads(payload)
+            if not isinstance(args, dict) or set(args) != {"quotation_number", "target_total_price", "approval"}:
+                raise ValueError("Invalid guarded request")
+            approval = args["approval"]
+            if (not isinstance(approval, dict) or set(approval) != {"source", "target_total", "factor", "total", "profit"}
+                    or approval["source"]["quotation_number"] != args["quotation_number"]
+                    or Decimal(str(approval["target_total"])) != Decimal(str(args["target_total_price"]))):
+                raise ValueError("Approval does not match request")
+            return Event(output=args, route="approved_price", state={"pending_intent": None, "clarify_source_text": ""})
+        except (ValueError, KeyError, TypeError, ArithmeticError):
+            return Event(output="未送出操作：核准資料格式錯誤，請重新試算。", route="no_credentials",
+                         state={"pending_intent": None, "clarify_source_text": ""})
     if not _has_credentials():
         return Event(
             output=(
@@ -886,6 +912,10 @@ async def update_pricing_factor(ctx: Context, node_input: dict) -> str:
 
 
 async def adjust_total_price(ctx: Context, node_input: dict) -> str:
+    # Guarded A2A requests are checked atomically by the backend, not against a
+    # newly read snapshot here. Do not strip their approval or downgrade on error.
+    if "approval" in node_input:
+        return await _call_mcp_tool(ctx, "adjust_total_price", node_input)
     try:
         args = await validate_change("adjust_total_price", node_input)
     except PreflightError as e:
@@ -941,7 +971,7 @@ root_agent = Workflow(
     description="EZStore 報價單管理 Agent：查詢、複製、改報價因子、改總價、轉訂單。",
     edges=[
         ("START", load_context),
-        (load_context, {"classify": classify_intent, "no_credentials": respond}),
+        (load_context, {"classify": classify_intent, "no_credentials": respond, "approved_price": adjust_total_price}),
         (classify_intent, route),
         (
             route,

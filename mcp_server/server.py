@@ -325,15 +325,54 @@ async def update_pricing_factor(quotation_number: str, new_pricing_factor: float
 
 
 @mcp.tool()
-async def adjust_total_price(quotation_number: str, target_total_price: float) -> str:
+async def adjust_total_price(quotation_number: str, target_total_price: float, approval: dict | None = None) -> str:
     """修改報價單總價。會先自動複製一份新的報價單，然後透過二分法搜尋調整報價因子，使總價逼近目標值。最多迭代 20 次。
 
     Args:
         quotation_number: 要修改的報價單編號，例如 QT-20260330-001
         target_total_price: 目標總價數值，例如 100000
+        approval: 議價顧問核准的版本與試算結果；提供時必須走原子驗證，不可退回一般改價。
     """
     if not math.isfinite(target_total_price) or target_total_price <= 0:
         raise ToolError("目標總價必須是大於 0 的有限數值")
+
+    if approval is not None:
+        try:
+            source = approval["source"]
+            if (source["quotation_number"] != quotation_number
+                    or Decimal(str(approval["target_total"])) != Decimal(str(target_total_price))):
+                raise ValueError("Approval mismatch")
+            # Verify that the guarded candidate is precisely the same 20-step
+            # bisection result as the normal tool, without writing intermediate drafts.
+            lo, hi = BISECT_LOW, BISECT_HIGH
+            for iterations in range(1, BISECT_MAX_ITERATIONS + 1):
+                mid = (lo + hi) / 2.0
+                factor = Decimal(str(round(mid, 4)))
+                total = sum((Decimal(str(i["list_price"])) * factor).quantize(
+                    Decimal(".01"), rounding=ROUND_HALF_UP) * i["quantity"] for i in source["items"])
+                if abs(float(total) - target_total_price) < BISECT_TOLERANCE:
+                    break
+                if float(total) < target_total_price:
+                    lo = mid
+                else:
+                    hi = mid
+            profit = total - sum(Decimal(str(i["product_cost"])) * i["quantity"] for i in source["items"])
+            if (factor != Decimal(str(approval["factor"])) or total != Decimal(str(approval["total"]))
+                    or profit != Decimal(str(approval["profit"]))):
+                raise ValueError("Approval result mismatch")
+            source_id = int(source["id"])
+            if source_id <= 0 or not source["items"]:
+                raise ValueError("Missing source")
+        except (KeyError, ValueError, TypeError, ArithmeticError):
+            raise ToolError("未送出操作：核准資料不符合二分法試算，請重新試算；沒有建立副本")
+        best_q = await _post(f"/quotations/{source_id}/approved-price-copy", approval)
+        return (
+            f"已依二分法試算（迭代 {iterations} 次）原子建立核准版本的改價副本。\n"
+            f"原始報價單: {quotation_number}（未修改） — {_quotation_link(source_id)}\n"
+            f"新報價單: {best_q['quotation_number']}\n報價因子: {best_q['pricing_factor']}\n"
+            f"目標總價: {target_total_price}\n實際總價: {best_q['total_price']}\n"
+            f"系統連結: {_quotation_link(best_q['id'])}"
+        )
 
     q = await _require_quotation(quotation_number)
     async with _editing_copy(q) as new_q:

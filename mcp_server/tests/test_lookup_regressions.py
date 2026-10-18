@@ -9,6 +9,45 @@ spec.loader.exec_module(server)
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize('reject', [False, True])
+async def test_guarded_price_uses_one_atomic_request_and_never_falls_back(monkeypatch, reject):
+    import runpy
+    q = {'id':1,'quotation_number':'QT-20260330-001','customer_id':1,'customer_level':'standard',
+         'pricing_factor':'1','items':[{'product_id':1,'list_price':'100','product_cost':'60','quantity':1,'unit_price':'100'}]}
+    compute = runpy.run_path(str(Path(__file__).resolve().parents[2]/'knowledge/ezstore/references/computations/price_change_impact.py'))['compute']
+    result = compute(q,100)
+    approval = {'source':q,'target_total':100,'factor':result['new_factor'],'total':result['new_total'],'profit':result['new_profit']}
+    calls=[]
+    async def post(path, body):
+        calls.append((path,body))
+        if reject: raise server.ToolError('APPROVAL_CHANGED')
+        return {**q,'id':2,'quotation_number':'QT-20261018-999','total_price':result['new_total']}
+    async def forbidden(*args, **kw): pytest.fail('guard must not call ordinary duplicate/update or reload approval')
+    monkeypatch.setattr(server,'_post',post)
+    monkeypatch.setattr(server,'_put',forbidden)
+    monkeypatch.setattr(server,'_require_quotation',forbidden)
+    if reject:
+        with pytest.raises(server.ToolError,match='APPROVAL_CHANGED'):
+            await server.adjust_total_price(q['quotation_number'],100,approval)
+    else:
+        reply=await server.adjust_total_price(q['quotation_number'],100,approval)
+        assert 'QT-20261018-999' in reply
+    assert calls == [('/quotations/1/approved-price-copy',approval)]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('change',['factor','total','profit','target_total','source'])
+async def test_guarded_price_rejects_inconsistent_approval_before_http(monkeypatch, change):
+    approval={'source':{'id':1,'quotation_number':'QT-20260330-001','items':[{'list_price':'100','product_cost':'60','quantity':1}]},
+              'target_total':100,'factor':'1','total':'100','profit':'40'}
+    approval[change] = {} if change=='source' else '999'
+    async def forbidden(*args,**kw): pytest.fail('invalid approval must not write')
+    monkeypatch.setattr(server,'_post',forbidden)
+    with pytest.raises(server.ToolError,match='沒有建立副本'):
+        await server.adjust_total_price('QT-20260330-001',100,approval)
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize('rows,target', [
     ([('0.04', 100000)], 3000),
     ([('0.01', 1000)], 5),

@@ -18,6 +18,7 @@ LLM 只做兩件事：聽懂這一句（意圖、欄位、要讀哪些知識條�
 from __future__ import annotations
 
 import asyncio
+import json
 import math
 import os
 import re
@@ -898,6 +899,9 @@ async def _check_price(quotation_number: str, target_total: float) -> dict[str, 
         "customer": customer,
         "decision": decision,
         "original_source_sha256": receipt["source_sha256"],
+        "approval_snapshot": {"source": source, "target_total": target_total,
+                              "factor": result["new_factor"], "total": result["new_total"],
+                              "profit": result["new_profit"]},
         "receipt_summary": {
             "computation_sha256": receipt["computation_sha256"],
             "source_url": receipt["source_url"],
@@ -975,6 +979,7 @@ async def apply_price(ctx: Context, node_input: dict):
                 "original_factor": check["result"]["current_factor"],
                 "target_total": target,
                 "original_source_sha256": check["original_source_sha256"],
+                "approval_snapshot": check["approval_snapshot"],
             },
             route="delegate",
             state=state,
@@ -1275,6 +1280,16 @@ def _definitely_not_written(reply: str) -> bool:
 
 async def _send_a2a(node_input: dict, on_dispatch=None) -> Event:
     request = node_input["text"]
+    if node_input.get("purpose") == "apply_price":
+        # Structured version precondition travels in the A2A text part. The peer
+        # decodes it before the LLM; it must never be rewritten as an unguarded command.
+        approval = node_input.get("approval_snapshot")
+        if not approval:
+            return Event(output="未送出操作：缺少核准版本，請重新試算。")
+        request = "EZSTORE_APPROVED_PRICE_V1\n" + json.dumps({
+            "quotation_number": node_input["quotation_number"],
+            "target_total_price": node_input["target_total"], "approval": approval,
+        }, ensure_ascii=False, allow_nan=False)
     converting = node_input.get("purpose") == "convert_order"
     number = node_input.get("quotation_number")
     try:
@@ -1298,7 +1313,7 @@ async def _send_a2a(node_input: dict, on_dispatch=None) -> Event:
         return Event(output=f"{node_input.get('preface') or ''}\n沒辦法連到報價單 Agent：{e}\n{warning}".strip())
     head = node_input.get("preface") or ""
     trace = f"（經 A2A 交給報價單 Agent，task {result.task_id[:8]}，狀態 {result.state}）"
-    not_written = converting and _definitely_not_written(result.text)
+    not_written = _definitely_not_written(result.text) or (node_input.get("purpose") == "apply_price" and "APPROVAL_CHANGED" in result.text)
     # A proven pre-dispatch failure has no order to verify. Do not tell the
     # user the result is uncertain when the guard can safely allow a retry.
     verification = (_WriteVerification("") if not_written else

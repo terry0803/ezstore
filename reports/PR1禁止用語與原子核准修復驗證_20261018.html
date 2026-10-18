@@ -1,0 +1,24 @@
+<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PR #1：禁止用語與原子核准修復驗證</title>
+<style>body{font:17px/1.8 system-ui,sans-serif;max-width:1000px;margin:40px auto;padding:0 24px;color:#172b3a;background:#f5f8fb}main{background:white;padding:28px;border-radius:16px}h1{font-size:28px;line-height:1.4}h2{font-size:21px;margin-top:32px}table{border-collapse:collapse;width:100%;font-size:15px}td,th{padding:12px;text-align:left;border-bottom:1px solid #dce4eb}code{background:#edf1f6;padding:2px 5px;overflow-wrap:anywhere}.ok{color:#076248;font-weight:700}p,li{overflow-wrap:anywhere}</style>
+<main><p>2026-10-18 · 作業本機版與 PR #1 修復紀錄</p><h1>禁止操作不寫入；核准資料變更就拒絕建立副本</h1>
+<p class="ok">兩項 P1 已修正，離線回歸、隔離 PostgreSQL 併發及真實 A2A 串接測試通過。四個本機服務已更新，原有業務資料未變。</p>
+<h2>1. 禁止用語在補救與待補操作前攔截</h2>
+<p>兩個 Agent 共用相同規則，補上「不能、不可以、不可、不准、禁止、不許、不允許、不得」及簡體變體。即使模型分類成 off_topic、provide_info 或寫入操作，禁止語句仍不會進入 MCP；待補操作與顧問上一輪試算授權也會清除。單獨回答「不能／不准／禁止」會取消待補操作。</p>
+<p>保留正常客氣請求「能不能把…」「可不可以把…」；既有唯讀狀態查詢、否定動詞、保留原單及複製補件回歸仍通過。這是保守的程式判斷，不是所有自然語言均已涵蓋的保證。</p>
+<h2>2. 把核准版本綁到真正建立副本的交易</h2>
+<ol><li>顧問通過 attested computation 與政策後，保留核准時的完整報價快照、目標、實際預測因子、總價及利潤。</li>
+<li>A2A 使用結構化版本封包，第一個 Agent 在模型分類前解析並原樣交給 MCP；格式不符直接拒絕。舊版 Agent 的 card 或 MCP schema 不支援時，不降級成普通改價。</li>
+<li>MCP 以原有 20 次二分法及逐項單價捨入重新核對候選結果，呼叫新增的 <code>POST /quotations/{id}/approved-price-copy</code>。</li>
+<li>後端在同一筆交易鎖定來源報價、客戶及產品，核對來源 updated_at、內容、明細、客戶等級、產品成本及牌價，重算最終總價與利潤。全部一致才建立最終草稿；版本或結果改變回傳 409 / APPROVAL_CHANGED，完全不新增副本。</li></ol>
+<p>第一個 Agent 一般改價仍保留老師原先的先複製與二分法更新流程。六個 MCP 工具與六個 A2A skill 不變；只有顧問附帶核准快照時採用原子建立最終副本的路徑。核准版本是資料前提條件，不是登入認證或主管電子簽章。</p>
+<h2>驗證證據</h2><table><tr><th>範圍</th><th>結果</th></tr>
+<tr><td>Python 全套單元／離線整合</td><td>Agent 690、Advisor 629、MCP 50，合計 1369 項通過。其後修正 MCP SDK 的 input_schema / inputSchema 相容性，相關 160 項測試通過（多數與全套重疊，另新增 1 個參數案例）。無模型呼叫。</td></tr>
+<tr><td>Go 與真正 PostgreSQL</td><td>go test ./... 通過，包含 13 個新增資料庫情境：正常建立、8 種資料／結果不符、3 種寫入先取得鎖的競態，以及產品鎖持續到副本插入完成。版本失效時比對包含軟刪資料的總筆數，確認沒有失敗草稿。</td></tr>
+<tr><td>真實 A2A → Agent → MCP → API</td><td>6 個隔離串接案例通過：直接結構化成功、顧問實際核准成功、顧問核准後數量變更被拒、直接版本數量衝突、產品成本衝突、格式錯誤拒絕。正常案例重新讀取資料核對原單不變。</td></tr>
+<tr><td>知識庫與作業檢查</td><td>OKF 系統核對 10/10，17 條目驗證 0 error / 0 warning；作業檢查以 user_authorized_fixes 模式通過。既有 seed 部分儲存總額與品項重算差異仍為已知歷史資料，本輪沒有改寫 seed。</td></tr>
+<tr><td>部署</td><td>backend、MCP、Agent、Advisor 映像與驗證版本一致；7 個 Python 原始檔雜湊與執行容器一致。前端 health、報價清單、Agent 入口及 Advisor 入口均回 200。Agent card 含版本能力標記。</td></tr>
+<tr><td>資料保留</td><td>15 客戶、20 產品、12 報價、10 訂單，部署前後完整內容 SHA-256 一致。所有寫入與併發測試使用獨立資料庫。</td></tr></table>
+<h2>重現與範圍</h2><p>新增測試位於 <code>agent/tests/unit/test_approval_guard.py</code>、<code>advisor/tests/unit/test_approval_guard.py</code>、<code>backend/services/approved_price_test.go</code>、<code>mcp_server/tests/test_lookup_regressions.py</code>。真實串接腳本為 <code>scripts/verify_approved_price_guard.py</code>，只連專用隔離測試埠 58081 / 58511。</p>
+<p>新增後端端點及 MCP 可選參數屬使用者要求的基底修補，已列入 <code>scripts/check_assignment.py</code> 例外；不宣稱是老師原版或已獲老師核准。前端本輪未改動，也未重跑瀏覽器套件。未知網路結果仍提示先查詢，不會因逾時自動重送寫入。</p>
+<p>以上證明本輪兩項問題及已測情境通過，不代表整個專案零 bug。程式碼同步至既有審查草稿 PR，未合併。</p></main></html>

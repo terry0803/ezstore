@@ -21,7 +21,7 @@ attester:
   resource: /references/attesters/recompute.py
 generated: { by: claude-code/claude-opus-5-5, at: 2026-10-16T17:30:00Z }
 verified:
-  - { by: process:okf-verify, at: 2026-10-18T14:57:13Z }
+  - { by: process:okf-verify, at: 2026-10-18T15:38:00Z }
 status: stable
 stale_after: 2027-04-01T00:00:00Z
 sources:

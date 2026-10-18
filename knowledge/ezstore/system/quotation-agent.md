@@ -7,7 +7,7 @@ tags: [a2a, agent, quotation]
 a2a_skills: [get_quotation, list_customer_quotations, duplicate_quotation, update_pricing_factor, adjust_total_price, convert_to_order]
 generated: { by: claude-code/claude-opus-5-5, at: 2026-10-16T17:10:00Z }
 verified:
-  - { by: process:okf-verify, at: 2026-10-18T14:57:13Z }
+  - { by: process:okf-verify, at: 2026-10-18T15:38:00Z }
 status: stable
 stale_after: 2027-04-01T00:00:00Z
 sources:
@@ -50,3 +50,9 @@ agent card 裡的位址是 Compose 內部的 `http://agent:8080/...`。經 nginx
 - A2A 可以帶 `return_immediately`：對方先回 task 編號，再用 `tasks/get` 查到 task 結束。議價顧問轉訂單時就是這樣送，逾時後還能問那個 task 結束了沒。
 
 [^quotation-agent-code]: 報價單 Agent 原始碼（agent.py、fast_api_app.py、app_utils/a2a.py）
+
+## 本地修正：A2A 核准資料傳遞
+
+議價顧問把核准快照及計算結果包在 A2A 文字 part 的 `EZSTORE_APPROVED_PRICE_V1` JSON 格式中。報價單 Agent 在模型分類之前解析，直接送交既有 `adjust_total_price` 工具，不允許模型改寫或遺漏版本。格式錯誤即拒絕。顧問先確認 agent card 的 `adjust_total_price` skill 含 `approved-price-v1` tag；報價單 Agent 再確認 MCP schema 支援 `approval`。舊服務不支援時不發送改價。A2A skill 數仍為六個。來源：本地 `agent/quotation_agent/agent.py`、`fast_api_app.py`、`advisor/pricing_advisor/a2a_client.py`。
+
+禁止操作（含不能、不可以、不准、禁止、不許、不得）在補救路由及接續待補要求之前阻擋；正常「能不能把…」「可不可以把…」請求仍可辨識。此規則是保守的程式檢查，不代表已涵蓋所有自然語言。

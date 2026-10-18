@@ -13,6 +13,10 @@ PROTECTED = ('backend', 'frontend', 'mcp_server')
 USER_FIXES = {
     # 2026-10-18: user approved the six findings (including Taiwan numbering).
     # This list documents the exception; it does not grant instructor approval.
+    'backend/handlers/approved_price.go',
+    'backend/services/approved_price.go',
+    'backend/services/approved_price_test.go',
+    'backend/routes/routes.go',
     'backend/handlers/customer_handler.go',
     'backend/handlers/product_handler.go',
     'backend/handlers/quotation_handler.go',

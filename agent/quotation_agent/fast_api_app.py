@@ -49,7 +49,7 @@ def _operation_skills() -> list[AgentSkill]:
             id=op,
             name=OPERATION_LABELS[op],
             description=OPERATION_DESCRIPTIONS[op],
-            tags=["ezstore", "quotation"],
+            tags=["ezstore", "quotation"] + (["approved-price-v1"] if op == "adjust_total_price" else []),
             examples=[OPERATION_EXAMPLES[op]],
         )
         for op in OPERATIONS

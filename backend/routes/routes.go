@@ -44,6 +44,7 @@ func SetupRoutes(r *gin.Engine, customerHandler *handlers.CustomerHandler, produ
 			quotations.POST("", quotationHandler.Create)
 			quotations.PUT("/:id", quotationHandler.Update)
 			quotations.POST("/:id/duplicate", quotationHandler.Duplicate)
+			quotations.POST("/:id/approved-price-copy", quotationHandler.ApprovedPriceCopy)
 			quotations.POST("/:id/publish", quotationHandler.Publish)
 			quotations.DELETE("/:id", quotationHandler.Delete)
 		}

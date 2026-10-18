@@ -6,7 +6,7 @@ resource: http://localhost:8080/api/v1
 tags: [api, quotation, order]
 generated: { by: claude-code/claude-opus-5-5, at: 2026-10-16T17:10:00Z }
 verified:
-  - { by: process:okf-verify, at: 2026-10-18T14:57:13Z }
+  - { by: process:okf-verify, at: 2026-10-18T15:38:00Z }
 status: stable
 stale_after: 2027-04-01T00:00:00Z
 sources:
@@ -50,3 +50,9 @@ sources:
 
 [^routes]: EZStore 後端 routes.go
 [^order-repo]: EZStore 後端 order_repo.go
+
+## 本地修正：核准版本與改價副本的原子交易
+
+`POST /quotations/{id}/approved-price-copy` 接收 `source`（核准時的完整報價快照）、`target_total`、`factor`、`total`、`profit`。後端在同一筆交易內鎖定來源報價、客戶及依 ID 排序的產品，核對版本、明細、客戶等級、成本與牌價，再建立最終改價草稿。衝突回傳 HTTP 409 / `APPROVAL_CHANGED`，不建立副本，必須重新試算。欄位或結果錯誤也不得退回一般複製 API。這是使用者授權的基底修正，並非老師原版提供的端點。來源：`backend/services/approved_price.go`、`backend/handlers/approved_price.go`；併發驗證見 `backend/services/approved_price_test.go`。
+
+此處的版本前提條件不是身分認證，也不是主管電子簽章。只有顧問判定業務可以直接調整的請求會走這條路；需主管核准的情況仍只產生申請草稿。

@@ -115,6 +115,10 @@ class QuotationAgentClient:
         loop = asyncio.get_running_loop()
         async with httpx.AsyncClient(timeout=self.timeout) as http:
             card = await self.fetch_card(http)
+            if text.startswith("EZSTORE_APPROVED_PRICE_") and not any(
+                s.id == "adjust_total_price" and "approved-price-v1" in s.tags for s in card.skills
+            ):
+                raise A2AError("報價單 Agent 尚不支援原子核准版本，請更新服務後重新試算", may_have_written=False)
             client = self._client(http, card)
             message = new_text_message(text, role=Role.ROLE_USER, context_id=context_id)
             request = SendMessageRequest(message=message)
