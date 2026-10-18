@@ -6,6 +6,7 @@ import type { QuotationCreateInput } from '../api/quotationApi';
 import { customerApi } from '../api/customerApi';
 import { productApi } from '../api/productApi';
 import type { Customer, Product, PaginatedResponse } from '../types';
+import { apiErrorMessage } from '../components/shared/ErrorMessage';
 
 async function allOptions<T extends { id: number }>(list: (page: number, size: number) => Promise<PaginatedResponse<T>>): Promise<T[]> {
   const rows = new Map<number, T>();
@@ -145,7 +146,9 @@ export default function QuotationFormPage() {
   const mutation = useMutation({
     mutationFn: (data: QuotationCreateInput) =>
       isEdit ? quotationApi.update(Number(id), data) : quotationApi.create(data),
-    onSuccess: () => {
+    onSuccess: (saved) => {
+      // 編輯頁和詳情頁用 ['quotation', id] 快取 30 秒；先換成剛存好的資料，馬上重開才不會看到舊值、存回舊值
+      queryClient.setQueryData(['quotation', String(saved.id)], saved);
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
       navigate('/quotations');
     },
@@ -311,7 +314,7 @@ export default function QuotationFormPage() {
         </div>
 
         {mutation.error && (
-          <p className="text-red-500 text-sm">{(mutation.error as Error).message}</p>
+          <p className="text-red-500 text-sm">{apiErrorMessage(mutation.error)}</p>
         )}
 
         <div className="flex gap-2">

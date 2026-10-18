@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { customerApi } from '../api/customerApi';
 import type { Customer } from '../types';
+import { apiErrorMessage } from '../components/shared/ErrorMessage';
 
 type FormData = Omit<Customer, 'id' | 'created_at' | 'updated_at'>;
 
@@ -30,7 +31,9 @@ export default function CustomerFormPage() {
   const mutation = useMutation({
     mutationFn: (data: FormData) =>
       isEdit ? customerApi.update(Number(id), data) : customerApi.create(data),
-    onSuccess: () => {
+    onSuccess: (saved) => {
+      // 編輯頁和詳情頁用 ['customer', id] 快取 30 秒；先換成剛存好的資料，馬上重開才不會看到舊值、存回舊值
+      queryClient.setQueryData(['customer', String(saved.id)], saved);
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       navigate('/customers');
     },
@@ -90,7 +93,7 @@ export default function CustomerFormPage() {
         </div>
 
         {mutation.error && (
-          <p className="text-red-500 text-sm">{(mutation.error as Error).message}</p>
+          <p className="text-red-500 text-sm">{apiErrorMessage(mutation.error)}</p>
         )}
 
         <div className="flex gap-2 pt-4">

@@ -38,3 +38,43 @@ async def test_non_progressing_pagination_fails_instead_of_looping(monkeypatch):
     with pytest.raises(server.ToolError,match='沒有完整載入'):
         await server._all_rows('/quotations')
     assert calls==[1,2]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('factor', [10.0, 12.5, 9.99995, float('inf'), float('nan')])
+async def test_out_of_range_factor_is_rejected_before_duplicating(monkeypatch, factor):
+    """直接呼叫 MCP 也不會留下多的草稿：存不下的報價因子在複製之前就擋。"""
+    calls = []
+
+    async def record(*args, **kwargs):
+        calls.append(args)
+        return {'id': 1, 'customer_id': 1, 'items': []}
+
+    monkeypatch.setattr(server, '_require_quotation', record)
+    monkeypatch.setattr(server, '_duplicate', record)
+    monkeypatch.setattr(server, '_put', record)
+    with pytest.raises(server.ToolError, match='9.9999'):
+        await server.update_pricing_factor('QT-TEST-001', factor)
+    assert calls == []
+
+
+@pytest.mark.asyncio
+async def test_storable_factor_still_duplicates_then_updates(monkeypatch):
+    writes = []
+
+    async def require(_number):
+        return {'id': 12, 'pricing_factor': '0.9', 'total_price': '90'}
+
+    async def duplicate(q):
+        writes.append('duplicate')
+        return {'id': 13, 'customer_id': 7, 'notes': '', 'items': [{'product_id': 3, 'quantity': 1}]}
+
+    async def put(path, body):
+        writes.append(body['pricing_factor'])
+        return {'id': 13, 'quotation_number': 'QT-TEST-002', 'pricing_factor': '9.9999', 'total_price': '999.99'}
+
+    monkeypatch.setattr(server, '_require_quotation', require)
+    monkeypatch.setattr(server, '_duplicate', duplicate)
+    monkeypatch.setattr(server, '_put', put)
+    await server.update_pricing_factor('QT-TEST-001', 9.9999)
+    assert writes == ['duplicate', 9.9999]

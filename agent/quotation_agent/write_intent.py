@@ -71,6 +71,21 @@ def is_write_request(text: str) -> bool:
     return True
 
 
+# 客氣的請求句型：客氣的字後面直接接「幫我」「把」「將」（「可以幫我改…嗎」「能不能把…轉成訂單」）。
+# 「改成 200000 可以嗎？」沒有這個結構，比較像在問可不可行。
+_POLITE_REQUEST = re.compile(
+    r"(?:可以|可不可以|能不能|能否|可否|是否能|能|麻煩|請)\s*(?:你|您)?\s*(?:幫我|幫忙|替我|把|將|直接)"
+    r"|\b(?:can|could|would)\s+you\b|\bplease\b",
+    re.IGNORECASE,
+)
+
+
+def is_polite_request(text: str) -> bool:
+    """問句形式但其實是請人做事；議價顧問用它區分「請你改」和「問改了行不行」。"""
+    text = _GREETING.sub("", unicodedata.normalize("NFKC", text).strip())
+    return bool(_POLITE_REQUEST.search(text)) and is_write_request(text)
+
+
 def is_price_confirmation(text: str) -> bool:
     """Only an entire confirmation utterance can reuse the last checked price."""
     return bool(_CONFIRM.fullmatch(unicodedata.normalize("NFKC", text).strip()))

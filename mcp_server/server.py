@@ -10,7 +10,9 @@
 - 後端錯誤一律轉成中文 ToolError，不把 traceback 丟給 Agent。
 """
 
+import math
 import os
+from decimal import ROUND_HALF_UP, Decimal
 
 import httpx
 from mcp.server import MCPServer
@@ -254,6 +256,10 @@ async def update_pricing_factor(quotation_number: str, new_pricing_factor: float
     """
     if new_pricing_factor <= 0:
         raise ToolError("報價因子必須大於 0")
+    # 複製之前先檢查：後端欄位是 decimal(5,4)，存不下的值複製完才失敗，會留下一張多的草稿
+    if not math.isfinite(new_pricing_factor) or Decimal(str(new_pricing_factor)).quantize(
+            Decimal("0.0001"), rounding=ROUND_HALF_UP) > Decimal("9.9999"):
+        raise ToolError("報價因子最多 9.9999（後端只存到小數 4 位），沒有建立副本")
 
     q = await _require_quotation(quotation_number)
     new_q = await _duplicate(q)

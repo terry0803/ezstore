@@ -27,10 +27,20 @@ type OrderService struct {
 	Repo         *repositories.OrderRepository
 	CustomerRepo *repositories.CustomerRepository
 	ProductRepo  *repositories.ProductRepository
+	// Reads the linked quotation so an order cannot point at another customer's quotation.
+	QuotationRepo quotationLookup
+}
+
+type quotationLookup interface {
+	GetByID(id uint) (*models.Quotation, error)
 }
 
 func NewOrderService(repo *repositories.OrderRepository, customerRepo *repositories.CustomerRepository, productRepo *repositories.ProductRepository) *OrderService {
-	return &OrderService{Repo: repo, CustomerRepo: customerRepo, ProductRepo: productRepo}
+	service := &OrderService{Repo: repo, CustomerRepo: customerRepo, ProductRepo: productRepo}
+	if repo != nil {
+		service.QuotationRepo = repositories.NewQuotationRepository(repo.DB)
+	}
+	return service
 }
 
 func (s *OrderService) List(page, pageSize int, status string, customerID uint) ([]models.Order, int64, error) {
@@ -48,6 +58,12 @@ func (s *OrderService) GetByID(id uint) (*models.Order, error) {
 }
 
 func (s *OrderService) Create(input *OrderCreateInput) (*models.Order, error) {
+	if err := validateOrderInput(input); err != nil {
+		return nil, err
+	}
+	if err := s.validateQuotation(input); err != nil {
+		return nil, err
+	}
 	if _, err := s.CustomerRepo.GetByID(input.CustomerID); err != nil {
 		return nil, errors.New("客戶不存在")
 	}
@@ -79,6 +95,12 @@ func (s *OrderService) Create(input *OrderCreateInput) (*models.Order, error) {
 }
 
 func (s *OrderService) Update(id uint, input *OrderCreateInput) (*models.Order, error) {
+	if err := validateOrderInput(input); err != nil {
+		return nil, err
+	}
+	if err := s.validateQuotation(input); err != nil {
+		return nil, err
+	}
 	existing, err := s.Repo.GetByID(id)
 	if err != nil {
 		return nil, err
@@ -109,6 +131,39 @@ func (s *OrderService) Update(id uint, input *OrderCreateInput) (*models.Order, 
 	}
 
 	return s.Repo.GetByID(existing.ID)
+}
+
+// Reject negative prices before any database access (an order total of -2 was accepted).
+func validateOrderInput(input *OrderCreateInput) error {
+	if input == nil || len(input.Items) == 0 {
+		return errors.New("訂單至少需要一個品項")
+	}
+	for _, item := range input.Items {
+		if item.UnitPrice.IsNegative() {
+			return errors.New("訂單單價不可為負數")
+		}
+		if item.Quantity <= 0 {
+			return errors.New("數量必須大於 0")
+		}
+	}
+	return nil
+}
+
+func (s *OrderService) validateQuotation(input *OrderCreateInput) error {
+	if input.QuotationID == nil {
+		return nil
+	}
+	if s.QuotationRepo == nil {
+		return errors.New("無法驗證關聯報價單")
+	}
+	quotation, err := s.QuotationRepo.GetByID(*input.QuotationID)
+	if err != nil || quotation == nil {
+		return errors.New("關聯報價單不存在")
+	}
+	if quotation.CustomerID != input.CustomerID {
+		return errors.New("關聯報價單與訂單必須屬於同一客戶")
+	}
+	return nil
 }
 
 func (s *OrderService) Delete(id uint) error {

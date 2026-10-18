@@ -6,6 +6,7 @@ import type { OrderCreateInput } from '../api/orderApi';
 import { customerApi } from '../api/customerApi';
 import { productApi } from '../api/productApi';
 import type { Customer, Product } from '../types';
+import { apiErrorMessage } from '../components/shared/ErrorMessage';
 
 interface ItemRow {
   product_id: number;
@@ -72,7 +73,9 @@ export default function OrderFormPage() {
   const mutation = useMutation({
     mutationFn: (data: OrderCreateInput) =>
       isEdit ? orderApi.update(Number(id), data) : orderApi.create(data),
-    onSuccess: () => {
+    onSuccess: (saved) => {
+      // 詳情頁用 ['order', id] 快取 30 秒；先換成剛存好的資料，馬上點開才不會看到舊值
+      queryClient.setQueryData(['order', String(saved.id)], saved);
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       navigate('/orders');
     },
@@ -197,7 +200,7 @@ export default function OrderFormPage() {
         </div>
 
         {mutation.error && (
-          <p className="text-red-500 text-sm">{(mutation.error as Error).message}</p>
+          <p className="text-red-500 text-sm">{apiErrorMessage(mutation.error)}</p>
         )}
 
         <div className="flex gap-2">

@@ -76,7 +76,10 @@ def test_hypothetical_question_only_checks():
     assert routed(event) == "price_check"
     assert event.output == {"quotation_number": "QT-20260325-001", "target_total": 200000.0}
 
+    # 「可以幫我把…嗎？」是客氣的請求，要照做（10/18 外部檢查）；問可不可行的「…可以嗎？」才只檢查
     _, event = run_route("可以幫我把 QT-20260301-001 轉成訂單嗎？", {"intent": "convert_order"})
+    assert event.output["convert"] is True
+    _, event = run_route("QT-20260301-001 轉成訂單可以嗎？", {"intent": "convert_order"})
     assert event.output["convert"] is False
 
 

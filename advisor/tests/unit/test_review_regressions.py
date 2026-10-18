@@ -174,3 +174,35 @@ def test_cancel_with_object_noun_is_recognized(text, classification):
     """「壓價了」「改價了」「轉單了」動詞後面還有名詞，也要認得是取消（Gemini 實測找到）。"""
     event = agent.route(SimpleNamespace(state={'last_user_text': text}), agent.AdvisorIntent(intent=classification))
     assert event.actions.route == 'off_topic' and '已經取消' in event.output
+
+
+@pytest.mark.parametrize('text,intent,route', [
+    (f'可以幫我把 {Q} 總價改成 200000 嗎？', 'apply_price', 'apply_price'),
+    (f'能不能把 {Q} 總價改成 200000？', 'apply_price', 'apply_price'),
+    ('能不能把 QT-20260301-001 轉成訂單？', 'convert_order', 'order_check'),
+    (f'麻煩幫我把 {Q} 壓到 200000 好嗎？', 'apply_price', 'apply_price'),
+    (f'{Q} 改成 200000 可以嗎？', 'apply_price', 'price_check'),
+    (f'如果 {Q} 改成 200000 呢？', 'apply_price', 'price_check'),
+    (f'{Q} 可以改成 200000 嗎？', 'apply_price', 'price_check'),
+])
+def test_polite_request_executes_but_feasibility_question_only_checks(text, intent, route):
+    """外部檢查：「可以幫我改價／轉訂單嗎？」只檢查不執行。客氣的請求要照做，問可不可行才只試算。"""
+    event = agent.route(SimpleNamespace(state={'last_user_text': text}), agent.AdvisorIntent(intent=intent))
+    assert event.actions.route == route, event.output
+    if route == 'order_check':
+        assert event.output.get('convert') is True
+
+
+@pytest.mark.parametrize('text,intent,route,convert', [
+    ('能不能把 QT-20260301-001 轉成訂單？', 'order_check', 'order_check', True),
+    (f'可以幫我把 {Q} 總價改成 200000 嗎？', 'price_check', 'apply_price', None),
+    ('可以幫我檢查 QT-20260301-001 能不能轉訂單嗎？', 'order_check', 'order_check', False),
+    (f'可以幫我把 {Q} 改成 200000 試算一下嗎？', 'price_check', 'price_check', None),
+    (f'能不能幫我看看 {Q} 改成 200000 要誰核准？', 'price_check', 'price_check', None),
+])
+def test_polite_request_is_upgraded_even_if_model_says_check(text, intent, route, convert):
+    """Gemini 把「能不能把…轉成訂單？」判成只檢查；客氣的請求由程式升級，想先看結果的說法不升級。"""
+    event = agent.route(SimpleNamespace(state={'last_user_text': text}), agent.AdvisorIntent(intent=intent))
+    assert event.actions.route == route, event.output
+    if convert is not None:
+        assert event.output.get('convert') is convert

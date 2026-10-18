@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { productApi } from '../api/productApi';
+import { apiErrorMessage } from '../components/shared/ErrorMessage';
 
 interface FormData {
   product_number: string;
@@ -43,7 +44,9 @@ export default function ProductFormPage() {
   const mutation = useMutation({
     mutationFn: (data: FormData) =>
       isEdit ? productApi.update(Number(id), data as never) : productApi.create(data as never),
-    onSuccess: () => {
+    onSuccess: (saved) => {
+      // 編輯頁和詳情頁用 ['product', id] 快取 30 秒；先換成剛存好的資料，馬上重開才不會看到舊值、存回舊值
+      queryClient.setQueryData(['product', String(saved.id)], saved);
       queryClient.invalidateQueries({ queryKey: ['products'] });
       navigate('/products');
     },
@@ -95,7 +98,7 @@ export default function ProductFormPage() {
         </div>
 
         {mutation.error && (
-          <p className="text-red-500 text-sm">{(mutation.error as Error).message}</p>
+          <p className="text-red-500 text-sm">{apiErrorMessage(mutation.error)}</p>
         )}
 
         <div className="flex gap-2 pt-4">

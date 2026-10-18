@@ -166,3 +166,58 @@ test('failed delete closes the dialog and explains why', async ({ page }) => {
   await expect(page.getByText('確定要刪除此報價單嗎？')).toHaveCount(0);
   await expect(page.getByRole('alert')).toHaveText('刪除報價單失敗：已發佈的報價單不可刪除');
 });
+
+// 外部檢查：存檔後馬上重開編輯頁會載入快取裡的舊內容，再存一次就把剛才的修改蓋掉
+const cacheCases = [
+  { collection: 'customers', field: 'name', input: 'input[name="name"]', save: '儲存',
+    initial: { id: 900002, name: 'Original customer', tax_id: '12345678', level: 'standard', credit_score: 80 } },
+  { collection: 'products', field: 'name', input: 'input[name="name"]', save: '儲存',
+    initial: { id: 900002, name: 'Original product', product_number: 'P-CACHE', cost: '40', list_price: '100', inventory: 1 } },
+  { collection: 'quotations', field: 'notes', input: 'textarea', save: '儲存草稿',
+    initial: { id: 900002, quotation_number: 'QT-TEST-CACHE', customer_id: 1, pricing_factor: '0.9', notes: 'Original notes',
+      status: 'draft', total_price: '90', profit_rate: '0.5', items: [{ product_id: 1, quantity: 1 }] } },
+];
+
+async function cacheFixtures(page: Page, collection: string, initial: Record<string, unknown>, failPut = false) {
+  const state = { stored: structuredClone(initial) as Record<string, unknown> };
+  await page.route('**/api/v1/**', async route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === `/api/v1/${collection}/900002`) {
+      if (route.request().method() === 'PUT') {
+        if (failPut) return route.fulfill({ status: 400, json: { error: { code: 'VALIDATION_ERROR', message: '報價因子必須大於 0、最多 9.9999' } } });
+        state.stored = { ...state.stored, ...route.request().postDataJSON() };
+      }
+      return route.fulfill({ json: state.stored });
+    }
+    if (path === `/api/v1/${collection}`) return route.fulfill({ json: listing([state.stored]) });
+    if (path === '/api/v1/customers') return route.fulfill({ json: listing([{ id: 1, name: 'Customer', tax_id: '12345678', level: 'standard' }]) });
+    if (path === '/api/v1/products') return route.fulfill({ json: listing([{ id: 1, name: 'Product', product_number: 'P-TEST', cost: '40', list_price: '100' }]) });
+    return route.fulfill({ status: 404, json: { error: { message: 'Unexpected fixture path' } } });
+  });
+  return state;
+}
+
+for (const sample of cacheCases) {
+  test(`${sample.collection}: reopening right after save shows the saved values`, async ({ page }) => {
+    const state = await cacheFixtures(page, sample.collection, sample.initial);
+    const updated = `Saved ${sample.collection} value`;
+    await page.goto(`/${sample.collection}/900002/edit`);
+    await expect(page.locator(sample.input)).toHaveValue(String(sample.initial[sample.field as keyof typeof sample.initial]));
+    await page.locator(sample.input).fill(updated);
+    await page.getByRole('button', { name: sample.save, exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(`/${sample.collection}$`));
+    expect(state.stored[sample.field]).toBe(updated);
+    // 用網頁內的連結重開（不重新載入），才會用到快取
+    await page.getByRole('button', { name: '編輯', exact: true }).click();
+    await expect(page.locator(sample.input)).toHaveValue(updated);
+  });
+}
+
+test('form save failure shows the backend reason, not the HTTP status text', async ({ page }) => {
+  await cacheFixtures(page, 'quotations', cacheCases[2].initial, true);
+  await page.goto('/quotations/900002/edit');
+  await expect(page.locator('textarea')).toHaveValue('Original notes');
+  await page.getByRole('button', { name: '儲存草稿', exact: true }).click();
+  await expect(page.getByText('報價因子必須大於 0、最多 9.9999')).toBeVisible();
+  await expect(page.getByText('Request failed with status code 400')).toHaveCount(0);
+});

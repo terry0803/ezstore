@@ -42,7 +42,7 @@ from .a2a_client import STOPPED_STATES, A2AError, QuotationAgentClient
 from .amounts import _NUMERIC_CHARS, parse_number_token
 from .backend import Backend, BackendError
 from .conversion_journal import ConversionJournal
-from .write_intent import is_write_request, is_price_confirmation
+from .write_intent import is_polite_request, is_price_confirmation, is_write_request
 from .computation import (
     ComputationError,
     attest_receipt,
@@ -152,6 +152,8 @@ _HISTORY_WORDS = ("舊", "去年", "2025", "以前", "作廢", "之前的規定"
 _QUESTION_WORDS = ("如果", "可以嗎", "可不可以", "行不行", "會怎樣", "怎麼樣")
 _QUESTION_ENDINGS = ("嗎", "嗎？", "嗎?", "呢", "呢？", "呢?", "?", "？")
 _COMMAND_WORDS = ("幫我改", "改吧", "請改", "直接改", "幫我轉", "轉吧", "直接轉")
+# 只想先看結果的說法：客氣的請求裡有這些字，照樣只試算、只檢查
+_CHECK_ONLY_RE = re.compile(r"試算|算一下|算算|看看|看一下|評估|檢查|查一下|確認|核准|毛利|可不可以轉|能不能轉")
 
 
 class AdvisorIntent(BaseModel):
@@ -662,13 +664,20 @@ def route(ctx: Context, node_input: Any):
         operation = "order_check" if "訂單" in text else "price_check"
 
     # 4. 試算、改價、轉訂單：否定句不做；問句和問做法的句子降級成只檢查，不改資料
+    # 模型常把「能不能把…轉成訂單？」判成只檢查（Gemini 實測）。客氣的請求由程式升級成真的要做，
+    # 句子裡有「試算」「看看」這類只想先看結果的字就不升級
+    if (operation in ("price_check", "order_check") and is_polite_request(guard_text)
+            and not _CHECK_ONLY_RE.search(guard_text)):
+        operation = {"price_check": "apply_price", "order_check": "convert_order"}[operation]
     if operation in ("apply_price", "convert_order") and _NEGATED_ACTION_RE.search(guard_text):
         return Event(output=CANCEL_TEXT, route="off_topic", state={"pending": None, "last_check": None})
     # Bare values may complete an already requested write; ordinary narration
     # must remain read-only even when the model labels it as an operation.
     bare_followup = (pending.get("intent") == operation and bool(re.fullmatch(
         r"[\s0-9零〇一二兩三四五六七八九十百千萬万億亿壹貳參肆伍陸柒捌玖拾佰仟點点.,+負负-]+(?:元)?|QT-\d{8}-\d{3,}", text.strip(), re.I)))
-    if _is_question(text) or _EXPLANATION_REQUEST_RE.search(guard_text) or (not is_write_request(guard_text) and not bare_followup):
+    # 「可以幫我…嗎」「能不能把…」是客氣的請求，照做；「改成 200000 可以嗎？」「如果…呢？」只試算
+    question = _is_question(text) and not is_polite_request(guard_text)
+    if question or _EXPLANATION_REQUEST_RE.search(guard_text) or (not is_write_request(guard_text) and not bare_followup):
         operation = {"apply_price": "price_check", "convert_order": "order_check"}.get(operation, operation)
 
     # 合併欄位（原文 → 理解結果 → 待補 → 上一次試算）
