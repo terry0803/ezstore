@@ -80,10 +80,30 @@ def is_status_query(text: str) -> bool:
 
 
 _ACTION = re.compile(
-    r"複製|改|調|變更|變成|設定|設為|設成|轉|壓|降"
-    r"|\b(?:copy|duplicate|clone|convert|turn|set|change|adjust|update)\b|\bfrom\b.+\bto\b",
+    r"複製|复制|改|調|调|變更|变更|變成|变成|設|设|轉|转|壓|压|降|殺|砍"
+    r"|(?<![a-z])(?:copy|duplicate|clone|convert|turn|set|change|adjust|update)(?![a-z])|\bfrom\b.+\bto\b",
     re.IGNORECASE,
 )
+_NEGATION = re.compile(
+    r"(?:不要|請勿|请勿|不必|不用|(?<![分特個區識類告離差性級辨派])別|别|不想|不需要|先不|暫時不|暂时不|勿|不(?=把|將|将|再))"
+    r"|\b(?:do\s+not|don't|never)\b", re.IGNORECASE,
+)
+
+
+def has_negated_write(text: str) -> bool:
+    """Use the same action vocabulary as authorization; do not cap object length.
+
+    Callers remove complete 'keep the original unchanged' clauses first.
+    Clause boundaries prevent a formatting preference from negating a later request.
+    """
+    text = unicodedata.normalize("NFKC", text)
+    for clause in re.split(r"[，。；;,\n]", text):
+        for negation in _NEGATION.finditer(clause):
+            if _ACTION.search(clause[negation.end():]):
+                return True
+    return False
+
+
 _GREETING = re.compile(r"^(?:你好|您好|嗨|哈囉|hi|hello)[，,!！。\s]*", re.IGNORECASE)
 _CONFIRM = re.compile(
     r"^(?:(?:好(?:的)?|那就|那|對)[，,\s]*)*"
@@ -97,7 +117,7 @@ _CONFIRM = re.compile(
 
 def is_write_request(text: str) -> bool:
     text = _GREETING.sub("", unicodedata.normalize("NFKC", text).strip())
-    if has_execution_hold(text) or is_status_query(text):
+    if has_execution_hold(text) or is_status_query(text) or has_negated_write(text):
         return False
     if is_price_confirmation(text):
         return True

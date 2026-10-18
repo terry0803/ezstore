@@ -42,7 +42,7 @@ from .a2a_client import STOPPED_STATES, A2AError, QuotationAgentClient
 from .amounts import _NUMERIC_CHARS, parse_number_token
 from .backend import Backend, BackendError
 from .conversion_journal import ConversionJournal
-from .write_intent import has_execution_hold, is_polite_request, is_price_confirmation, is_write_request, is_status_query
+from .write_intent import has_execution_hold, has_negated_write, is_polite_request, is_price_confirmation, is_write_request, is_status_query
 from .computation import (
     ComputationError,
     attest_receipt,
@@ -595,10 +595,20 @@ def route(ctx: Context, node_input: Any):
         return Event(output="這是操作完成狀態的查詢；本次沒有執行複製、改價或轉單，也尚未核實先前操作是否完成。請到報價單／訂單清單確認。",
                      route="off_topic", state={"pending": None, "last_check": None})
     # 使用者說不要做了（「算了」「先不要改了」）：清掉待補的要求和上一次試算，不沿用舊的值
-    if has_execution_hold(_guard_text(text)) or _CANCEL_RE.search(text):
+    if (has_execution_hold(_guard_text(text)) or _CANCEL_RE.search(text)
+            or (intent.intent != "policy_question" and has_negated_write(_guard_text(text)))):
         return Event(output=CANCEL_TEXT, route="off_topic", state={"pending": None, "last_check": None})
 
     operation = intent.intent
+    copy_followup = (
+        pending.get("intent") == "quotation_request"
+        and pending.get("operation") == "duplicate_quotation"
+        and bool(re.fullmatch(r"(?:(?:報價單)?(?:編號|單號)(?:是|為)?\s*[:：]?\s*)?QT-\d{8}-\d{3,}[。.!！]?", text.strip(), re.I))
+    )
+    if copy_followup:
+        # Only an unambiguous number completes the locally authorized copy.
+        # Other utterances must be routed normally, not inherit write consent.
+        operation = "quotation_request"
     if operation == "provide_info":
         # 沒有待補的要求、只給了報價單編號：當成查詢
         operation = pending.get("intent") or ("quotation_request" if QUOTATION_NUMBER_RE.search(text) else "off_topic")
@@ -648,15 +658,23 @@ def route(ctx: Context, node_input: Any):
     guard_text = _guard_text(text)
     if operation == "quotation_request":
         if not _WRITE_RE.search(guard_text):
-            copy = bool(_COPY_RE.search(guard_text))
+            copy = bool(_COPY_RE.search(guard_text)) or copy_followup
             # 「不要複製」「教我如何複製」不能組成複製的指令送出去
             if copy and _NEGATED_ACTION_RE.search(guard_text):
                 return Event(output=CANCEL_TEXT, route="off_topic", state={"pending": None, "last_check": None})
-            if copy and not is_write_request(guard_text):
+            if copy and not copy_followup and not is_write_request(guard_text):
                 return Event(output=EXPLAIN_TEXT, route="off_topic", state={"pending": None, "last_check": None})
             # 有報價單編號時不轉原句，由程式組出查詢或複製的句子；報價單 Agent 的寫入動作
             # 都要報價單編號，所以沒有編號的原句最多讓它追問或列客戶清單，改不到任何一張單
             found = QUOTATION_NUMBER_RE.search(text)
+            if copy and not found:
+                # Collect the missing field here. A new A2A context cannot
+                # resume the peer's question, so do not dispatch yet.
+                return Event(
+                    output={"operation": "quotation_request", "missing": ["quotation_number"], "fields": {}, "hint": "copy"},
+                    route="clarify",
+                    state={"pending": {"intent": "quotation_request", "operation": "duplicate_quotation"}, "last_check": None},
+                )
             if found:
                 verb = "複製" if copy else "查詢"
                 request = f"我要{verb}報價單，報價單編號：{found.group(0).upper()}"
@@ -1300,6 +1318,8 @@ async def _send_a2a(node_input: dict, on_dispatch=None) -> Event:
 
 def clarify(node_input: dict) -> str:
     """缺資料時追問；使用者下一句補上後，route 會接續原本的要求。"""
+    if node_input.get("hint") == "copy":
+        return "請提供要複製的報價單編號（例如 QT-20260330-001）。目前尚未送出複製操作。"
     if node_input.get("hint") == "ambiguous":
         return "這句話包含多張報價單，請只指定這次要操作的一張報價單編號，並重新說明要做的操作。這次沒有修改資料。"
     operation = node_input.get("operation")

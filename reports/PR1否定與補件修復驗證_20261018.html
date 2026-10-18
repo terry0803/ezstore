@@ -1,0 +1,7 @@
+<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><title>PR #1：否定與複製補件修復驗證</title><style>body{font:17px/1.8 system-ui;max-width:950px;margin:45px auto;padding:0 24px;color:#203040}h1,h2{line-height:1.4}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccd5df;padding:9px;text-align:left}code{background:#eef2f6;padding:2px 5px}</style>
+<h1>PR #1：否定與複製補件修復驗證</h1><p>2026-10-18。本輪處理後續審查的 P1 否定改價與 P2 複製缺少單號無法接續問題。</p>
+<h2>P1：否定改價</h2><p>兩個 Agent 的共用授權檢查加入 has_negated_write，直接使用與寫入判斷相同的動詞表，涵蓋調到、設為、變成、壓到、降到、複製、轉單等中英文動詞。檢查在關鍵字補救與待補操作之前執行，不受原本 60 字距離限制。「不要把 QT-20260330-001 的總價調到 200000」會清除待補操作並拒絕寫入，即使分類器回傳 off_topic、provide_info 或改價標籤也相同。單純政策問答仍維持唯讀回答；完整「原單不要動」子句可保留後續明確複製要求。</p>
+<h2>P2：複製補件</h2><p>「幫我複製報價單」未帶單號時，顧問會在本地追問並保存待補複製意圖，不先建立 A2A context。下一輪提供唯一、完整單號後，組成完整複製請求，只委派一次並清除待補狀態。不沿用上次查詢的報價單。取消、查詢完成狀態、明確查詢、歧義或錯誤單號不會繼承複製授權。完成後再次輸入單號只會查詢。</p>
+<h2>驗證</h2><table><tr><th>範圍</th><th>結果</th></tr><tr><td>第一個 Agent：單元與離線整合</td><td>548 通過</td></tr><tr><td>議價顧問：單元與離線整合</td><td>498 通過</td></tr><tr><td>合計</td><td>1046 通過；包含完整 Workflow／session 的補單號與取消流程</td></tr><tr><td>作業例外檢查</td><td>--allow-user-fixes 通過；既有老師基底差異仍保留揭露</td></tr><tr><td>部署</td><td>兩個 Agent 已重建並健康啟動；4 個部署程式檔雜湊與測試版本一致，共用授權檔內容一致</td></tr><tr><td>資料</td><td>部署前後完整 API 內容雜湊一致：15 客戶、20 產品、12 報價、10 訂單</td></tr></table>
+<p>本輪未呼叫 Gemini／本地模型，未操作實際報價或訂單；完整 Workflow 測試使用假分類器、假 A2A 對端與記憶體資料。未修改 MCP、Go 或前端功能，因此未重跑那些套件。本輪不新增老師保護目錄的修改。</p>
+<h2>送審與限制</h2><p>以新增提交更新 PR #1，維持草稿、不合併，原開發分支及本機工作保留。這些回歸測試涵蓋已知否定、補件、取消、查詢與歧義情境，不代表自然語言的所有說法都已涵蓋。複製結果不明時仍不自動重送。</p></html>

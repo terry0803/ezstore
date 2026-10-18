@@ -43,7 +43,7 @@ class FakeLlm(BaseLlm):
                 intent = {"intent": "apply_price", "quotation_number": number}
             elif "壓到" in line:
                 intent = {"intent": "price_check", "quotation_number": number}
-            elif "查詢" in line:
+            elif "查詢" in line or "複製" in line:
                 intent = {"intent": "quotation_request", "quotation_number": number}
             else:
                 intent = {"intent": "provide_info"}
@@ -88,6 +88,13 @@ class FakeQuotationAgent:
                  "total_price": quotation["total_price"], "items": json.loads(json.dumps(quotation["items"]))}
             )
             reply = f"已成功將報價單轉換為訂單。\n報價單: {number}（未修改）\n訂單編號: ORD-20261017-001\n訂單連結: http://localhost:3000/orders/11"
+        elif "複製" in text:
+            number = re.search(r"QT-\d{8}-\d{3}", text).group(0)
+            source = self.backend.quotations[number]
+            self.backend.quotations["QT-20261017-001"] = _copy_with_factor(source, "QT-20261017-001", source["pricing_factor"])
+            reply = "已複製報價單：QT-20261017-001 http://localhost:3000/quotations/13"
+        elif "查詢" in text:
+            reply = "報價單查詢完成 http://localhost:3000/quotations/1"
         else:
             self.backend.quotations["QT-20261017-001"] = _copy_with_factor(
                 self.backend.quotations["QT-20260325-001"], "QT-20261017-001", "0.7751"
@@ -138,6 +145,36 @@ async def ask(runner, session_id, text):
 
 async def new_session(runner):
     return (await runner.session_service.create_session(app_name="pricing_advisor", user_id="t")).id
+
+
+@pytest.mark.asyncio
+async def test_copy_missing_number_resumes_through_full_workflow(runner):
+    run, peer = runner
+    session = await new_session(run)
+    before = len(peer.backend.quotations)
+    first = await ask(run, session, "幫我複製報價單")
+    assert "請提供要複製的報價單編號" in first
+    assert peer.requests == []
+    second = await ask(run, session, "QT-20260330-001")
+    assert "已複製" in second
+    assert peer.requests == ["我要複製報價單，報價單編號：QT-20260330-001"]
+    assert len(peer.backend.quotations) == before + 1
+    await ask(run, session, "QT-20260330-001")
+    assert len(peer.requests) == 2 and "查詢" in peer.requests[-1]
+    assert len(peer.backend.quotations) == before + 1
+
+
+@pytest.mark.asyncio
+async def test_cancel_copy_clears_pending_in_persisted_session(runner):
+    run, peer = runner
+    session = await new_session(run)
+    before = len(peer.backend.quotations)
+    await ask(run, session, "幫我複製報價單")
+    await ask(run, session, "不要複製")
+    assert peer.requests == []
+    await ask(run, session, "QT-20260330-001")
+    assert len(peer.requests) == 1 and "查詢" in peer.requests[0]
+    assert len(peer.backend.quotations) == before
 
 
 @pytest.mark.asyncio

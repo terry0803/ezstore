@@ -34,7 +34,7 @@ from google.adk.workflow import Workflow
 from google.genai import types
 from pydantic import BaseModel, Field
 from .preflight import PreflightError, validate_change
-from .write_intent import has_execution_hold, is_write_request, is_status_query
+from .write_intent import has_execution_hold, has_negated_write, is_write_request, is_status_query
 
 load_dotenv()
 
@@ -352,7 +352,7 @@ def _request_guard_text(text: str) -> str:
 
 def _keyword_operation(text: str) -> str | None:
     guard_text = _request_guard_text(text)
-    if is_status_query(guard_text):
+    if is_status_query(guard_text) or has_negated_write(guard_text):
         return None
     if (not re.search(r"報價單|quotation|QT-\d{8}-\d{3,}", text, re.IGNORECASE)
             or _UNSUPPORTED_ACTION_RE.search(text) or _NEGATED_ACTION_RE.search(guard_text)
@@ -749,7 +749,7 @@ def route(ctx: Context, node_input: Any):
                      route="off_topic", state={"pending_intent": None, "clarify_source_text": ""})
 
     # 使用者說不要做了：不管分類器怎麼判，都清掉待補的操作，不沿用上一輪記住的值
-    if (has_execution_hold(_request_guard_text(text)) or _CANCEL_RE.search(text)
+    if (has_execution_hold(_request_guard_text(text)) or has_negated_write(_request_guard_text(text)) or _CANCEL_RE.search(text)
             or _NEGATED_ACTION_RE.search(_request_guard_text(text))):
         return Event(output=CANCEL_TEXT, route="off_topic", state={"pending_intent": None, "clarify_source_text": ""})
 
