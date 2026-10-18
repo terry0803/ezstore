@@ -1,0 +1,119 @@
+[
+  {
+    "test": "create",
+    "factor": "0.3333",
+    "total": "649.95",
+    "passed": true
+  },
+  {
+    "test": "update",
+    "factor": "0.3333",
+    "total": "649.95",
+    "passed": true
+  },
+  {
+    "test": "duplicate",
+    "factor": "0.3333",
+    "total": "649.95",
+    "passed": true
+  },
+  {
+    "test": "advisor_attestation",
+    "factor": "0.3333",
+    "passed": true
+  },
+  {
+    "test": "create",
+    "factor": "1.0050",
+    "total": "3.03",
+    "passed": true
+  },
+  {
+    "test": "update",
+    "factor": "1.0050",
+    "total": "3.03",
+    "passed": true
+  },
+  {
+    "test": "duplicate",
+    "factor": "1.0050",
+    "total": "3.03",
+    "passed": true
+  },
+  {
+    "test": "advisor_attestation",
+    "factor": "1.0050",
+    "passed": true
+  },
+  {
+    "test": "create",
+    "factor": "0.5000",
+    "total": "10",
+    "passed": true
+  },
+  {
+    "test": "update",
+    "factor": "0.5000",
+    "total": "10",
+    "passed": true
+  },
+  {
+    "test": "duplicate",
+    "factor": "0.5000",
+    "total": "10",
+    "passed": true
+  },
+  {
+    "test": "advisor_attestation",
+    "factor": "0.5000",
+    "passed": true
+  },
+  {
+    "test": "create",
+    "factor": "0.3333",
+    "total": "0",
+    "passed": true
+  },
+  {
+    "test": "update",
+    "factor": "0.3333",
+    "total": "0",
+    "passed": true
+  },
+  {
+    "test": "duplicate",
+    "factor": "0.3333",
+    "total": "0",
+    "passed": true
+  },
+  {
+    "test": "multiple_lines",
+    "passed": true
+  },
+  {
+    "test": "order_create",
+    "passed": true
+  },
+  {
+    "test": "order_update",
+    "passed": true
+  },
+  {
+    "test": "mcp_update_pricing_factor",
+    "total": "649.95",
+    "original_unchanged": true,
+    "passed": true
+  },
+  {
+    "test": "mcp_adjust_total_price",
+    "total": "649.95",
+    "original_unchanged": true,
+    "passed": true
+  },
+  {
+    "test": "mcp_convert_to_order",
+    "total": "649.95",
+    "original_unchanged": true,
+    "passed": true
+  }
+]

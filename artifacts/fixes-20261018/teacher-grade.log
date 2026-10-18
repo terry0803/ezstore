@@ -1,0 +1,9 @@
+Loading trace file(s) from ../artifacts/grading/20261018_111537/guardrails/run1/traces.json...
+Loaded 3 total eval cases from 1 file(s).
+Running evaluation for metrics: refusal_or_action at 15/s (--qps to change)...
+Dropped 6 event(s) with no content; the eval service rejects them.
+agents-cli v1.10.0
+❌ Error: Could not determine GCP project. Set one with:
+  * pass --project <PROJECT_ID>
+  * export GOOGLE_CLOUD_PROJECT=<PROJECT_ID>
+  * gcloud config set project <PROJECT_ID>

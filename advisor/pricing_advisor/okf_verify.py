@@ -112,7 +112,7 @@ async def check_customer_levels(ctx: VerifyContext, concept) -> tuple[bool, list
 async def check_pricing_formula(ctx: VerifyContext, concept) -> tuple[bool, list[str]]:
     code = ctx.source("backend/services/quotation_service.go")
     needles = [
-        "product.ListPrice.Mul(pricingFactor)",
+        "product.ListPrice.Mul(pricingFactor).Round(2)",
         "unitPrice.Mul(quantity)",
         "totalPrice.Add(item.Subtotal)",
         "item.UnitPrice.Sub(item.ProductCost).Mul(",
@@ -127,9 +127,10 @@ async def check_pricing_formula(ctx: VerifyContext, concept) -> tuple[bool, list
     for q in await ctx.quotations():
         factor = _d(q["pricing_factor"])
         for item in q.get("items") or []:
-            if abs(_d(item["unit_price"]) - _d(item["list_price"]) * factor) > Decimal("0.005"):
+            expected_unit = (_d(item["list_price"]) * factor).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            if _d(item["unit_price"]) != expected_unit:
                 bad += 1
-            if abs(_d(item["subtotal"]) - _d(item["unit_price"]) * item["quantity"]) > Decimal("0.01"):
+            if _d(item["subtotal"]) != _d(item["unit_price"]) * item["quantity"]:
                 bad += 1
     notes.append(f"API 的品項單價與小計和公式不符：{bad} 筆")
     return not missing and bad == 0, notes
@@ -279,11 +280,16 @@ async def check_price_change_impact(ctx: VerifyContext, concept) -> tuple[bool, 
         detail = await ctx.get(f"/quotations/{q['id']}")
         total, cost, listed, profit = _recompute(detail)
         result = compute(detail, float(total))
-        if _d(result["new_factor"]) != _d(detail["pricing_factor"]).quantize(Decimal("0.0001")):
+        # Cent rounding makes factor -> total many-to-one: a total cannot
+        # uniquely recover the original factor. Check amounts independently.
+        factor = _d(result["new_factor"])
+        expected_total = sum(((_d(i["list_price"]) * factor).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                              * i["quantity"] for i in detail['items']), Decimal(0))
+        if _d(result["current_total"]) != total or _d(result["current_profit"]) != profit:
             bad.append(detail["quotation_number"])
-        elif _d(result["new_profit"]) != profit.quantize(Decimal("0.01")):
+        elif _d(result["new_total"]) != expected_total or _d(result["new_profit"]) != expected_total - cost:
             bad.append(detail["quotation_number"])
-    return not bad, [f"用 {len(await ctx.quotations())} 張報價單的目前總價反推，報價因子與利潤不符：{bad or '無'}"]
+    return not bad, [f"用 {len(await ctx.quotations())} 張報價單核對逐項捨入後的目前與試算金額，不符：{bad or '無'}"]
 
 
 async def check_glossary_examples(ctx: VerifyContext, concept) -> tuple[bool, list[str]]:

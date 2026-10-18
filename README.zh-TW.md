@@ -1,5 +1,7 @@
 # EZStore
 
+此版本保留老師的六項操作與 Agent 架構，並依使用者要求修正已確認的基底問題。`backend/`、`frontend/`、`mcp_server/` 因此與講師 `09f6588` 有差異；這不是講師已核准修改。`python scripts/check_assignment.py` 仍會嚴格回報差異；`--allow-user-fixes` 只放行列明的修補檔案。目前狀態和最新測試見 [目前狀態](reports/目前狀態.md)。
+
 > 輕量級 B2B 報價與訂單管理系統。
 
 [English](README.md)
@@ -342,8 +344,8 @@ agents-cli eval run --dataset tests/eval/datasets/quotation-guardrails.json  # 2
 cd .. && python3 scripts/grading/grade_agent.py --suite scripts/grading/student-suite.json   # 0–100 自我驗收分數
 ```
 
-`agent/tests/eval/eval_config.yaml` 的四個指標（`custom_response_quality`、`link_present`、`refusal_or_action`、`agent_turn_count`）都是在本機執行的自訂函式，用 AI Studio key 或本機模型都能跑。沒有 GCP 專案的電腦要注意兩件事：
-- `agents-cli eval grade` 啟動時還是會建立 Google Cloud Storage 客戶端，需要預設憑證（ADC）。沒有 `gcloud` 的話，把 `GOOGLE_APPLICATION_CREDENTIALS` 指到一個佔位用的 `authorized_user` JSON 檔就好，讀本機題庫時不會用到它。
+`agent/tests/eval/eval_config.yaml` 的四個指標是自訂函式，已有 AI Studio 與本機模型介接；這不代表安裝的 CLI 評分流程不需要雲端設定：
+- 本輪實測 `agents-cli` v1.10.0 的雲端提示評分指標因無法解析 GCP 專案而停止；選用該路徑另需具權限的雲端認證（例如 ADC）。這不等於所有評分都必須上雲，也不是老師要求購買雲端服務：講義允許 AI Studio API key，助教正式評分使用其私有題庫。詳見 `scripts/local_eval/README.md`。
 - 本機模型如果只開一個推論槽，要用 `agents-cli eval run --concurrency 1`。
 
 學員用的可信賴度評鑑 LAB：課堂版 [eval-lab-quick.zh-TW.md](eval-lab-quick.zh-TW.md)（25 分鐘）、完整版 [eval-lab.zh-TW.md](eval-lab.zh-TW.md)（60–90 分鐘，回家做）。這個 Agent 照完整版做完的結果與一頁報告見 [reports/可信賴度報告.md](reports/可信賴度報告.md)。
@@ -563,3 +565,5 @@ bun run build                             # 正式建置 → dist/
 
 **新增實體：**
 依循現有模式：model → repository → service → handler → route。每個實體在每一層都有獨立檔案。可參考 `customer` 作為最簡單的完整範例。
+
+Windows 的 Docker Desktop 若不能掛載 D 槽，可執行 `.\scripts\start-homework.ps1 -DockerBindCache "$env:LOCALAPPDATA\EZStore\docker-bind-cache"`。Start 每次重新複製 scripts 與知識庫到指定快取並建置，保留原資料庫；首次設定後會記住快取路徑。修改知識或本人簽核後執行 `-Action SyncKnowledge` 並開新對話；未設定快取時直接掛載原資料夾。

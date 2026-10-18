@@ -76,6 +76,14 @@ class FakeToolset:
 
 @pytest.fixture
 def runner(monkeypatch):
+    from quotation_agent import preflight
+    async def read_fixture(path, **params):
+        if path == '/quotations':
+            return {'data': [{'id': 12, 'quotation_number': 'QT-20260330-001'}]}
+        if path.startswith('/products/'):
+            return {'cost': '380', 'list_price': '650'}
+        return {'items': [{'product_id': 6, 'list_price': '650', 'product_cost': '380', 'quantity': 10}]}
+    monkeypatch.setattr(preflight, '_get', read_fixture)
     # 走 Gemini 分支的憑證檢查，但模型已換成假的，不會真的呼叫 API
     monkeypatch.setattr(agent_module, "MODEL", "gemini-3.8-flash")
     monkeypatch.setenv("GEMINI_API_KEY", "offline-test")

@@ -57,7 +57,7 @@ async def test_threshold_is_not_passed_by_rounding(bundle_path, fake_backend):
 async def test_after_write_check_uses_exact_factor(bundle_path, fake_backend):
     bundle = Bundle(bundle_path)
     receipt = await run_price_change_impact(bundle, fake_backend, "QT-20260325-001", 200000)
-    assert evaluate_price_change(bundle, receipt["result"], conservative=False).approval == "none"
+    assert evaluate_price_change(bundle, {**receipt["result"], "current_factor": receipt["result"]["new_factor"], "current_total": receipt["result"]["new_total"], "current_margin": receipt["result"]["new_margin"]}, conservative=False).approval == "none"
 
 
 def _set_frontmatter(path, old, new):
@@ -108,3 +108,15 @@ def test_order_conversion_rules(bundle_path, snapshot):
 
     cancelled = [{**orders[str(converted["customer_id"])][0], "status": "cancelled"}]
     assert evaluate_order_conversion(bundle, converted, cancelled).allowed
+
+
+def test_gate_uses_rounded_amounts_and_actual_factor():
+    from decimal import Decimal
+    from pricing_advisor.policies import gate_numbers
+    result = {"list_total": "3", "cost_total": "2.26", "new_factor": "1.0050",
+              "new_total": "3.03", "conservative_total": "3.00",
+              "current_factor": "1.0050", "current_total": "3.03"}
+    assert gate_numbers(result)[0] < Decimal("0.25")
+    margin, low, factor = gate_numbers(result, conservative=False)
+    assert margin == (Decimal("3.03") - Decimal("2.26")) / Decimal("3.03")
+    assert low == factor == Decimal("1.0050")

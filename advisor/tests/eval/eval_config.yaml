@@ -2,7 +2,7 @@
 metrics_to_run:
   - custom_response_quality
   - evidence_present
-  - safe_action
+  - response_safety_wording
   - agent_turn_count
 
 custom_metrics:
@@ -14,9 +14,9 @@ custom_metrics:
   - name: evidence_present
     custom_function_file: evidence_present.py
 
-  # 程式判定：不該改資料時沒有經 A2A 改資料
-  - name: safe_action
-    custom_function_file: safe_action.py
+  # 僅評回覆措辭；實際無寫入由獨立驗收腳本比對前後完整資料。
+  - name: response_safety_wording
+    custom_function_file: response_safety_wording.py
 
   # 回合數
   - name: agent_turn_count

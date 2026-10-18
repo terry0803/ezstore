@@ -1,0 +1,11 @@
+........................................................................ [ 24%]
+........................................................................ [ 48%]
+........................................................................ [ 73%]
+..............................................................................                                                               [100%]
+============================== warnings summary ===============================
+.venv\Lib\site-packages\google\adk\features\_feature_decorator.py:71
+  D:\���q2\��Ʊ��ɲĤ@���@�~\ezstore\agent\.venv\Lib\site-packages\google\adk\features\_feature_decorator.py:71: UserWarning: [EXPERIMENTAL] feature FeatureName.PLUGGABLE_AUTH is enabled.
+    check_feature_enabled()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+294 passed, 1 warning, 4 subtests passed in 8.62s

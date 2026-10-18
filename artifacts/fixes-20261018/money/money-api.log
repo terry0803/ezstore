@@ -1,0 +1,8 @@
+D:\���q2\��Ʊ��ɲĤ@���@�~\ezstore\advisor\.venv\Lib\site-packages\google\adk\features\_feature_decorator.py:71: UserWarning: [EXPERIMENTAL] feature FeatureName.PLUGGABLE_AUTH is enabled.
+  check_feature_enabled()
+Failed to configure mTLS using AsyncAuthorizedSession: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+D:\���q2\��Ʊ��ɲĤ@���@�~\ezstore\advisor\.venv\Lib\site-packages\google\adk\tools\mcp_tool\mcp_toolset.py:407: UserWarning: [EXPERIMENTAL] feature FeatureName._MCP_GRACEFUL_ERROR_HANDLING is enabled.
+  session = await self._mcp_session_manager.create_session(
+D:\���q2\��Ʊ��ɲĤ@���@�~\ezstore\advisor\.venv\Lib\site-packages\google\adk\features\_feature_decorator.py:71: UserWarning: [EXPERIMENTAL] feature FeatureName.BASE_AUTHENTICATED_TOOL is enabled.
+  check_feature_enabled()
+{"passed": 21, "total": 21, "model_calls": 0}

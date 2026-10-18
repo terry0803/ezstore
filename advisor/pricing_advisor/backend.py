@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from decimal import Decimal
 from typing import Any
 
 import httpx
@@ -52,3 +53,14 @@ class Backend:
             if not batch or page * 100 >= int(data.get("total") or 0):
                 return orders
             page += 1
+
+    async def require_current_catalog(self, quotation: dict) -> None:
+        """Reject historical costs that the teacher's duplicate/update replaces."""
+        current_level = (quotation.get('customer') or {}).get('level')
+        if current_level and current_level != quotation.get('customer_level'):
+            raise BackendError("客戶等級已不同於原報價快照；請先建立最新報價，這次沒有改資料")
+        for item in quotation.get("items") or []:
+            product = await self._get(f"/products/{item['product_id']}")
+            if (Decimal(str(product['cost'])) != Decimal(str(item['product_cost']))
+                    or Decimal(str(product['list_price'])) != Decimal(str(item['list_price']))):
+                raise BackendError("目前商品成本或牌價已不同於原報價快照；請先以最新商品資料建立報價後再試算，這次沒有改資料")

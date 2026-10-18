@@ -1,0 +1,61 @@
+{
+  "image_ids_match_tested_images": {
+    "backend": "sha256:9a46e67eb2627770d2a81473d66180253c9ac2b7bd135622572022dfde103408",
+    "frontend": "sha256:6772567df9eca3a80b1fc6b8b4d612f499b6e92834b9f6cbd77594dff36ca978",
+    "mcp-server": "sha256:4fd795634a6f017ab7fc6774f82d4702045547573cb44340bfd4525d0dd8369e",
+    "agent": "sha256:f477314230a5b6a27ee3b220fe1d713fd2891fc8c342accd53b1f75159af38b0",
+    "advisor": "sha256:4748b0643c7e0c05f78e0d70d79f874e41de141b33cd5201e9ff4327b9914a25"
+  },
+  "app_source": {
+    "agent": {
+      "files": 7,
+      "source_matches_container": true
+    },
+    "advisor": {
+      "files": 16,
+      "source_matches_container": true
+    }
+  },
+  "knowledge_source_matches_container": true,
+  "knowledge_file_count": 31,
+  "knowledge_hashes": {
+    "computations/index.md": "787c293d188f3cff5f4e56d56b3dacf4801c63263756fcfc0f537bc8286f8921",
+    "computations/price-change-impact.md": "77db5a0d0e7d08a6656bd1cadf24de7bb89da633b8ce892ebde73f143a155868",
+    "glossary/index.md": "5c8b8abea066f3c327149c1db68b0b475f3829223ba7fb413c286b43e34a5e55",
+    "glossary/pricing-factor.md": "958e7449626e477dce2d045f564f9c3158017dfd0584590b15c718548a8fc20c",
+    "glossary/profit-rate.md": "01334678a1f9bdbb1e8a8e017b21579d2de07ec2735c802d3179b8dbc42692f1",
+    "index.md": "140bfcc2eca14829ce77a158f0744539233bb59947eeaddd48d20db0d2a93abc",
+    "log.md": "208c158f7125b9e78e28c36506dc16bf4cdb6d2d6ec8cdefcd3c86e0df8dd2b3",
+    "playbooks/index.md": "f0120401cae73ac5505267c503346821b5881ee10a4bd958b6ed8b4dee6a2306",
+    "playbooks/price-negotiation.md": "c0df77fd5eb7ee49a544697fc985f1b91a6df699ca7ea1cc14cb0a6473280acc",
+    "policies/discount-approval-2025.md": "074bfdd39ee158c8a3bbd903f05386fcbc96e8b5cbf16467864817a060364950",
+    "policies/discount-approval.md": "454168e3fdbb35d6b7856e9b089d2deda72fb44526d5d872a38a5e8d22f88b36",
+    "policies/index.md": "0c425bd6fd1465bf72a4fa56cdcae7e63fcba96b30e52adbbdbcf39ad0797b86",
+    "policies/order-conversion.md": "b1d48346398f81c02688c3b833a5d5703071324f961c35214ba437c25b23f71b",
+    "policies/pricing-factor-floor.md": "bd5c227b680c3d8edf04b990ea5b6c79514df55436762ac95a28daa065c75461",
+    "policies/promo-2026q3.md": "1943314e6ab702cc89de82d697bac037a068d3163d39cdd9ce9fca988c8c2b96",
+    "references/attesters/index.md": "7adbbe59613706ce73d965a58927cd85858217e46cdf02c1f7ca435534b96184",
+    "references/attesters/recompute.py": "dddfbdb01d8fbea533a6114b72fae9fe7ffcb0ef065b053b5bcc771051c05224",
+    "references/computations/index.md": "418ef9bb814570d949b36b702af7cd819f22d2fdc01af83ad9f9a8c498e5cf03",
+    "references/computations/price_change_impact.py": "ae362ce9aa5f2a0449493c1fd00b0d879a9f017da966044268a3bef64d468391",
+    "references/index.md": "74727c3e987664223a03d6e4898120eee7c0f1852a9c3c5a4711c298d1a27aa0",
+    "references/skills/index.md": "8da2d7d20201251e9bf77ae3c77458fe6b9a62daac385bc26f025b5e7f9ededb",
+    "references/skills/run-python-computation.md": "9797f4c35a5d478359fbc262f63bbba1c9511194a663365569b67e9dbc129d9a",
+    "system/backend-api.md": "21e550d56c564938f606fc500b5356d934c174f8d847ab7a88c20799e7103d95",
+    "system/customer-levels.md": "3df5bb088eff7a885bfa90cf052534a3c446fa475496b000c60f3f24b74e12e2",
+    "system/index.md": "098052bf39ca4de4981c5234e6879ef5d756c09fe4fa1ab8bc79afdb22a15330",
+    "system/mcp-tools.md": "358d4e44a8f7f5eec3c33b4d29148b9aec025e7abadd866988b5d4fc6364fa2d",
+    "system/orders-table.md": "a1dcdc4be9bd4b8eb25f467f872d6a0588dfa919163a225458a4487ae30fd0ea",
+    "system/pricing-formula.md": "6f757f2ab9a440df1607bda0a3d337c5fb64645499b377f56329a9d5751d9856",
+    "system/quotation-agent.md": "7d8d84e1670199d34f182e1247a2b7c474601ad870e7fcdc4fd0ee701a3f7d73",
+    "system/quotations-table.md": "f9b36d3e351c26891dec624b01dfef625b6de159036c4c86267109640fc81021",
+    "viz.html": "883fb6f1fc0beea0beebb73b84d710661f5736d32812c9f5ce876cc584e953c8"
+  },
+  "main_agent_model": "gemini-3.1-flash-lite",
+  "http_health": {
+    "http://localhost:8080/health": 200,
+    "http://localhost:3000/agent": 200,
+    "http://localhost:3000/agent-api/list-apps": 200,
+    "http://localhost:8502/list-apps": 200
+  }
+}

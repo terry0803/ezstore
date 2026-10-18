@@ -1,0 +1,25 @@
+<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EZStore 再檢查與 GCP 說明</title>
+<style>body{font:17px/1.7 system-ui,"Microsoft JhengHei",sans-serif;background:#eef2f5;color:#203344;margin:0}main{max-width:1040px;margin:32px auto;background:white;padding:36px;border-radius:14px}h1{font-size:29px}h2{font-size:22px;margin-top:28px}table{width:100%;border-collapse:collapse}td,th{padding:10px;border:1px solid #ccd5df;text-align:left}th{background:#e9eff4}a{color:#096c95}.notice{padding:16px;background:#fff1d6;border-left:5px solid #b47b1c}code{overflow-wrap:anywhere}</style><main>
+<p class="warn"><strong>歷史紀錄。</strong>這頁是當時的檢查結果，之後又修改過。目前的狀態、與講義不同的地方和最新測試數字，請看 <a href="目前狀態.md">目前狀態</a>。</p>
+
+<h1>EZStore 再檢查與 GCP／ADC 說明</h1><div class="notice">本頁為修正前歷史紀錄。金額問題現已修正，<a href="金額精度修正與自檢_20261018.html">最新結果與測試見這裡</a>；下文「尚未修正」描述的是當時狀態。</div><p>2026-10-18｜本次為重新檢查；未修改業務程式。修正前次報告的雲端評分措辭，並記錄新發現。</p>
+<div class="notice"><strong>仍有一項已重現的程式問題：</strong>金額單價與小計的四捨五入不一致。既有測試全部通過，不能據此宣稱沒有 BUG。</div>
+<h2>新發現：P2 金額精度不一致（尚未修正）</h2>
+<p>在隔離後端 <code>127.0.0.1:58080</code> 新增報價，商品牌價 650、因子 0.3333、數量 3。再次 GET 讀回：</p>
+<table><tr><th>欄位</th><th>金額</th></tr><tr><td>儲存單價</td><td>216.65</td></tr><tr><td>儲存小計</td><td>649.94</td></tr><tr><td>單價 × 數量</td><td>216.65 × 3 = 649.95</td></tr><tr><td>差異</td><td>小計少 0.01</td></tr></table>
+<p>原因：<code>backend/services/quotation_service.go:213</code> 用未捨入單價計算小計，模型中的單價與小計欄位各自儲存成兩位小數，造成分別捨入。影響單據核算與資料一致性；修正時需統一貨幣計算精度，並讓前端預覽、後端儲存及顧問驗證採用一致規則。</p>
+<p><a href="../artifacts/fixes-20261018/recheck/rounding-probe.json">實際請求與讀回資料</a> · <a href="../artifacts/fixes-20261018/recheck/probe_rounding.py">隔離環境重現程式</a></p>
+<h2>本次重跑結果與範圍</h2><ul>
+<li>Python 549 項＋4 子測試全部通過（294＋255）；Go 11 個測試函式通過；瀏覽器 17／17 通過。</li>
+<li>199 份受測檔案在檢查開始時與上一輪雜湊一致；兩個 Agent 執行中的來源、31 個知識檔與本機檔案一致，四個服務健康／路由檢查回傳 200。</li>
+<li>本次未重新消耗 Gemini 額度，也未重跑 30＋19 項真實模型測試或 LLM 評審；那些結果屬上一輪同版本證據，95.0／100 仍是本地自評。</li>
+<li>原資料庫仍為 15 客戶、20 商品、12 報價、10 訂單，逐筆雜湊與修正前相同。新重現只寫隔離資料庫。</li>
+</ul><p><a href="../artifacts/fixes-20261018/recheck/python-agent.log">Python 第一組</a> · <a href="../artifacts/fixes-20261018/recheck/python-advisor.log">Python 第二組</a> · <a href="../artifacts/fixes-20261018/recheck/go-tests.log">Go</a> · <a href="../artifacts/fixes-20261018/recheck/e2e-tests.log">UI 10 項</a> · <a href="../artifacts/fixes-20261018/recheck/e2e-existing.log">其餘 UI 7 項</a> · <a href="../artifacts/fixes-20261018/recheck/source-and-auth.json">版本與設定狀態</a></p>
+<h2>更正「老師雲端缺 GCP／ADC」的說法</h2>
+<p>前次把工具的雲端評分路徑稱為「教師正式雲端評分」，不夠準確。講義第 10 頁允許 AI Studio API key，GCP／Vertex AI 是可選方式；第 17 頁說明助教用私有題庫在本機評分，未要求學生購買雲端服務。</p>
+<table><tr><th>名詞</th><th>在這個專案的意思</th></tr><tr><td>GCP project</td><td>Google Cloud 的專案識別，用於指定雲端服務所屬專案、權限及配額。</td></tr><tr><td>ADC</td><td>Application Default Credentials；Google 函式庫尋找身分憑證的機制，讓程式代表已授權的使用者或服務帳號呼叫雲端服務。</td></tr><tr><td>Gemini API key</td><td>目前 Agent 透過 AI Studio 路徑呼叫 Gemini 使用的金鑰；持有 key 不表示 CLI 已配置專案及雲端認證。</td></tr></table>
+<p>目前安裝的 <code>agents-cli</code> v1.10.0，對老師設定的 <code>refusal_or_action</code> prompt 指標會走雲端評分服務，<code>cmd_grade.py:245</code> 先要求解析 project。本次直接錯誤是 <code>Could not determine GCP project</code>；標準本機 ADC 檔也不存在，但尚未走到雲端權限、API 啟用或計費驗證，不能說是已收到 ADC 驗證失敗。</p>
+<p>所以：Agent 使用 API key 對話與「此 CLI 指標呼叫雲端評分服務」是兩條路徑。沒有配置後者不表示 Agent 不能運作，也不表示作業必須部署到老師的雲端。本地自評與助教正式成績應持續分開標示。</p>
+<p><a href="../artifacts/fixes-20261018/recheck/workshop-references.json">講義第 10／17／20 頁文字</a> · <a href="../artifacts/fixes-20261018/teacher-grade.log">前次 CLI 原始錯誤</a> · <a href="https://docs.cloud.google.com/docs/authentication/application-default-credentials">Google 官方 ADC 說明</a></p>
+<h2>繳交前仍應揭露</h2><p>本版修補了老師限制的基底檔案（4 個功能檔、3 個測試檔），嚴格基底檢查仍不相符；使用者允許修補不等於老師核准。另有尚未修正的金額精度問題，不能標示全部問題已解決。</p>
+<p><a href="修正與完整自檢_20261018.html">上一輪 14 項修正與證據</a> · <a href="可信賴度報告_20261018.pdf">更新的一頁報告</a></p></main></html>

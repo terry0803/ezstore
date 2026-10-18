@@ -5,7 +5,7 @@ description: 單價、小計、總價、利潤與利潤率的計算方式、後�
 tags: [pricing, quotation, formula]
 generated: { by: claude-code/claude-opus-5-5, at: 2026-10-16T17:10:00Z }
 verified:
-  - { by: process:okf-verify, at: 2026-10-17T12:32:06Z }
+  - { by: process:okf-verify, at: 2026-10-18T05:31:55Z }
 status: stable
 stale_after: 2027-04-01T00:00:00Z
 sources:
@@ -25,7 +25,7 @@ sources:
 
 | 欄位 | 算法 |
 |---|---|
-| 單價 `unit_price` | 定價 `list_price` × 報價因子 `pricing_factor`[^quotation-service] |
+| 單價 `unit_price` | 定價 `list_price` × 報價因子 `pricing_factor`，先四捨五入到小數兩位（本機修正版） |
 | 小計 `subtotal` | 單價 × 數量[^quotation-service] |
 | 總價 `total_price` | 所有品項小計相加[^quotation-service] |
 | 利潤 `profit_amount` | 每個品項（單價 − 成本 `product_cost`）× 數量，再相加[^quotation-service] |
@@ -33,7 +33,9 @@ sources:
 
 報價因子存到小數 4 位（`decimal(5,4)`），利潤率也是小數 4 位，金額是小數 2 位。[^quotation-model] 一張報價單只有一個報價因子，所有品項用同一個。
 
-換個方式看：定價合計 L = Σ 定價 × 數量，成本合計 C = Σ 成本 × 數量，那麼總價 = L × 報價因子，利潤 = 總價 − C。
+本機修補來源：`backend/services/quotation_service.go`、`backend/services/order_service.go`（2026-10-18，使用者授權修正；上方 GitHub 連結是老師原始基底，不包含這項修補）。
+
+本機修正版使用 ROUND_HALF_UP：先將每項單價捨入到兩位，再乘數量、加總小計；利潤 = 總價 − 成本合計 C。定價合計 L × 因子只能作為未捨入估計，不能代替實際總價。例：650 × 0.3333 → 單價 216.65，數量 3 的小計與總價均為 649.95。這是對老師基底的金額精度修補；新增、修改與複製都套用，既有歷史單據不批次回寫。
 
 # 什麼時候會重算
 

@@ -2,9 +2,9 @@ name: CI - Build, Push & Test Container Images
 
 on:
   push:
-    branches: [main]
+    branches: [main, workshop-start, feature/ezstore-agent-develop]
   pull_request:
-    branches: [main]
+    branches: [main, workshop-start]
 
 env:
   REGISTRY: ghcr.io
@@ -78,7 +78,6 @@ jobs:
 
   e2e-test:
     needs: build-and-push
-    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -86,6 +85,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check assignment boundaries with disclosed user fixes
+        run: python3 scripts/check_assignment.py --allow-user-fixes
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -95,7 +99,8 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Start services
-        run: docker compose up -d db backend frontend
+        # Build this checkout rather than pulling unrelated upstream/latest images.
+        run: docker compose -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.advisor.yml up -d --build
 
       - name: Wait for backend to be ready
         run: |
@@ -114,8 +119,8 @@ jobs:
         run: docker compose exec -T db psql -U ezstore -f /scripts/seed-test-data.sql
 
       - name: Run E2E tests
-        run: docker compose run --rm e2e
+        run: docker compose -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.advisor.yml run --build --rm e2e
 
       - name: Stop services
         if: always()
-        run: docker compose down -v
+        run: docker compose -f docker-compose.yml -f docker-compose.build.yml -f docker-compose.advisor.yml down -v

@@ -390,6 +390,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "google-adk", extra = ["a2a", "mcp"] },
+    { name = "httpx" },
     { name = "litellm" },
     { name = "python-dotenv" },
 ]
@@ -418,6 +419,7 @@ requires-dist = [
     { name = "google-adk", extras = ["eval"], marker = "extra == 'eval'", specifier = ">=2.10,<3.0.0" },
     { name = "google-adk", extras = ["mcp", "a2a"], specifier = ">=2.10,<3" },
     { name = "google-cloud-aiplatform", extras = ["evaluation"], marker = "extra == 'eval'", specifier = ">=1.156.0,<2.0.0" },
+    { name = "httpx", specifier = ">=0.28" },
     { name = "litellm", specifier = ">=1.80" },
     { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "ruff", marker = "extra == 'lint'", specifier = ">=0.4.6,<1.0.0" },

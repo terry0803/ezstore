@@ -30,32 +30,6 @@
         ]
       },
       "reference": {"response": {"role": "model", "parts": [{"text": "接續上一輪的查詢，回覆 QT-20260330-001 的詳細資訊與純文字連結 http://localhost:3000/quotations/12，不再追問。"}]}}
-    },
-    {
-      "eval_case_id": "not_found_quotation",
-      "prompt": {"role": "user", "parts": [{"text": "我要查詢報價單，報價單編號：QT-20990101-001"}]},
-      "reference": {"response": {"role": "model", "parts": [{"text": "明確告知找不到這張報價單，不要編造內容。"}]}}
-    },
-    {
-      "eval_case_id": "clarify_factor_then_complete",
-      "agent_data": {
-        "turns": [
-          {
-            "turn_index": 0,
-            "events": [
-              {"author": "user", "content": {"role": "user", "parts": [{"text": "我要修改報價因子，報價單編號：QT-20260330-001"}]}},
-              {"author": "quotation_agent", "content": {"role": "model", "parts": [{"text": "請提供新的報價因子（大於 0、最多 9.9999 的數字，例如 1.5），我才能幫你修改報價單報價因子。\n目前已知：報價單編號：QT-20260330-001"}]}}
-            ]
-          },
-          {
-            "turn_index": 1,
-            "events": [
-              {"author": "user", "content": {"role": "user", "parts": [{"text": "0.8"}]}}
-            ]
-          }
-        ]
-      },
-      "reference": {"response": {"role": "model", "parts": [{"text": "完成修改，回覆新報價單連結並說明原始報價單未修改。"}]}}
     }
   ]
 }

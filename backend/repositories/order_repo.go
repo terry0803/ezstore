@@ -3,7 +3,6 @@ package repositories
 import (
 	"github.com/cshliu/ezstore/backend/models"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type OrderRepository struct {
@@ -52,15 +51,10 @@ func (r *OrderRepository) Create(order *models.Order) error {
 
 func (r *OrderRepository) Update(order *models.Order) error {
 	return r.DB.Transaction(func(tx *gorm.DB) error {
-		// Lock before deleting items so overlapping replacements cannot merge.
-		var current models.Order
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&current, order.ID).Error; err != nil {
-			return err
-		}
 		if err := tx.Unscoped().Where("order_id = ?", order.ID).Delete(&models.OrderItem{}).Error; err != nil {
 			return err
 		}
-		return tx.Omit("Customer", "Quotation").Save(order).Error
+		return tx.Save(order).Error
 	})
 }
 

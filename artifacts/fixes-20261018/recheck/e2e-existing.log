@@ -1,0 +1,12 @@
+
+Running 7 tests using 1 worker
+
+  ✓  1 [chromium] › e2e/ezstore.spec.ts:4:3 › Dashboard › should display summary cards with correct icons (215ms)
+  ✓  2 [chromium] › e2e/ezstore.spec.ts:29:3 › Customer Management › should display fictional company names (147ms)
+  ✓  3 [chromium] › e2e/ezstore.spec.ts:46:3 › Product Management › should display product list (150ms)
+  ✓  4 [chromium] › e2e/ezstore.spec.ts:58:3 › Quotation Management › should display list and view detail (268ms)
+  ✓  5 [chromium] › e2e/ezstore.spec.ts:91:3 › Order Management › should only have view button, no edit or delete (176ms)
+  ✓  6 [chromium] › e2e/ezstore.spec.ts:109:3 › Order Management › should display read-only detail page (276ms)
+  ✓  7 [chromium] › e2e/ezstore.spec.ts:137:3 › API Health Check › should return ok (20ms)
+
+  7 passed (1.8s)

@@ -41,6 +41,8 @@ from pydantic import BaseModel, Field
 from .a2a_client import STOPPED_STATES, A2AError, QuotationAgentClient
 from .amounts import _NUMERIC_CHARS, parse_number_token
 from .backend import Backend, BackendError
+from .conversion_journal import ConversionJournal
+from .write_intent import is_write_request, is_price_confirmation
 from .computation import (
     ComputationError,
     attest_receipt,
@@ -91,7 +93,7 @@ EXPLAIN_TEXT = (
 
 QUOTATION_NUMBER_RE = re.compile(r"(?<![A-Za-z0-9_-])QT-\d{8}-\d{3,}(?![A-Za-z0-9_-])", re.IGNORECASE)
 QUOTATION_TOKEN_RE = re.compile(r"[A-Za-z0-9_-]*QT-[A-Za-z0-9_-]*", re.IGNORECASE)
-_TARGET_HINT_RE = re.compile(r"(壓到|降到|改成|改為|調到|變成|殺到|砍到|到)\s*$")
+_TARGET_HINT_RE = re.compile(r"(壓到|降到|改成|改為|調到|變成|殺到|砍到|到|\bto)\s*$", re.IGNORECASE)
 # 「降 2 萬」「便宜 5000」「打九折」「降 10%」是相對的說法，不自己換算成總價
 _RELATIVE_RE = re.compile(r"\d\s*[%％]|[\d一二三四五六七八九]\s*折|(降|減|便宜|折讓|扣|少)[^\d到]{0,2}\d")
 # 一般報價單操作（原句交給報價單 Agent）只能是查詢、清單、複製；帶有這些字就要先經過檢查
@@ -285,10 +287,10 @@ _AMOUNT_TOKEN_RE = re.compile(rf"(?<![A-Za-z0-9_.])(?:[-+負负]\s*)?(?:\d|[{_NU
 # 後面接著年、月、件、%、折這類單位的不算金額
 _NON_AMOUNT_SUFFIX_RE = re.compile(r"\s*(?:年|月|日|號|%|％|折|件|台|個|人|天|週|周|次|箱|張|份|套|組|歲|點鐘|點半)")
 _DATE_TIME_RE = re.compile(
-    r"\d{4}\s*[-/.年]\s*\d{1,2}\s*[-/.月]\s*\d{1,2}\s*[日號]?|\d{1,2}\s*/\s*\d{1,2}|\d{1,2}\s*月\s*\d{1,2}\s*[日號]|\d{1,2}:\d{2}"
+    r"(?<!\d)(?:\d{4}\s*[-/.年]\s*\d{1,2}\s*[-/.月]\s*\d{1,2}\s*[日號]?|\d{1,2}\s*/\s*\d{1,2}|\d{1,2}\s*月\s*\d{1,2}\s*[日號]|\d{1,2}:\d{2})(?!\d)"
 )
 # 兩個金額中間是「或」「還是」「、」，或只隔著「到」「至」「~」，表示給了好幾個值或一個範圍
-_ALTERNATIVE_RE = re.compile(r"或|還是|、")
+_ALTERNATIVE_RE = re.compile(r"或|還是|、|/|\bor\b", re.IGNORECASE)
 _RANGE_RE = re.compile(r"^\s*(?:到|至|~|～|-)\s*$")
 
 
@@ -315,6 +317,9 @@ def _amount_from_text(text: str) -> tuple[float | None, bool, bool]:
     """
     cleaned = QUOTATION_NUMBER_RE.sub(" ", text).translate(_UNIFY_SIGNS)
     cleaned = _join_number_units(_DATE_TIME_RE.sub(" ", cleaned))
+    # Unsupported numeric notation must not be truncated to its mantissa.
+    if re.search(r"\d(?:[\d.,]*\d)?[eE][+-]?\d", cleaned):
+        return None, False, True
     candidates: list[tuple[bool, float, int, int]] = []
     ambiguous = False
     for match in _AMOUNT_TOKEN_RE.finditer(cleaned):
@@ -340,8 +345,12 @@ def _amount_from_text(text: str) -> tuple[float | None, bool, bool]:
     hinted_values = [value for is_hinted, value, *_ in candidates if is_hinted]
     if len(set(hinted_values)) > 1:
         ambiguous = True
+    if len({value for _, value, *_ in candidates}) > 1 and len(hinted_values) != 1:
+        ambiguous = True
     if not candidates:
-        return None, False, ambiguous
+        # A new but invalid value (including a date) cannot silently reuse history.
+        supplied_value = bool(re.search(r"(?:(?:改|調|變|壓|降)(?:成|為|到)|總價\s*[:：=]|\bto\b)\s*\S", text, re.I))
+        return None, False, ambiguous or supplied_value or bool(_DATE_TIME_RE.search(text))
     if hinted_values:
         return hinted_values[-1], True, ambiguous
     return candidates[-1][1], False, ambiguous
@@ -356,13 +365,14 @@ _NEGATED_ACTION_RE = re.compile(
 )
 _CANCEL_RE = re.compile(
     r"^\s*(?:算了|取消|不用了|不要了|免了|作罷|先這樣)(?=\s*(?:[，,。.!！]|QT-|$))"
-    r"|(?:不要|不用|別|不必|不想)[^，。；;,\n]{0,4}(?:改|轉|動|複製|做|處理|壓|降)了"
-    r"|不(?:改|轉|複製|做|壓|降)了"
+    r"|(?:不要|不用|別|不必|不想)[^，。；;,\n]{0,4}(?:改|轉|動|複製|做|處理|壓|降)(?:價|單|訂單)?了"
+    r"|不(?:改|轉|複製|做|壓|降)(?:價|單|訂單)?了"
     r"|取消(?:修改|操作|這次|剛剛|剛才|前面|上一個|改價|轉單)"
 )
 _EXPLANATION_REQUEST_RE = re.compile(
-    r"^\s*(?:請|麻煩|我想|想要)?\s*(?:如何|怎麼|教我|說明|解釋|如果|假設)"
-    r"|^\s*(?:please\s+)?(?:how\s+to|explain|what\s+if)\b",
+    r"如何|怎麼|教我|操作(?:流程|方法|步驟)|(?:流程|步驟)(?:是|為)什麼"
+    r"|^\s*(?:請問?|麻煩|我想|想要)?\s*(?:說明|解釋|如果|假設)"
+    r"|\b(?:how\s+(?:to|do|can|would|should)|explain|what\s+(?:if|happens))\b",
     re.IGNORECASE,
 )
 _PRESERVE_ORIGINAL_RE = re.compile(
@@ -634,8 +644,8 @@ def route(ctx: Context, node_input: Any):
             # 「不要複製」「教我如何複製」不能組成複製的指令送出去
             if copy and _NEGATED_ACTION_RE.search(guard_text):
                 return Event(output=CANCEL_TEXT, route="off_topic", state={"pending": None, "last_check": None})
-            if copy and _EXPLANATION_REQUEST_RE.search(guard_text):
-                return Event(output=EXPLAIN_TEXT, route="off_topic", state={"pending": None})
+            if copy and not is_write_request(guard_text):
+                return Event(output=EXPLAIN_TEXT, route="off_topic", state={"pending": None, "last_check": None})
             # 有報價單編號時不轉原句，由程式組出查詢或複製的句子；報價單 Agent 的寫入動作
             # 都要報價單編號，所以沒有編號的原句最多讓它追問或列客戶清單，改不到任何一張單
             found = QUOTATION_NUMBER_RE.search(text)
@@ -645,7 +655,7 @@ def route(ctx: Context, node_input: Any):
             else:
                 request = text
             return Event(
-                output={"text": request, "purpose": "quotation_request", "preface": ""},
+                output={"text": request, "purpose": "quotation_request", "writes": copy, "preface": ""},
                 route="delegate",
                 state={"pending": None, "last_check": None, "last_quotation": numbers[0] if numbers else None},
             )
@@ -654,7 +664,11 @@ def route(ctx: Context, node_input: Any):
     # 4. 試算、改價、轉訂單：否定句不做；問句和問做法的句子降級成只檢查，不改資料
     if operation in ("apply_price", "convert_order") and _NEGATED_ACTION_RE.search(guard_text):
         return Event(output=CANCEL_TEXT, route="off_topic", state={"pending": None, "last_check": None})
-    if _is_question(text) or _EXPLANATION_REQUEST_RE.search(guard_text):
+    # Bare values may complete an already requested write; ordinary narration
+    # must remain read-only even when the model labels it as an operation.
+    bare_followup = (pending.get("intent") == operation and bool(re.fullmatch(
+        r"[\s0-9零〇一二兩三四五六七八九十百千萬万億亿壹貳參肆伍陸柒捌玖拾佰仟點点.,+負负-]+(?:元)?|QT-\d{8}-\d{3,}", text.strip(), re.I)))
+    if _is_question(text) or _EXPLANATION_REQUEST_RE.search(guard_text) or (not is_write_request(guard_text) and not bare_followup):
         operation = {"apply_price": "price_check", "convert_order": "order_check"}.get(operation, operation)
 
     # 合併欄位（原文 → 理解結果 → 待補 → 上一次試算）
@@ -676,12 +690,15 @@ def route(ctx: Context, node_input: Any):
         target = -1.0 if model_number is not None and not math.isfinite(model_number) else _number(carry.get("target_total"))
     if target is not None and not math.isfinite(target):
         target = -1.0
+    if target is None and _number(intent.target_total) is not None and not math.isfinite(_number(intent.target_total)):
+        target = -1.0
     current_number = ctx.state.get("last_quotation")
     if current_number and current_number != last_check.get("quotation_number"):
         last_check = {}
-    if operation == "apply_price" and not number and target is None and not unclear and last_check.get("quotation_number"):
+    confirmation = is_price_confirmation(guard_text)
+    if operation == "apply_price" and confirmation and not number and target is None and not unclear and last_check.get("quotation_number"):
         number, target = last_check["quotation_number"], last_check["target_total"]
-    if operation == "apply_price" and number and target is None and not unclear and last_check.get("quotation_number") == number:
+    if operation == "apply_price" and confirmation and number and target is None and not unclear and last_check.get("quotation_number") == number:
         target = last_check["target_total"]
     if not number:
         # 「那 200000 呢？」這種接著問的句子，沿用上一張報價單
@@ -790,6 +807,10 @@ async def _check_price(quotation_number: str, target_total: float) -> dict[str, 
         return {"ok": False, "text": f"沒辦法重讀報價單核對資料來源：{e}。這次不顯示數字。"}
     if fresh is None or sha256_hex(canonical_json(fresh)) != receipt["source_sha256"]:
         return {"ok": False, "text": "重讀後端的報價單，和收據裡的資料來源不同（可能剛被改過）。這次不顯示數字，請再試一次。"}
+    try:
+        await backend.require_current_catalog(fresh)
+    except BackendError as e:
+        return {"ok": False, "text": f"沒辦法確認改價會使用相同的成本與牌價：{e}。這次不會自動改價。"}
     stale = stale_note(bundle)
 
     source = receipt["source"]
@@ -975,9 +996,9 @@ async def _verify_write_result(purpose: str, request: dict, reply: str) -> _Writ
             entry = (str(item["product_id"]), quantity)
             if with_prices:
                 unit, subtotal = amount(item["unit_price"]), amount(item["subtotal"])
-                # DB 各自將單價及小計存成兩位小數，乘數量後會放大單價的半分捨入差。
-                line_tolerance = Decimal("0.005") * (quantity + 1)
-                if unit < 0 or subtotal < 0 or abs(unit * quantity - subtotal) > line_tolerance:
+                # Stored unit prices already have cent precision; totals must
+                # equal those units multiplied by quantity, without slack.
+                if unit < 0 or subtotal < 0 or unit * quantity != subtotal:
                     raise ValueError("Invalid line total")
                 entry += (unit, subtotal)
             result.append(entry)
@@ -1017,7 +1038,7 @@ async def _verify_write_result(purpose: str, request: dict, reply: str) -> _Writ
             if abs(actual - target) > tolerance:
                 return failed(f"新單總價 {actual} 不符合指定總價 {target}（容差 {tolerance}）")
             price_items = items(fresh, with_prices=True)
-            if abs(sum(row[3] for row in price_items) - actual) > Decimal("0.005") * (len(price_items) + 1):
+            if sum(row[3] for row in price_items) != actual:
                 return failed("新報價單總價與明細加總不符")
             bundle = _bundle()
             receipt = await run_price_change_impact(bundle, backend, new_number, float(fresh["total_price"]))
@@ -1061,14 +1082,10 @@ async def _verify_write_result(purpose: str, request: dict, reply: str) -> _Writ
             expected_items, actual_items = items(original, with_prices=True), items(order, with_prices=True)
             if [row[:3] for row in actual_items] != [row[:3] for row in expected_items]:
                 return failed("新訂單的產品、數量、單價或明細金額與報價單不同")
-            if any(abs(row[1] * row[2] - row[3]) > Decimal("0.01") for row in actual_items):
+            if any(row[1] * row[2] != row[3] for row in actual_items):
                 return failed("新訂單明細金額不符合單價與數量")
             actual, expected = amount(order["total_price"]), amount(original["total_price"])
-            # 轉單使用報價單已存為兩位的單價重算；與原小計的差只能來自存檔捨入。
-            source_tolerance = Decimal("0.005") * (sum(row[1] for row in expected_items) + len(expected_items) + 1)
-            sum_tolerance = Decimal("0.005") * (len(actual_items) + 1)
-            if (abs(actual - expected) > source_tolerance
-                    or abs(sum(row[3] for row in actual_items) - actual) > sum_tolerance):
+            if actual != expected or sum(row[3] for row in actual_items) != actual:
                 return failed("新訂單總價與報價單或明細加總不符")
             original_now = await backend.find_quotation(request["quotation_number"])
             if original_now is None or sha256_hex(canonical_json(original_now)) != original_hash:
@@ -1124,16 +1141,18 @@ _CONVERT_LOCKS: dict[str, asyncio.Lock] = {}
 # 只排隊不夠：送出後這邊逾時或被取消，遠端可能還在建訂單。結果不明時先擋住，要有證據才放行：
 # - 送出時就記下 task 編號（拿不到就記這邊產生的對話編號），之後問報價單 Agent 那個 task
 #   結束了沒。還在跑就繼續擋。
-# - task 停了（做完、失敗、取消，或對方已經沒有這個 task：沒收到或重啟過），就不會再發新的呼叫；
-#   但最後一個 MCP 呼叫可能還在後端處理。MCP 呼叫後端有逾時上限（連線 5 秒、讀取 30 秒、
-#   寫入 10 秒），從確定停了開始再等這段時間才放行。報價單 Agent 回「操作中斷」也一樣。
-# 放行之後還要再重讀一次訂單，確認那次真的沒有轉成。這份紀錄只在單一程序內，議價顧問只能跑一個容器。
-_CONVERT_UNCERTAIN: dict[str, dict[str, Any]] = {}
-_MCP_INTERRUPT_SECONDS = 120
+# - task 停止／消失、等待多久、重啟都不能證明最後一個後端交易已停止。
+# - 寫入前先持久保存紀錄；只有確認未送出，或重新讀到已建立的訂單才解除。
+# 排隊鎖只在單一程序內，因此議價顧問仍只支援一個 worker／容器。
+_CONVERT_UNCERTAIN = ConversionJournal()
 
 
 async def _uncertain_still_open(number: str, entry: dict[str, Any]) -> str | None:
-    """上一次轉訂單還沒有確定結束就回說明文字；確定結束了回 None。"""
+    """Only a pre-dispatch cancellation can release an uncertain write.
+
+    A stopped/missing task and elapsed time do not prove a database rollback.
+    A later committed order is reconciled by _recheck_order_conversion.
+    """
     if entry.get("kind") == "dispatched":
         if not entry.get("task_id") and not entry.get("context_id"):
             # 送出前一定會先記下對話編號；兩個都沒有，表示還沒送出就停了
@@ -1145,11 +1164,9 @@ async def _uncertain_still_open(number: str, entry: dict[str, Any]) -> str | Non
         if state != "not_found" and state not in STOPPED_STATES:
             return f"{number} 上一次轉訂單還在處理（報價單 Agent 的 task 狀態是 {state}）。這次沒有再次送出，請等它完成再試。"
         entry.update(kind="interrupted", since=time.monotonic())
-    left = _MCP_INTERRUPT_SECONDS - (time.monotonic() - entry.get("since", 0.0))
-    if left > 0:
-        return (f"{number} 上一次轉訂單沒有正常結束，後端可能還在處理。這次沒有再次送出；"
-                f"請約 {max(1, math.ceil(left / 60))} 分鐘後再試，我會重新檢查，還是沒有訂單才轉。")
-    return None
+        _CONVERT_UNCERTAIN[number] = entry
+    return (f"{number} 上一次轉訂單的寫入結果仍未確認。這次沒有再次送出。"
+            "等待時間或 task 結束不代表後端交易停止；請先查詢訂單，若仍查不到，需管理員確認後端交易結果。")
 
 
 async def _recheck_order_conversion(node_input: dict) -> str | None:
@@ -1203,17 +1220,20 @@ async def delegate_a2a(ctx: Context, node_input: dict):
             def remember(task_id: str | None, context_id: str) -> None:
                 entry["task_id"] = task_id or entry.get("task_id")
                 entry["context_id"] = context_id
+                _CONVERT_UNCERTAIN[number] = entry
 
             return await _send_a2a(node_input, remember)
     return await _send_a2a(node_input)
 
 
 def _definitely_not_written(reply: str) -> bool:
-    """報價單 Agent 已完成、而且明確回報失敗（例如找不到報價單、後端拒絕資料），代表沒有寫入。
-    「操作中斷」「可能已經建立」表示 MCP 途中斷線或逾時，後端可能還在處理，不算。"""
+    """報價單 Agent 預檢就擋下，或 MCP 在建訂單之前的讀取就失敗（找不到報價單），才算確定沒寫入。
+    後端 400 可能發生在訂單已建立之後的重讀，不算。"""
     text = reply.strip()
+    if text.startswith("未送出操作："):
+        return True
     return (text.startswith("操作失敗：") and not _NEW_ORDER_RE.search(text)
-            and not any(word in text for word in ("操作中斷", "可能已經建立", "逾時", "無法連線")))
+            and any(word in text for word in ("找不到報價單編號", "找不到資料")))
 
 
 async def _send_a2a(node_input: dict, on_dispatch=None) -> Event:
@@ -1235,8 +1255,9 @@ async def _send_a2a(node_input: dict, on_dispatch=None) -> Event:
             elif entry is not None:
                 entry["task_id"] = e.task_id or entry.get("task_id")
                 entry["context_id"] = e.context_id or entry.get("context_id")
+                _CONVERT_UNCERTAIN[number] = entry
         warning = ("可能已送出操作，尚未確認結果；請先至系統核對，勿直接重試。"
-                   if e.may_have_written and node_input.get("purpose") in ("convert_order", "apply_price") else "")
+                   if e.may_have_written and (node_input.get("writes") or node_input.get("purpose") in ("convert_order", "apply_price")) else "")
         return Event(output=f"{node_input.get('preface') or ''}\n沒辦法連到報價單 Agent：{e}\n{warning}".strip())
     head = node_input.get("preface") or ""
     trace = f"（經 A2A 交給報價單 Agent，task {result.task_id[:8]}，狀態 {result.state}）"
@@ -1245,11 +1266,11 @@ async def _send_a2a(node_input: dict, on_dispatch=None) -> Event:
         if verification.verified or _definitely_not_written(result.text):
             _CONVERT_UNCERTAIN.pop(number, None)
         elif "操作中斷" in result.text or "可能已經建立" in result.text:
-            # task 已經結束，但它呼叫 MCP 到一半斷掉，後端那邊要等 MCP 的逾時過了才確定
+            # task 結束仍不能證明後端交易停止；紀錄沒有自動過期時間。
             _CONVERT_UNCERTAIN[number] = {"kind": "interrupted", "since": time.monotonic()}
         else:
-            # task 已經結束、回覆核對不過：不會再寫入，下次重讀訂單就知道有沒有轉成
-            _CONVERT_UNCERTAIN.pop(number, None)
+            # A generic 400 may follow a successful insert and a failed reread.
+            _CONVERT_UNCERTAIN[number] = {"kind": "interrupted", "since": time.monotonic()}
     text = "\n".join(part for part in (head, trace, result.text, verification.text) if part).strip()
     return Event(output=text, state={"last_a2a": {**result.trace(), "request": request}})
 

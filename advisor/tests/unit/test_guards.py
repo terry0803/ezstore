@@ -56,12 +56,17 @@ def test_ambiguous_amount_does_not_fall_back_to_the_last_check():
     (f"幫我把 {Q} 壓到 20 萬", 200000.0),
     (f"幫我把 {Q} 壓到十八萬五千", 185000.0),
     (f"幫我把 {Q} 從 211560 壓到 200000", 200000.0),
-    (f"2026/10/17 客戶說 {Q} 想壓到 190000", 190000.0),
 ])
 def test_clear_amounts_still_parse(text, value):
     event = run(text, "apply_price")
     assert event.actions.route == "apply_price"
     assert event.output["target_total"] == value
+
+
+def test_reported_customer_wish_can_be_checked_but_is_not_a_write_request():
+    event = run(f"2026/10/17 客戶說 {Q} 想壓到 190000", "apply_price")
+    assert event.actions.route == "price_check"
+    assert event.output["target_total"] == 190000.0
 
 
 @pytest.mark.parametrize("text,intent", [

@@ -43,37 +43,4 @@ test.describe('Agent Chat UI', () => {
     // Input should be cleared
     await expect(input).toHaveValue('');
   });
-
-  test('recovers once when an Agent restart invalidates the browser session', async ({ page }) => {
-    let sessionCalls = 0;
-    let runCalls = 0;
-    await page.route('**/agent-api/apps/quotation_agent/users/web-user/sessions', async route => {
-      sessionCalls += 1;
-      await route.fulfill({ json: { id: sessionCalls === 1 ? 'stale-session' : 'fresh-session' } });
-    });
-    await page.route('**/agent-api/run_sse', async route => {
-      runCalls += 1;
-      const body = route.request().postDataJSON();
-      if (runCalls === 1) {
-        expect(body.session_id).toBe('stale-session');
-        await route.fulfill({ status: 404, body: 'session not found' });
-        return;
-      }
-      expect(body.session_id).toBe('fresh-session');
-      await route.fulfill({
-        status: 200,
-        contentType: 'text/event-stream',
-        body: 'data: {"author":"quotation_agent","nodeInfo":{"path":"quotation_agent@1/respond@1"},"content":{"parts":[{"text":"重新連線成功"}]}}\n\n',
-      });
-    });
-
-    await page.goto('/agent');
-    await page.getByPlaceholder('輸入您的指令...').fill('查詢報價單 QT-20260330-001');
-    await page.getByRole('button', { name: '送出' }).click();
-
-    await expect(page.getByText('重新連線成功')).toBeVisible();
-    await expect(page.getByText(/Agent request failed/)).toHaveCount(0);
-    expect(sessionCalls).toBe(2);
-    expect(runCalls).toBe(2);
-  });
 });

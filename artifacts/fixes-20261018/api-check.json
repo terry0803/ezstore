@@ -1,0 +1,118 @@
+[
+  {
+    "test": "factor_precision_matches_calculation",
+    "passed": true,
+    "id": 24,
+    "factor": "1.2346",
+    "total": "8024.9"
+  },
+  {
+    "test": "invalid_factor",
+    "method": "POST",
+    "value": "-1",
+    "status": 400,
+    "passed": true
+  },
+  {
+    "test": "invalid_factor",
+    "method": "PUT",
+    "value": "-1",
+    "status": 400,
+    "passed": true
+  },
+  {
+    "test": "invalid_factor",
+    "method": "POST",
+    "value": "0",
+    "status": 400,
+    "passed": true
+  },
+  {
+    "test": "invalid_factor",
+    "method": "PUT",
+    "value": "0",
+    "status": 400,
+    "passed": true
+  },
+  {
+    "test": "invalid_factor",
+    "method": "POST",
+    "value": "0.00001",
+    "status": 400,
+    "passed": true
+  },
+  {
+    "test": "invalid_factor",
+    "method": "PUT",
+    "value": "0.00001",
+    "status": 400,
+    "passed": true
+  },
+  {
+    "test": "invalid_factor",
+    "method": "POST",
+    "value": "10",
+    "status": 400,
+    "passed": true
+  },
+  {
+    "test": "invalid_factor",
+    "method": "PUT",
+    "value": "10",
+    "status": 400,
+    "passed": true
+  },
+  {
+    "test": "invalid_factor",
+    "method": "POST",
+    "value": "999999999999",
+    "status": 400,
+    "passed": true
+  },
+  {
+    "test": "invalid_factor",
+    "method": "PUT",
+    "value": "999999999999",
+    "status": 400,
+    "passed": true
+  },
+  {
+    "test": "invalid_factors_leave_database_identical",
+    "passed": true
+  },
+  {
+    "test": "ambiguous_customer_does_not_choose_first",
+    "passed": true,
+    "response": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Error executing tool list_customer_quotations: 找到多個符合的客戶：修正測試乙公司、修正測試甲公司。請提供唯一的完整客戶名稱。"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "test": "unique_exact_customer_accepted",
+    "passed": true,
+    "response": {
+      "content": [
+        {
+          "type": "text",
+          "text": "客戶「修正測試乙公司」目前沒有任何報價單"
+        }
+      ],
+      "structuredContent": {
+        "result": "客戶「修正測試乙公司」目前沒有任何報價單"
+      },
+      "isError": false
+    }
+  },
+  {
+    "test": "live_mcp_all_pages",
+    "passed": true,
+    "actual": 112,
+    "reported_lines": 112
+  }
+]

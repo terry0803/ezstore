@@ -47,9 +47,10 @@ func (s *QuotationService) GetByID(id uint) (*models.Quotation, error) {
 }
 
 func (s *QuotationService) Create(input *QuotationCreateInput) (*models.Quotation, error) {
-	if err := validateQuotationInput(input); err != nil {
+	if err := validatePricingFactor(input.PricingFactor); err != nil {
 		return nil, err
 	}
+	input.PricingFactor = input.PricingFactor.Round(4)
 	customer, err := s.CustomerRepo.GetByID(input.CustomerID)
 	if err != nil {
 		return nil, errors.New("客戶不存在")
@@ -82,9 +83,10 @@ func (s *QuotationService) Create(input *QuotationCreateInput) (*models.Quotatio
 }
 
 func (s *QuotationService) Update(id uint, input *QuotationCreateInput) (*models.Quotation, error) {
-	if err := validateQuotationInput(input); err != nil {
+	if err := validatePricingFactor(input.PricingFactor); err != nil {
 		return nil, err
 	}
+	input.PricingFactor = input.PricingFactor.Round(4)
 	existing, err := s.Repo.GetByID(id)
 	if err != nil {
 		return nil, err
@@ -122,45 +124,21 @@ func (s *QuotationService) Update(id uint, input *QuotationCreateInput) (*models
 	return s.Repo.GetByID(existing.ID)
 }
 
-// pricing_factor 和 profit_rate 欄位是 decimal(5,4)：只存到小數 4 位，最大 9.9999。
-var maxDecimal54 = decimal.RequireFromString("9.9999")
-
-// normalizePricingFactor 先把報價因子四捨五入到 4 位再拿去算單價，存進去的因子才對得上品項和總價。
-func normalizePricingFactor(factor decimal.Decimal) (decimal.Decimal, error) {
-	rounded := factor.Round(4)
-	if !rounded.GreaterThan(decimal.Zero) {
-		return decimal.Zero, errors.New("報價因子必須大於 0")
-	}
-	if rounded.GreaterThan(maxDecimal54) {
-		return decimal.Zero, errors.New("報價因子不可超過 9.9999")
-	}
-	return rounded, nil
-}
-
-// checkProfitRate 擋下存不進 profit_rate 欄位的報價單（報價因子太低時利潤率會小於 -9.9999）。
-func checkProfitRate(q *models.Quotation) error {
-	if q.ProfitRate.Round(4).Abs().GreaterThan(maxDecimal54) {
-		return errors.New("報價因子太低，利潤率超出可儲存的範圍（-9.9999 到 9.9999）")
+// Match decimal(5,4): reject invalid values before any database mutation.
+func validatePricingFactor(value decimal.Decimal) error {
+	// Round first, like the agent and MCP do: 9.99994 is stored as 9.9999.
+	rounded := value.Round(4)
+	if !value.IsPositive() || rounded.GreaterThan(decimal.RequireFromString("9.9999")) || rounded.IsZero() {
+		return errors.New("報價因子必須大於 0、最多 9.9999，且小數四位捨入後不可為 0")
 	}
 	return nil
 }
 
-func validateQuotationInput(input *QuotationCreateInput) error {
-	if input == nil {
-		return errors.New("報價因子必須大於 0")
-	}
-	factor, err := normalizePricingFactor(input.PricingFactor)
-	if err != nil {
-		return err
-	}
-	input.PricingFactor = factor
-	if len(input.Items) == 0 {
-		return errors.New("報價單至少需要一個品項")
-	}
-	for _, item := range input.Items {
-		if item.Quantity <= 0 {
-			return errors.New("數量必須大於 0")
-		}
+// profit_rate is decimal(5,4) too: a very small factor makes the rate fall
+// below -9.9999 and PostgreSQL would answer with a raw overflow error.
+func checkProfitRate(q *models.Quotation) error {
+	if q.ProfitRate.Round(4).Abs().GreaterThan(decimal.RequireFromString("9.9999")) {
+		return errors.New("報價因子太低，利潤率超出可儲存的範圍（-9.9999 到 9.9999）")
 	}
 	return nil
 }
@@ -251,7 +229,9 @@ func (s *QuotationService) buildItems(inputs []QuotationItemInput, pricingFactor
 			return nil, errors.New("數量必須大於 0")
 		}
 
-		unitPrice := product.ListPrice.Mul(pricingFactor)
+		// Round the unit once, before quantity multiplication, to match decimal(12,2).
+		// Otherwise PostgreSQL rounds unit/subtotal independently and they disagree.
+		unitPrice := product.ListPrice.Mul(pricingFactor).Round(2)
 		quantity := decimal.NewFromInt(int64(input.Quantity))
 		subtotal := unitPrice.Mul(quantity)
 

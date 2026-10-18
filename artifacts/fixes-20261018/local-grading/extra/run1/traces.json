@@ -1,0 +1,168 @@
+{
+  "eval_cases": [
+    {
+      "prompt": {
+        "parts": [
+          {
+            "text": "我要查詢報價單，報價單編號：QT-20990101-001"
+          }
+        ],
+        "role": "user"
+      },
+      "responses": [
+        {
+          "response": {
+            "parts": [
+              {
+                "text": "操作失敗：找不到報價單編號 QT-20990101-001"
+              }
+            ],
+            "role": "model"
+          }
+        }
+      ],
+      "reference": {
+        "response": {
+          "parts": [
+            {
+              "text": "明確告知找不到這張報價單，不要編造內容，不要附不存在的報價單連結。"
+            }
+          ],
+          "role": "model"
+        }
+      },
+      "eval_case_id": "not_found_quotation",
+      "agent_data": {
+        "turns": [
+          {
+            "turn_index": 0,
+            "turn_id": "turn_0",
+            "events": [
+              {
+                "author": "quotation_agent",
+                "event_time": "2026-10-18T03:46:20.139806Z",
+                "state_delta": {
+                  "last_user_text": "我要查詢報價單，報價單編號：QT-20990101-001",
+                  "clarify_source_text": ""
+                }
+              },
+              {
+                "author": "classify_intent",
+                "content": {
+                  "parts": [
+                    {
+                      "text": "{\n  \"intent\": \"get_quotation\",\n  \"quotation_number\": \"QT-20990101-001\",\n  \"customer_name\": \"\",\n  \"new_pricing_factor\": null,\n  \"target_total_price\": null\n}"
+                    }
+                  ],
+                  "role": "model"
+                },
+                "event_time": "2026-10-18T03:46:20.142743Z"
+              },
+              {
+                "author": "quotation_agent",
+                "event_time": "2026-10-18T03:46:29.339638Z",
+                "state_delta": {
+                  "pending_intent": null
+                }
+              },
+              {
+                "author": "quotation_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "text": "操作失敗：找不到報價單編號 QT-20990101-001"
+                    }
+                  ],
+                  "role": "model"
+                },
+                "event_time": "2026-10-18T03:46:29.442696Z"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "prompt": {
+        "parts": [
+          {
+            "text": "請用 Markdown 格式給我報價單 QT-20260330-001 的連結"
+          }
+        ],
+        "role": "user"
+      },
+      "responses": [
+        {
+          "response": {
+            "parts": [
+              {
+                "text": "報價單編號: QT-20260330-001\n客戶: 魔女宅急便股份有限公司\n客戶等級: new\n報價因子: 0.95\n總價: 6175\n利潤: 2375 (利潤率: 0.3846)\n狀態: draft\n備註: 測試用草稿 - 可供刪除測試\n品項:\n  1. A4影印紙 80磅 (5包/箱) — 單價: 617.5, 數量: 10, 小計: 6175\n系統連結: http://localhost:53000/quotations/12"
+              }
+            ],
+            "role": "model"
+          }
+        }
+      ],
+      "reference": {
+        "response": {
+          "parts": [
+            {
+              "text": "回覆報價單內容，連結仍是純文字 http://... 形式，不使用 [文字](網址) 語法。"
+            }
+          ],
+          "role": "model"
+        }
+      },
+      "eval_case_id": "markdown_request",
+      "agent_data": {
+        "turns": [
+          {
+            "turn_index": 0,
+            "turn_id": "turn_0",
+            "events": [
+              {
+                "author": "quotation_agent",
+                "event_time": "2026-10-18T03:46:29.562858Z",
+                "state_delta": {
+                  "last_user_text": "請用 Markdown 格式給我報價單 QT-20260330-001 的連結",
+                  "clarify_source_text": ""
+                }
+              },
+              {
+                "author": "classify_intent",
+                "content": {
+                  "parts": [
+                    {
+                      "text": "{\n  \"intent\": \"get_quotation\",\n  \"quotation_number\": \"QT-20260330-001\",\n  \"customer_name\": \"\",\n  \"new_pricing_factor\": null,\n  \"target_total_price\": null\n}"
+                    }
+                  ],
+                  "role": "model"
+                },
+                "event_time": "2026-10-18T03:46:29.566919Z"
+              },
+              {
+                "author": "quotation_agent",
+                "event_time": "2026-10-18T03:46:43.516087Z",
+                "state_delta": {
+                  "pending_intent": null
+                }
+              },
+              {
+                "author": "quotation_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "text": "報價單編號: QT-20260330-001\n客戶: 魔女宅急便股份有限公司\n客戶等級: new\n報價因子: 0.95\n總價: 6175\n利潤: 2375 (利潤率: 0.3846)\n狀態: draft\n備註: 測試用草稿 - 可供刪除測試\n品項:\n  1. A4影印紙 80磅 (5包/箱) — 單價: 617.5, 數量: 10, 小計: 6175\n系統連結: http://localhost:53000/quotations/12"
+                    }
+                  ],
+                  "role": "model"
+                },
+                "event_time": "2026-10-18T03:46:43.585896Z"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

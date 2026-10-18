@@ -1,5 +1,7 @@
 # EZStore
 
+This version retains the six instructor operations and Agent architecture, with explicitly disclosed user-requested fixes in backend, frontend and MCP. Those trees differ from instructor baseline `09f6588`; this does not imply instructor approval. `python scripts/check_assignment.py` reports strict differences; `--allow-user-fixes` permits only the documented repair files. See [current status, deviations and latest results](reports/目前狀態.md).
+
 > A lightweight B2B quotation and order management system.
 
 [中文版](README.zh-TW.md)
@@ -342,8 +344,8 @@ agents-cli eval run --dataset tests/eval/datasets/quotation-guardrails.json  # 2
 cd .. && python3 scripts/grading/grade_agent.py --suite scripts/grading/student-suite.json   # 0–100 self-acceptance score
 ```
 
-The four metrics in `agent/tests/eval/eval_config.yaml` (`custom_response_quality`, `link_present`, `refusal_or_action`, `agent_turn_count`) all run locally as custom functions, so they work with an AI Studio key or a local model. Two notes for machines without a GCP project:
-- `agents-cli eval grade` still builds a Google Cloud Storage client at start-up and needs Application Default Credentials. Without `gcloud`, point `GOOGLE_APPLICATION_CREDENTIALS` at a placeholder `authorized_user` JSON file; it is never used to read local datasets.
+The four metrics in `agent/tests/eval/eval_config.yaml` use custom functions with AI Studio or local-model adapters. This does not remove the installed CLI’s own evaluation requirements:
+- The tested cloud prompt-metric path in `agents-cli` v1.10.0 stopped because it could not resolve a GCP project. That path also needs authorized cloud credentials, such as ADC. This does not make every evaluation cloud-only or imply a course requirement to purchase cloud services: the workshop allows AI Studio API keys, and the TA uses a private grading suite. See `scripts/local_eval/README.md` for the distinction.
 - A local model served with a single slot needs `agents-cli eval run --concurrency 1`.
 
 Trustworthiness evaluation labs for learners: [eval-lab-quick.md](eval-lab-quick.md) (25 min, in class) and [eval-lab.md](eval-lab.md) (60–90 min, full version). Results of the full lab for this agent and the one-page report: [reports/可信賴度報告.md](reports/可信賴度報告.md) (Chinese).
@@ -582,3 +584,5 @@ agents-cli eval run                       # LLM-judged eval over tests/eval/data
 
 **Adding a new entity:**
 Follow the existing pattern: model → repository → service → handler → route. Each entity has its own file in each layer. Reference `customer` as the simplest complete example.
+
+If Docker Desktop cannot mount the source drive on Windows, run `.\scripts\start-homework.ps1 -DockerBindCache "$env:LOCALAPPDATA\EZStore\docker-bind-cache"`. Each Start refreshes scripts and knowledge snapshots and builds the services while retaining the database. The selected cache path is remembered. After knowledge edits or a real human signature, run `-Action SyncKnowledge` and open a new conversation. Without a configured cache, direct mounts are used.

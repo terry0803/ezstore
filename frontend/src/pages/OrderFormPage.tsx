@@ -6,8 +6,6 @@ import type { OrderCreateInput } from '../api/orderApi';
 import { customerApi } from '../api/customerApi';
 import { productApi } from '../api/productApi';
 import type { Customer, Product } from '../types';
-import ErrorMessage from '../components/shared/ErrorMessage';
-import { apiErrorMessage } from '../api/errors';
 
 interface ItemRow {
   product_id: number;
@@ -35,7 +33,7 @@ export default function OrderFormPage() {
     queryFn: () => productApi.list(1, 100),
   });
 
-  const { data: order, error: loadError } = useQuery({
+  const { data: order } = useQuery({
     queryKey: ['order', id],
     queryFn: () => orderApi.get(Number(id)),
     enabled: isEdit,
@@ -96,7 +94,6 @@ export default function OrderFormPage() {
   return (
     <div>
       <h2 className="text-2xl font-bold mb-6">{isEdit ? '編輯訂單' : '新增訂單'}</h2>
-      <ErrorMessage error={loadError} action="讀取訂單" />
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="bg-white p-6 rounded-lg shadow space-y-4">
@@ -200,11 +197,11 @@ export default function OrderFormPage() {
         </div>
 
         {mutation.error && (
-          <p className="text-red-500 text-sm">{apiErrorMessage(mutation.error)}</p>
+          <p className="text-red-500 text-sm">{(mutation.error as Error).message}</p>
         )}
 
         <div className="flex gap-2">
-          <button type="submit" disabled={mutation.isPending || (isEdit && !order)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+          <button type="submit" disabled={mutation.isPending} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
             {mutation.isPending ? '儲存中...' : '儲存'}
           </button>
           <button type="button" onClick={() => navigate('/orders')} className="px-4 py-2 border rounded-lg hover:bg-gray-50">

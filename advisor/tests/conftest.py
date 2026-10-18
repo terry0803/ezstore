@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from pricing_advisor.backend import Backend
 
 os.environ["PYTHON_DOTENV_DISABLED"] = "1"
 os.environ.setdefault("AGENT_MODEL", "gemini-3.8-flash")
@@ -17,7 +18,7 @@ BUNDLE = ROOT / "knowledge" / "ezstore"
 SNAPSHOT = json.loads((Path(__file__).parent / "fixtures" / "seed_snapshot.json").read_text(encoding="utf-8"))
 
 
-class FakeBackend:
+class FakeBackend(Backend):
     """只回測試資料快照，不連網路。"""
 
     base_url = "http://backend:8080/api/v1"
@@ -25,6 +26,12 @@ class FakeBackend:
     def __init__(self, quotations=None, orders=None):
         self.quotations = quotations if quotations is not None else SNAPSHOT["quotations"]
         self.orders = orders if orders is not None else SNAPSHOT["orders_by_customer"]
+        self.products = {i['product_id']: {'cost': i['product_cost'], 'list_price': i['list_price']}
+                         for q in SNAPSHOT['quotations'].values() for i in q['items']}
+
+    async def _get(self, path, **params):
+        assert path.startswith('/products/')
+        return self.products[int(path.rsplit('/', 1)[1])]
 
     def url(self, path):
         return f"{self.base_url}{path}"
@@ -58,6 +65,13 @@ def fake_backend():
 @pytest.fixture
 def snapshot():
     return SNAPSHOT
+
+
+@pytest.fixture(autouse=True)
+def isolated_conversion_state(monkeypatch):
+    from pricing_advisor import agent
+    monkeypatch.setattr(agent, '_CONVERT_UNCERTAIN', {})
+    monkeypatch.setattr(agent, '_CONVERT_LOCKS', {})
 
 
 @pytest.fixture(autouse=True)

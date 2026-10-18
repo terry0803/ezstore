@@ -136,3 +136,22 @@ async def test_parameters_are_checked(bundle_path, fake_backend):
         await run_price_change_impact(bundle, fake_backend, "QT-20260325-001", "很多")
     with pytest.raises(ComputationError, match="找不到"):
         await run_price_change_impact(bundle, fake_backend, "QT-20990101-001", 1000)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('price,factor,quantity,total,target', [
+    ('650','0.3333',3,'649.95',649.95),
+    ('1','1.0050',3,'3.03',3.015),
+    ('0.01','0.5000',1000,'10.00',5),
+])
+async def test_cent_rounding_matches_quote_and_attestation(bundle_path, fake_backend, price, factor, quantity, total, target):
+    q=copy.deepcopy(await fake_backend.find_quotation('QT-20260330-001'))
+    q.update(pricing_factor=factor,total_price=total,profit_amount=total)
+    q['items']=[{'list_price':price,'product_cost':'0','quantity':quantity}]
+    fake_backend.quotations={q['quotation_number']:q}
+    bundle=Bundle(bundle_path)
+    receipt=await run_price_change_impact(bundle,fake_backend,q['quotation_number'],target)
+    assert receipt['result']['current_total']==total
+    assert receipt['result']['new_total']==total
+    assert receipt['result']['stored_mismatch']==[]
+    assert attest_receipt(bundle,receipt)['ok']

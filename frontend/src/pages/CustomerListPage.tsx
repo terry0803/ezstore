@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { customerApi } from '../api/customerApi';
 import DataTable from '../components/shared/DataTable';
-import ErrorMessage from '../components/shared/ErrorMessage';
 import Pagination from '../components/shared/Pagination';
 import ConfirmDialog from '../components/shared/ConfirmDialog';
 import type { Customer } from '../types';
@@ -29,7 +28,7 @@ export default function CustomerListPage() {
   const [search, setSearch] = useState('');
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['customers', page, search],
     queryFn: () => customerApi.list(page, 20, search),
   });
@@ -40,8 +39,6 @@ export default function CustomerListPage() {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       setDeleteId(null);
     },
-    // 失敗也關掉確認框，讓下面的錯誤訊息看得到
-    onError: () => setDeleteId(null),
   });
 
   const columnsWithActions: Column<Customer>[] = columns.map(col => {
@@ -91,8 +88,6 @@ export default function CustomerListPage() {
         />
       </div>
 
-      <ErrorMessage error={error} action="讀取客戶清單" />
-      <ErrorMessage error={deleteMutation.error} action="刪除客戶" />
       <DataTable columns={columnsWithActions} data={data?.data ?? []} loading={isLoading} />
       <Pagination
         page={page}

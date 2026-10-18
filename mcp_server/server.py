@@ -10,9 +10,7 @@
 - 後端錯誤一律轉成中文 ToolError，不把 traceback 丟給 Agent。
 """
 
-import math
 import os
-from decimal import ROUND_HALF_UP, Decimal
 
 import httpx
 from mcp.server import MCPServer
@@ -28,8 +26,6 @@ API_BASE = f"{BACKEND_URL}/api/v1"
 BISECT_MAX_ITERATIONS = 20
 BISECT_LOW, BISECT_HIGH = 0.01, 5.0
 BISECT_TOLERANCE = 0.01
-# 後端 pricing_factor 欄位是 decimal(5,4)：只存到小數 4 位，最大 9.9999
-MAX_PRICING_FACTOR = Decimal("9.9999")
 
 mcp = MCPServer("ezstore-quotation")
 
@@ -63,17 +59,19 @@ async def _get(path: str, **params) -> dict:
     return await _request("GET", path, params=params)
 
 
-async def _all_pages(path: str, **params) -> list[dict]:
-    """Read the complete backend result instead of presenting page one as all rows."""
-    rows = []
+async def _all_rows(path: str, **params) -> list[dict]:
+    """Never silently claim a first page is the full result."""
+    rows = {}
     page = 1
     while True:
-        data = await _get(path, **params, page=page, page_size=100)
-        batch = data.get("data") or []
-        rows.extend(batch)
-        total = data.get("total")
-        if not batch or (isinstance(total, int) and len(rows) >= total) or len(batch) < 100:
-            return rows
+        result = await _get(path, page=page, page_size=100, **params)
+        previous = len(rows)
+        for row in result.get("data") or []:
+            rows[row["id"]] = row
+        if len(rows) >= result["total"]:
+            return list(rows.values())
+        if len(rows) == previous:
+            raise ToolError("清單沒有完整載入，請稍後重新查詢")
         page += 1
 
 
@@ -162,16 +160,17 @@ async def _find_quotation_by_number(quotation_number: str) -> dict | None:
 
 
 async def _find_customer_by_name(customer_name: str) -> dict | None:
-    """依客戶名稱查詢；多個模糊結果時不任選一位客戶。"""
-    customers = await _all_pages("/customers", search=customer_name)
+    """Prefer an exact name; an ambiguous partial name requires clarification."""
+    customers = await _all_rows("/customers", search=customer_name)
     if not customers:
         return None
-    exact = [c for c in customers if c.get("name", "").casefold() == customer_name.casefold()]
+    exact = [c for c in customers if c.get("name") == customer_name]
     if len(exact) == 1:
         return exact[0]
-    if not exact and len(customers) == 1:
-        return customers[0]
-    raise ToolError("找到多位符合名稱的客戶，請提供可唯一識別的完整客戶名稱；目前沒有選取任何客戶。")
+    if len(customers) > 1:
+        names = "、".join(c["name"] for c in customers[:10])
+        raise ToolError(f"找到多個符合的客戶：{names}。請提供唯一的完整客戶名稱。")
+    return customers[0]
 
 
 async def _require_quotation(quotation_number: str) -> dict:
@@ -220,7 +219,7 @@ async def list_customer_quotations(customer_name: str) -> str:
     if not customer:
         raise ToolError(f"找不到客戶名稱包含「{customer_name}」的客戶")
 
-    quotations = await _all_pages("/quotations", customer_id=customer["id"])
+    quotations = await _all_rows("/quotations", customer_id=customer["id"])
     if not quotations:
         return f"客戶「{customer['name']}」目前沒有任何報價單"
 
@@ -251,14 +250,10 @@ async def update_pricing_factor(quotation_number: str, new_pricing_factor: float
 
     Args:
         quotation_number: 要修改的報價單編號，例如 QT-20260330-001
-        new_pricing_factor: 新的報價因子數值，例如 0.85；範圍 0.0001 到 9.9999，後端只存到小數 4 位
+        new_pricing_factor: 新的報價因子數值，例如 0.85
     """
-    if not math.isfinite(new_pricing_factor) or new_pricing_factor <= 0:
-        raise ToolError("報價因子必須是大於 0 的有限數字")
-    # 複製之前先檢查範圍：後端存不下的值，複製完才失敗會留下一張沒用的草稿
-    factor = Decimal(str(new_pricing_factor)).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
-    if factor <= 0 or factor > MAX_PRICING_FACTOR:
-        raise ToolError("報價因子必須在 0.0001 到 9.9999 之間（後端只存到小數 4 位）")
+    if new_pricing_factor <= 0:
+        raise ToolError("報價因子必須大於 0")
 
     q = await _require_quotation(quotation_number)
     new_q = await _duplicate(q)
@@ -267,7 +262,7 @@ async def update_pricing_factor(quotation_number: str, new_pricing_factor: float
         f"/quotations/{new_q['id']}",
         {
             "customer_id": new_q["customer_id"],
-            "pricing_factor": float(factor),
+            "pricing_factor": new_pricing_factor,
             "notes": new_q.get("notes", ""),
             "items": _items_input(new_q),
         },
@@ -290,8 +285,8 @@ async def adjust_total_price(quotation_number: str, target_total_price: float) -
         quotation_number: 要修改的報價單編號，例如 QT-20260330-001
         target_total_price: 目標總價數值，例如 100000
     """
-    if not math.isfinite(target_total_price) or target_total_price <= 0:
-        raise ToolError("目標總價必須是大於 0 的有限數字")
+    if target_total_price <= 0:
+        raise ToolError("目標總價必須大於 0")
 
     q = await _require_quotation(quotation_number)
     new_q = await _duplicate(q)

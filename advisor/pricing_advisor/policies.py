@@ -107,11 +107,10 @@ def gate_numbers(result: dict[str, Any], conservative: bool = True) -> tuple[Dec
     最後也可能停在比試算少一格的報價因子。改價前的判斷用比較不利的那一組數字；
     改完之後核對實際的報價單時（conservative=False），因子已經確定，不再扣一格。
     """
-    list_total = Decimal(result["list_total"])
     cost_total = Decimal(result["cost_total"])
-    factor = Decimal(result["new_factor"])
+    factor = Decimal(result["new_factor"] if conservative else result["current_factor"])
     low_factor = max(factor - FACTOR_STEP, FACTOR_STEP) if conservative else factor
-    total = list_total * low_factor
+    total = Decimal(result["conservative_total"] if conservative else result["current_total"])
     margin = (total - cost_total) / total if total else Decimal(-1)
     return margin, low_factor, factor
 
@@ -122,7 +121,7 @@ def evaluate_price_change(
     """result 是改價影響試算（已通過 attester）的結果。"""
     now = now or utc_now()
     decision = PriceDecision(approval="none")
-    shown_margin = Decimal(result["new_margin"])
+    shown_margin = Decimal(result["new_margin"] if conservative else result["current_margin"])
     margin, low_factor, factor = gate_numbers(result, conservative)
     level = str(result.get("customer_level") or "")
     usable: set[str] = set()

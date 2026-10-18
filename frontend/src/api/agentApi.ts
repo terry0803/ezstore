@@ -71,16 +71,15 @@ export async function sendMessageSSE(
   onText: (text: string) => void,
   onDone: () => void,
   onError: (err: Error) => void,
-  renewSession?: () => Promise<string>,
 ): Promise<void> {
   try {
-    const request = (currentSessionId: string) => fetch(`${AGENT_BASE}/run_sse`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+    const resp = await fetch(`${AGENT_BASE}/run_sse`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         app_name: appName,
         user_id: userId,
-        session_id: currentSessionId,
+        session_id: sessionId,
         new_message: {
           role: 'user',
           parts: [{ text: message }],
@@ -88,13 +87,6 @@ export async function sendMessageSSE(
         streaming: true,
       }),
     });
-    let resp = await request(sessionId);
-
-    // ADK sessions are in memory. A container restart invalidates the ID held
-    // by an already-open browser tab, so create one new session and retry once.
-    if (resp.status === 404 && renewSession) {
-      resp = await request(await renewSession());
-    }
 
     if (!resp.ok) {
       throw new Error(`Agent request failed: ${resp.status}`);
@@ -147,6 +139,9 @@ export async function sendMessageSSE(
       }
     }
 
+    if (!accumulated.trim()) {
+      throw new Error('Agent 未回傳最終回覆，操作結果尚未確認。請先查詢單據，再決定是否重試。');
+    }
     onDone();
   } catch (err) {
     onError(err instanceof Error ? err : new Error(String(err)));

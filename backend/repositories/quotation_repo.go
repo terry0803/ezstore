@@ -1,11 +1,8 @@
 package repositories
 
 import (
-	"errors"
-
 	"github.com/cshliu/ezstore/backend/models"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type QuotationRepository struct {
@@ -57,51 +54,21 @@ func (r *QuotationRepository) Create(quotation *models.Quotation) error {
 
 func (r *QuotationRepository) Update(quotation *models.Quotation) error {
 	return r.DB.Transaction(func(tx *gorm.DB) error {
-		// Serialize the complete replacement, including deletion of old items.
-		// Locking only when Save updates the header is too late: two deletes
-		// can share an old snapshot and leave both replacement item lists.
-		var current models.Quotation
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&current, quotation.ID).Error; err != nil {
-			return err
-		}
-		if current.Status == "published" {
-			return errors.New("已發佈的報價單不可修改")
-		}
 		// Hard delete existing items (items don't use soft delete)
 		if err := tx.Unscoped().Where("quotation_id = ?", quotation.ID).Delete(&models.QuotationItem{}).Error; err != nil {
 			return err
 		}
 		// Save quotation with new items
-		// Customer is a preloaded read snapshot. Saving it would replace the
-		// requested CustomerID with that snapshot's old ID.
-		return tx.Omit("Customer").Save(quotation).Error
+		return tx.Save(quotation).Error
 	})
 }
 
 func (r *QuotationRepository) UpdateStatus(id uint, status string) error {
-	return r.DB.Transaction(func(tx *gorm.DB) error {
-		var current models.Quotation
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&current, id).Error; err != nil {
-			return err
-		}
-		if current.Status == "published" {
-			return errors.New("報價單已經發佈")
-		}
-		return tx.Model(&current).Update("status", status).Error
-	})
+	return r.DB.Model(&models.Quotation{}).Where("id = ?", id).Update("status", status).Error
 }
 
 func (r *QuotationRepository) Delete(id uint) error {
-	return r.DB.Transaction(func(tx *gorm.DB) error {
-		var current models.Quotation
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&current, id).Error; err != nil {
-			return err
-		}
-		if current.Status == "published" {
-			return errors.New("已發佈的報價單不可刪除")
-		}
-		return tx.Delete(&current).Error
-	})
+	return r.DB.Delete(&models.Quotation{}, id).Error
 }
 
 func (r *QuotationRepository) CountToday() (int64, error) {

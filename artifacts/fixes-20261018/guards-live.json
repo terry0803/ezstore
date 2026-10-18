@@ -1,0 +1,3925 @@
+{
+  "model": "openai/qwen3.5-9b",
+  "isolated_backend": "http://127.0.0.1:58080/api/v1",
+  "summary": {
+    "complete": true,
+    "expected_cases": 19,
+    "cases_completed": 19,
+    "cases_passed": 19,
+    "turns": 22,
+    "visible_model_events": 23,
+    "prompt_tokens": 20647,
+    "candidate_tokens": 1381,
+    "total_tokens": 22028
+  },
+  "attempt_failures": [],
+  "results": [
+    {
+      "case": "first_howto",
+      "passed": true,
+      "seconds": 11.83,
+      "turns": [
+        {
+          "app": "quotation_agent",
+          "session_id": "30365ec9-2383-4c70-88c4-119b262ba091",
+          "user": "請問如何複製報價單 QT-20260330-001",
+          "reply": "這句是在問做法或假設的情況，我沒有執行任何操作。\n要我實際操作，請直接說，例如「我要複製報價單，報價單編號：QT-20260330-001」。",
+          "events": [
+            {
+              "invocationId": "e-82fc4f47-cf6b-4aa5-b3c9-8008e0a96f61",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {
+                  "last_user_text": "請問如何複製報價單 QT-20260330-001",
+                  "clarify_source_text": ""
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "classify"
+              },
+              "output": "待補的前一輪操作：無\n使用者這一句：請問如何複製報價單 QT-20260330-001",
+              "nodeInfo": {
+                "path": "quotation_agent@1/load_context@1",
+                "outputFor": [
+                  "quotation_agent@1/load_context@1"
+                ]
+              },
+              "id": "62262de9-0221-4bc4-aab7-aaf13e52a664",
+              "timestamp": 1792294511.4870045
+            },
+            {
+              "modelVersion": "qwen3.5-9b",
+              "content": {
+                "parts": [
+                  {
+                    "text": "{\n  \"intent\": \"duplicate_quotation\",\n  \"quotation_number\": \"QT-20260330-001\",\n  \"customer_name\": \"\",\n  \"new_pricing_factor\": null,\n  \"target_total_price\": null\n}"
+                  }
+                ],
+                "role": "model"
+              },
+              "partial": false,
+              "finishReason": "STOP",
+              "usageMetadata": {
+                "cachedContentTokenCount": 436,
+                "candidatesTokenCount": 63,
+                "promptTokenCount": 480,
+                "totalTokenCount": 543
+              },
+              "invocationId": "e-82fc4f47-cf6b-4aa5-b3c9-8008e0a96f61",
+              "author": "classify_intent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": {
+                "intent": "duplicate_quotation",
+                "quotation_number": "QT-20260330-001",
+                "customer_name": ""
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/classify_intent@1",
+                "outputFor": [
+                  "quotation_agent@1/classify_intent@1"
+                ]
+              },
+              "id": "6f605630-3593-46e4-a4d4-96d5496f45c7",
+              "timestamp": 1792294511.4898965
+            },
+            {
+              "invocationId": "e-82fc4f47-cf6b-4aa5-b3c9-8008e0a96f61",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {
+                  "pending_intent": null,
+                  "clarify_source_text": ""
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "off_topic"
+              },
+              "output": "這句是在問做法或假設的情況，我沒有執行任何操作。\n要我實際操作，請直接說，例如「我要複製報價單，報價單編號：QT-20260330-001」。",
+              "nodeInfo": {
+                "path": "quotation_agent@1/route@1",
+                "outputFor": [
+                  "quotation_agent@1/route@1"
+                ]
+              },
+              "id": "16b5d9fc-4996-43d0-a967-82d33fda3342",
+              "timestamp": 1792294522.6278515
+            },
+            {
+              "invocationId": "e-82fc4f47-cf6b-4aa5-b3c9-8008e0a96f61",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "這句是在問做法或假設的情況，我沒有執行任何操作。\n要我實際操作，請直接說，例如「我要複製報價單，報價單編號：QT-20260330-001」。",
+              "nodeInfo": {
+                "path": "quotation_agent@1/off_topic@1",
+                "outputFor": [
+                  "quotation_agent@1/off_topic@1"
+                ]
+              },
+              "id": "a681a12b-1235-45e2-a979-23ab2b5e48b5",
+              "timestamp": 1792294522.6319542
+            },
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "這句是在問做法或假設的情況，我沒有執行任何操作。\n要我實際操作，請直接說，例如「我要複製報價單，報價單編號：QT-20260330-001」。"
+                  }
+                ],
+                "role": "model"
+              },
+              "invocationId": "e-82fc4f47-cf6b-4aa5-b3c9-8008e0a96f61",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/respond@1"
+              },
+              "id": "610dc283-6d9a-4754-a9f0-7909f2a0a023",
+              "timestamp": 1792294522.6343267
+            },
+            {
+              "invocationId": "e-82fc4f47-cf6b-4aa5-b3c9-8008e0a96f61",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "這句是在問做法或假設的情況，我沒有執行任何操作。\n要我實際操作，請直接說，例如「我要複製報價單，報價單編號：QT-20260330-001」。",
+              "nodeInfo": {
+                "path": "quotation_agent@1/respond@1",
+                "outputFor": [
+                  "quotation_agent@1/respond@1",
+                  "quotation_agent@1"
+                ]
+              },
+              "id": "53e97b97-30ff-42df-9f3b-21543584b725",
+              "timestamp": 1792294522.635839
+            }
+          ]
+        }
+      ],
+      "database_checks": [
+        {
+          "type": "no_write",
+          "before_after_sha256": "164f92da85a317393c1a1c6388a6644fd4f5f7c81d9ebed9321ec9ee488185a5"
+        }
+      ]
+    },
+    {
+      "case": "advisor_howto",
+      "passed": true,
+      "seconds": 13.17,
+      "turns": [
+        {
+          "app": "pricing_advisor",
+          "session_id": "3f377a70-a49f-4ce6-b055-9153fc41df0f",
+          "user": "請問如何複製報價單 QT-20260330-001",
+          "reply": "這句是在問做法或假設的情況，我沒有操作任何資料。\n要我實際做，請直接說，例如「幫我複製報價單 QT-20260330-001」。",
+          "events": [
+            {
+              "invocationId": "e-c5054242-ba01-4889-bac2-76c25ae524a8",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "last_user_text": "請問如何複製報價單 QT-20260330-001"
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "classify"
+              },
+              "output": "知識目錄（id｜標題｜描述）：\ncomputations/price-change-impact｜改價影響試算｜給報價單編號與目標總價，算出要用的報價因子、改價後的總價、利潤與毛利率，也標出目標是不是超出可調範圍。\nglossary/pricing-factor｜報價因子（pricing_factor）｜報價單上的折扣倍率，單價 = 定價 × 報價因子。\nglossary/profit-rate｜毛利率（profit_rate）｜利潤除以總價；利潤是總價減掉品項成本。改價核准就是看這個數字。\nplaybooks/price-negotiation｜業務議價處理流程｜客戶要求降價或轉訂單時，議價顧問 Agent 和業務照這個順序處理。\npolicies/discount-approval｜改價核准層級（2026 年版）｜依改價後的毛利率決定業務能不能自己改、要誰核准，毛利率低於 5% 不可報價。\npolicies/discount-approval-2025｜改價核准層級（2025 年版，已作廢）（已作廢）｜舊版的毛利率核准門檻，已由 2026 年版取代，只留著對照，不可再用。\npolicies/order-conversion｜報價單轉訂單規則｜只有已發佈的報價單可以轉訂單，同一張報價單不重複轉。\npolicies/pricing-factor-floor｜報價因子下限｜各客戶等級的報價因子最低可以到多少，低於下限要業務主管核准。\npolicies/promo-2026q3｜2026 第三季新客戶優惠（已過期）｜2026 年第三季把 new 等級客戶的報價因子下限暫時降到 0.85，10 月 1 日起失效。\nsystem/backend-api｜EZStore 後端 REST API（報價與訂單）｜報價單、訂單、客戶與預設報價因子的 REST 端點，以及查詢參數。\nsystem/customer-levels｜客戶等級與預設報價因子｜vip、standard、new 三種客戶等級各自的預設報價因子，以及查詢用的 API。\nsystem/mcp-tools｜EZStore MCP Server 的 6 個報價單工具｜報價單 Agent 背後的 6 個 MCP 工具、先複製再改的做法，以及改總價的二分法設定。\nsystem/orders-table｜訂單資料表（orders、order_items）｜訂單欄位、和報價單的關聯，以及測試資料裡已經轉成訂單的報價單。\nsystem/pricing-formula｜報價金額怎麼算｜單價、小計、總價、利潤與利潤率的計算方式、後端什麼時候會重算，以及已發佈的報價單不能修改或刪除。\nsystem/quotation-agent｜報價單 Agent（quotation_agent）｜第一個 Agent 的 A2A 介面：agent card 位置、6 個 skill、該怎麼下指令、回覆長什麼樣子。\nsystem/quotations-table｜報價單資料表（quotations、quotation_items）｜報價單與報價品項的欄位、狀態，以及測試資料裡存值和重算不一致的報價單。\n\n前一輪：無\n使用者這一句：請問如何複製報價單 QT-20260330-001",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/load_context@1",
+                "outputFor": [
+                  "pricing_advisor@1/load_context@1"
+                ]
+              },
+              "id": "a2162854-3c62-448d-942c-0cce2dc88a73",
+              "timestamp": 1792294523.7243762
+            },
+            {
+              "modelVersion": "qwen3.5-9b",
+              "content": {
+                "parts": [
+                  {
+                    "text": "{\n  \"intent\": \"quotation_request\",\n  \"quotation_number\": \"QT-20260330-001\",\n  \"target_total\": null,\n  \"concept_ids\": []\n}"
+                  }
+                ],
+                "role": "model"
+              },
+              "partial": false,
+              "finishReason": "STOP",
+              "usageMetadata": {
+                "cachedContentTokenCount": 615,
+                "candidatesTokenCount": 53,
+                "promptTokenCount": 1089,
+                "totalTokenCount": 1142
+              },
+              "invocationId": "e-c5054242-ba01-4889-bac2-76c25ae524a8",
+              "author": "understand",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": {
+                "intent": "quotation_request",
+                "quotation_number": "QT-20260330-001",
+                "concept_ids": []
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/understand@1",
+                "outputFor": [
+                  "pricing_advisor@1/understand@1"
+                ]
+              },
+              "id": "8197a646-70a2-4234-8540-dbdd57b4dc82",
+              "timestamp": 1792294523.7318282
+            },
+            {
+              "invocationId": "e-c5054242-ba01-4889-bac2-76c25ae524a8",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "pending": null,
+                  "last_check": null
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "off_topic"
+              },
+              "output": "這句是在問做法或假設的情況，我沒有操作任何資料。\n要我實際做，請直接說，例如「幫我複製報價單 QT-20260330-001」。",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/route@1",
+                "outputFor": [
+                  "pricing_advisor@1/route@1"
+                ]
+              },
+              "id": "71854eb3-030f-4c05-b82a-01402eca3d27",
+              "timestamp": 1792294535.783186
+            },
+            {
+              "invocationId": "e-c5054242-ba01-4889-bac2-76c25ae524a8",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "這句是在問做法或假設的情況，我沒有操作任何資料。\n要我實際做，請直接說，例如「幫我複製報價單 QT-20260330-001」。",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/off_topic@1",
+                "outputFor": [
+                  "pricing_advisor@1/off_topic@1"
+                ]
+              },
+              "id": "0c227955-bd80-455d-88ba-8f69ea6c67cc",
+              "timestamp": 1792294535.7850497
+            },
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "這句是在問做法或假設的情況，我沒有操作任何資料。\n要我實際做，請直接說，例如「幫我複製報價單 QT-20260330-001」。"
+                  }
+                ],
+                "role": "model"
+              },
+              "invocationId": "e-c5054242-ba01-4889-bac2-76c25ae524a8",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/respond@1"
+              },
+              "id": "686e06e6-03a3-4053-8b12-aa963d646e3c",
+              "timestamp": 1792294535.786545
+            },
+            {
+              "invocationId": "e-c5054242-ba01-4889-bac2-76c25ae524a8",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "這句是在問做法或假設的情況，我沒有操作任何資料。\n要我實際做，請直接說，例如「幫我複製報價單 QT-20260330-001」。",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/respond@1",
+                "outputFor": [
+                  "pricing_advisor@1/respond@1",
+                  "pricing_advisor@1"
+                ]
+              },
+              "id": "0f0dcb6f-749c-4b0b-94b2-a5b13b5fe950",
+              "timestamp": 1792294535.786978
+            }
+          ]
+        }
+      ],
+      "database_checks": [
+        {
+          "type": "no_write",
+          "before_after_sha256": "164f92da85a317393c1a1c6388a6644fd4f5f7c81d9ebed9321ec9ee488185a5"
+        }
+      ]
+    },
+    {
+      "case": "advisor_howto_suffix",
+      "passed": true,
+      "seconds": 35.75,
+      "turns": [
+        {
+          "app": "pricing_advisor",
+          "session_id": "4a478b72-1f72-4727-9f45-01bca314e821",
+          "user": "複製報價單 QT-20260330-001 的操作流程是什麼？",
+          "reply": "複製報價單的操作是呼叫 `duplicate_quotation` 這個 skill，並一次提供報價單編號（例如 QT-20260330-001）給 Agent。系統會先建立一份新的報價單，原單內容不會被直接修改。複製出來的新單在備註欄位會自動寫上「複製自 QT-…」的來源資訊。\n\n依據（OKF 知識庫）：\n- system/quotation-agent：報價單 Agent（quotation_agent）（機器驗證，process:okf-verify 2026-10-18）\n- system/quotations-table：報價單資料表（quotations、quotation_items）（機器驗證，process:okf-verify 2026-10-18）",
+          "events": [
+            {
+              "invocationId": "e-38a7718e-5086-457a-8c25-c1632904c1de",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "last_user_text": "複製報價單 QT-20260330-001 的操作流程是什麼？"
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "classify"
+              },
+              "output": "知識目錄（id｜標題｜描述）：\ncomputations/price-change-impact｜改價影響試算｜給報價單編號與目標總價，算出要用的報價因子、改價後的總價、利潤與毛利率，也標出目標是不是超出可調範圍。\nglossary/pricing-factor｜報價因子（pricing_factor）｜報價單上的折扣倍率，單價 = 定價 × 報價因子。\nglossary/profit-rate｜毛利率（profit_rate）｜利潤除以總價；利潤是總價減掉品項成本。改價核准就是看這個數字。\nplaybooks/price-negotiation｜業務議價處理流程｜客戶要求降價或轉訂單時，議價顧問 Agent 和業務照這個順序處理。\npolicies/discount-approval｜改價核准層級（2026 年版）｜依改價後的毛利率決定業務能不能自己改、要誰核准，毛利率低於 5% 不可報價。\npolicies/discount-approval-2025｜改價核准層級（2025 年版，已作廢）（已作廢）｜舊版的毛利率核准門檻，已由 2026 年版取代，只留著對照，不可再用。\npolicies/order-conversion｜報價單轉訂單規則｜只有已發佈的報價單可以轉訂單，同一張報價單不重複轉。\npolicies/pricing-factor-floor｜報價因子下限｜各客戶等級的報價因子最低可以到多少，低於下限要業務主管核准。\npolicies/promo-2026q3｜2026 第三季新客戶優惠（已過期）｜2026 年第三季把 new 等級客戶的報價因子下限暫時降到 0.85，10 月 1 日起失效。\nsystem/backend-api｜EZStore 後端 REST API（報價與訂單）｜報價單、訂單、客戶與預設報價因子的 REST 端點，以及查詢參數。\nsystem/customer-levels｜客戶等級與預設報價因子｜vip、standard、new 三種客戶等級各自的預設報價因子，以及查詢用的 API。\nsystem/mcp-tools｜EZStore MCP Server 的 6 個報價單工具｜報價單 Agent 背後的 6 個 MCP 工具、先複製再改的做法，以及改總價的二分法設定。\nsystem/orders-table｜訂單資料表（orders、order_items）｜訂單欄位、和報價單的關聯，以及測試資料裡已經轉成訂單的報價單。\nsystem/pricing-formula｜報價金額怎麼算｜單價、小計、總價、利潤與利潤率的計算方式、後端什麼時候會重算，以及已發佈的報價單不能修改或刪除。\nsystem/quotation-agent｜報價單 Agent（quotation_agent）｜第一個 Agent 的 A2A 介面：agent card 位置、6 個 skill、該怎麼下指令、回覆長什麼樣子。\nsystem/quotations-table｜報價單資料表（quotations、quotation_items）｜報價單與報價品項的欄位、狀態，以及測試資料裡存值和重算不一致的報價單。\n\n前一輪：無\n使用者這一句：複製報價單 QT-20260330-001 的操作流程是什麼？",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/load_context@1",
+                "outputFor": [
+                  "pricing_advisor@1/load_context@1"
+                ]
+              },
+              "id": "3515a86c-342c-49e1-985b-5a8618105d48",
+              "timestamp": 1792294536.7825925
+            },
+            {
+              "modelVersion": "qwen3.5-9b",
+              "content": {
+                "parts": [
+                  {
+                    "text": "{\n  \"intent\": \"policy_question\",\n  \"quotation_number\": \"QT-20260330-001\",\n  \"target_total\": null,\n  \"concept_ids\": [\n    \"system/quotation-agent\",\n    \"system/mcp-tools\",\n    \"system/backend-api\"\n  ]\n}"
+                  }
+                ],
+                "role": "model"
+              },
+              "partial": false,
+              "finishReason": "STOP",
+              "usageMetadata": {
+                "cachedContentTokenCount": 615,
+                "candidatesTokenCount": 78,
+                "promptTokenCount": 1092,
+                "totalTokenCount": 1170
+              },
+              "invocationId": "e-38a7718e-5086-457a-8c25-c1632904c1de",
+              "author": "understand",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": {
+                "intent": "policy_question",
+                "quotation_number": "QT-20260330-001",
+                "concept_ids": [
+                  "system/quotation-agent",
+                  "system/mcp-tools",
+                  "system/backend-api"
+                ]
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/understand@1",
+                "outputFor": [
+                  "pricing_advisor@1/understand@1"
+                ]
+              },
+              "id": "28b5edda-236f-494d-bb31-f91a657c11ff",
+              "timestamp": 1792294536.7874837
+            },
+            {
+              "invocationId": "e-38a7718e-5086-457a-8c25-c1632904c1de",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "pending": null,
+                  "last_check": null
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "policy_question"
+              },
+              "output": {
+                "question": "複製報價單 QT-20260330-001 的操作流程是什麼？",
+                "concept_ids": [
+                  "system/quotation-agent",
+                  "system/quotations-table"
+                ]
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/route@1",
+                "outputFor": [
+                  "pricing_advisor@1/route@1"
+                ]
+              },
+              "id": "e51d9755-73f6-4ee4-80fb-572abb456bf4",
+              "timestamp": 1792294555.4722009
+            },
+            {
+              "invocationId": "e-38a7718e-5086-457a-8c25-c1632904c1de",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "kb_used": [
+                    "system/quotation-agent",
+                    "system/quotations-table"
+                  ],
+                  "kb_prompt_chars": 2257
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "answer"
+              },
+              "output": "問題：複製報價單 QT-20260330-001 的操作流程是什麼？\n\n[條目] id：system/quotation-agent｜標題：報價單 Agent（quotation_agent）｜狀態：現行｜信任：機器驗證，process:okf-verify 2026-10-18\n# 位置\n\n| 從哪裡連 | agent card | JSON-RPC 端點 |\n|---|---|---|\n| Compose 內部 | `http://agent:8080/a2a/quotation_agent/.well-known/agent-card.json` | `http://agent:8080/a2a/quotation_agent` |\n| 本機（經前端 nginx） | `http://localhost:3000/agent-api/a2a/quotation_agent/.well-known/agent-card.json` | `http://localhost:3000/agent-api/a2a/quotation_agent` |\n\nagent card 裡的位址是 Compose 內部的 `http://agent:8080/...`。經 nginx 連的時候，JSON-RPC 要送到取得 card 的同一個位址。\n\n# Skill 與例句\n\n| skill id | 例句 |\n|---|---|\n| `get_quotation` | 我要查詢報價單，報價單編號：QT-20260330-001 |\n| `list_customer_quotations` | 我要查詢客戶的報價單清單，客戶名稱：史塔克工業 |\n| `duplicate_quotation` | 我要複製報價單，報價單編號：QT-20260330-001 |\n| `update_pricing_factor` | 我要修改報價單報價因子，報價單編號：QT-20260330-001，報價因子改為 1.5 |\n| `adjust_total_price` | 我要修改報價單總價，報價單編號：QT-20260330-001，總價改為 8000 |\n| `convert_to_order` | 我要將報價單轉訂單，報價單編號：QT-20260330-001 |\n\n照例句的句型、一次給齊欄位，報價單 Agent 就不會追問。\n\n# 回覆\n\n- A2A task 完成時只有一個 artifact，內容就是 Chat UI 會看到的那段文字（respond 節點）。\n- 會改資料的操作都是先複製再改，原單不動，見 [MCP 工具](/system/mcp-tools.m\n\n[條目] id：system/quotations-table｜標題：報價單資料表（quotations、quotation_items）｜狀態：現行｜信任：機器驗證，process:okf-verify 2026-10-18\n# Schema\n\n`quotations`（一張報價單一筆）\n\n| 欄位 | 型別 | 說明 |\n|---|---|---|\n| `quotation_number` | varchar(50)，唯一 | 格式 `QT-YYYYMMDD-NNN` |\n| `customer_id` | uint | 客戶 |\n| `customer_level` | varchar(20) | 建單當下的客戶等級：`vip`、`standard`、`new` |\n| `pricing_factor` | decimal(5,4) | 報價因子 |\n| `total_price` | decimal(14,2) | 總價 |\n| `profit_amount` | decimal(14,2) | 利潤 |\n| `profit_rate` | decimal(5,4) | 利潤率 |\n| `status` | varchar(20) | `draft`（草稿）或 `published`（已發佈），預設 `draft` |\n| `notes` | text | 備註；複製出來的單會寫「複製自 QT-…」 |\n\n`quotation_items`（報價品項）\n\n| 欄位 | 說明 |\n|---|---|\n| `product_id`、`product_name` | 產品與名稱快照 |\n| `product_cost`、`list_price` | 建單當下的成本與定價快照 |\n| `unit_price`、`quantity`、`subtotal` | 單價、數量、小計 |\n\n計算方式見 [報價金額怎麼算](/system/pricing-formula.md)。\n\n# 測試資料的不一致\n\n2026-10-17 用後端 API 讀出 12 張報價單、依品項重算後比對：\n\n- QT-20260115-001 存的總價是 253500，品項小計加起來是 253350。\n- 7 張存的利潤和重算不同：QT-20260115-001（存 72000、重算 66150）、QT-20260120-001（82120、86570）、QT-20260210-001（21320、22720）、QT-20260218-001（39450、52130）、QT-20260325-001（66060、68060",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/retrieve_knowledge@1",
+                "outputFor": [
+                  "pricing_advisor@1/retrieve_knowledge@1"
+                ]
+              },
+              "id": "59261064-41b1-41ba-aa6c-aa05f19f5c72",
+              "timestamp": 1792294556.0916464
+            },
+            {
+              "modelVersion": "qwen3.5-9b",
+              "content": {
+                "parts": [
+                  {
+                    "text": "複製報價單的操作是呼叫 `duplicate_quotation` 這個 skill，並一次提供報價單編號（例如 QT-20260330-001）給 Agent。系統會先建立一份新的報價單，原單內容不會被直接修改。複製出來的新單在備註欄位會自動寫上「複製自 QT-…」的來源資訊。"
+                  }
+                ],
+                "role": "model"
+              },
+              "partial": false,
+              "finishReason": "STOP",
+              "usageMetadata": {
+                "cachedContentTokenCount": 1382,
+                "candidatesTokenCount": 82,
+                "promptTokenCount": 1386,
+                "totalTokenCount": 1468
+              },
+              "invocationId": "e-38a7718e-5086-457a-8c25-c1632904c1de",
+              "author": "answer_with_knowledge",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/answer_with_knowledge@1",
+                "outputFor": [
+                  "pricing_advisor@1/answer_with_knowledge@1"
+                ],
+                "messageAsOutput": true
+              },
+              "id": "d8a95832-365c-42f6-b6cb-329852512181",
+              "timestamp": 1792294556.0949967
+            },
+            {
+              "invocationId": "e-38a7718e-5086-457a-8c25-c1632904c1de",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "複製報價單的操作是呼叫 `duplicate_quotation` 這個 skill，並一次提供報價單編號（例如 QT-20260330-001）給 Agent。系統會先建立一份新的報價單，原單內容不會被直接修改。複製出來的新單在備註欄位會自動寫上「複製自 QT-…」的來源資訊。\n\n依據（OKF 知識庫）：\n- system/quotation-agent：報價單 Agent（quotation_agent）（機器驗證，process:okf-verify 2026-10-18）\n- system/quotations-table：報價單資料表（quotations、quotation_items）（機器驗證，process:okf-verify 2026-10-18）",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/cite_sources@1",
+                "outputFor": [
+                  "pricing_advisor@1/cite_sources@1"
+                ]
+              },
+              "id": "4307f969-016b-4f1d-bb11-747e0ac732ae",
+              "timestamp": 1792294571.529519
+            },
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "複製報價單的操作是呼叫 `duplicate_quotation` 這個 skill，並一次提供報價單編號（例如 QT-20260330-001）給 Agent。系統會先建立一份新的報價單，原單內容不會被直接修改。複製出來的新單在備註欄位會自動寫上「複製自 QT-…」的來源資訊。\n\n依據（OKF 知識庫）：\n- system/quotation-agent：報價單 Agent（quotation_agent）（機器驗證，process:okf-verify 2026-10-18）\n- system/quotations-table：報價單資料表（quotations、quotation_items）（機器驗證，process:okf-verify 2026-10-18）"
+                  }
+                ],
+                "role": "model"
+              },
+              "invocationId": "e-38a7718e-5086-457a-8c25-c1632904c1de",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/respond@1"
+              },
+              "id": "1fe995e9-d2b3-4f21-85b4-8aba621d4714",
+              "timestamp": 1792294571.5324917
+            },
+            {
+              "invocationId": "e-38a7718e-5086-457a-8c25-c1632904c1de",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "複製報價單的操作是呼叫 `duplicate_quotation` 這個 skill，並一次提供報價單編號（例如 QT-20260330-001）給 Agent。系統會先建立一份新的報價單，原單內容不會被直接修改。複製出來的新單在備註欄位會自動寫上「複製自 QT-…」的來源資訊。\n\n依據（OKF 知識庫）：\n- system/quotation-agent：報價單 Agent（quotation_agent）（機器驗證，process:okf-verify 2026-10-18）\n- system/quotations-table：報價單資料表（quotations、quotation_items）（機器驗證，process:okf-verify 2026-10-18）",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/respond@1",
+                "outputFor": [
+                  "pricing_advisor@1/respond@1",
+                  "pricing_advisor@1"
+                ]
+              },
+              "id": "c0ff463a-e5ad-40a3-9917-ed0f440dbb7f",
+              "timestamp": 1792294571.5329866
+            }
+          ]
+        }
+      ],
+      "database_checks": [
+        {
+          "type": "no_write",
+          "before_after_sha256": "164f92da85a317393c1a1c6388a6644fd4f5f7c81d9ebed9321ec9ee488185a5"
+        }
+      ]
+    },
+    {
+      "case": "english_alternatives",
+      "passed": true,
+      "seconds": 12.84,
+      "turns": [
+        {
+          "app": "pricing_advisor",
+          "session_id": "bc5a50dd-e23d-433c-b85a-252eef88fec4",
+          "user": "Change total of QT-20260325-001 to 200000 or 210000",
+          "reply": "請提供客戶想要的總價（大於 0 的數字，例如 180000），我才能幫你修改報價單總價。\n你給的金額不只一個，或寫法有兩種意思（例如「二百五」「18萬5」），我不自己挑。請只說一個總價，例如 250000。\n目前已知：報價單編號：QT-20260325-001",
+          "events": [
+            {
+              "invocationId": "e-375aaae6-eb6f-445c-8144-509a31e30491",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "last_user_text": "Change total of QT-20260325-001 to 200000 or 210000"
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "classify"
+              },
+              "output": "知識目錄（id｜標題｜描述）：\ncomputations/price-change-impact｜改價影響試算｜給報價單編號與目標總價，算出要用的報價因子、改價後的總價、利潤與毛利率，也標出目標是不是超出可調範圍。\nglossary/pricing-factor｜報價因子（pricing_factor）｜報價單上的折扣倍率，單價 = 定價 × 報價因子。\nglossary/profit-rate｜毛利率（profit_rate）｜利潤除以總價；利潤是總價減掉品項成本。改價核准就是看這個數字。\nplaybooks/price-negotiation｜業務議價處理流程｜客戶要求降價或轉訂單時，議價顧問 Agent 和業務照這個順序處理。\npolicies/discount-approval｜改價核准層級（2026 年版）｜依改價後的毛利率決定業務能不能自己改、要誰核准，毛利率低於 5% 不可報價。\npolicies/discount-approval-2025｜改價核准層級（2025 年版，已作廢）（已作廢）｜舊版的毛利率核准門檻，已由 2026 年版取代，只留著對照，不可再用。\npolicies/order-conversion｜報價單轉訂單規則｜只有已發佈的報價單可以轉訂單，同一張報價單不重複轉。\npolicies/pricing-factor-floor｜報價因子下限｜各客戶等級的報價因子最低可以到多少，低於下限要業務主管核准。\npolicies/promo-2026q3｜2026 第三季新客戶優惠（已過期）｜2026 年第三季把 new 等級客戶的報價因子下限暫時降到 0.85，10 月 1 日起失效。\nsystem/backend-api｜EZStore 後端 REST API（報價與訂單）｜報價單、訂單、客戶與預設報價因子的 REST 端點，以及查詢參數。\nsystem/customer-levels｜客戶等級與預設報價因子｜vip、standard、new 三種客戶等級各自的預設報價因子，以及查詢用的 API。\nsystem/mcp-tools｜EZStore MCP Server 的 6 個報價單工具｜報價單 Agent 背後的 6 個 MCP 工具、先複製再改的做法，以及改總價的二分法設定。\nsystem/orders-table｜訂單資料表（orders、order_items）｜訂單欄位、和報價單的關聯，以及測試資料裡已經轉成訂單的報價單。\nsystem/pricing-formula｜報價金額怎麼算｜單價、小計、總價、利潤與利潤率的計算方式、後端什麼時候會重算，以及已發佈的報價單不能修改或刪除。\nsystem/quotation-agent｜報價單 Agent（quotation_agent）｜第一個 Agent 的 A2A 介面：agent card 位置、6 個 skill、該怎麼下指令、回覆長什麼樣子。\nsystem/quotations-table｜報價單資料表（quotations、quotation_items）｜報價單與報價品項的欄位、狀態，以及測試資料裡存值和重算不一致的報價單。\n\n前一輪：無\n使用者這一句：Change total of QT-20260325-001 to 200000 or 210000",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/load_context@1",
+                "outputFor": [
+                  "pricing_advisor@1/load_context@1"
+                ]
+              },
+              "id": "98db0451-13ba-4f65-af01-14a711a7a2b3",
+              "timestamp": 1792294572.862919
+            },
+            {
+              "modelVersion": "qwen3.5-9b",
+              "content": {
+                "parts": [
+                  {
+                    "text": "{\n  \"intent\": \"apply_price\",\n  \"quotation_number\": \"QT-20260325-001\",\n  \"target_total\": 200000,\n  \"concept_ids\": []\n}"
+                  }
+                ],
+                "role": "model"
+              },
+              "partial": false,
+              "finishReason": "STOP",
+              "usageMetadata": {
+                "cachedContentTokenCount": 615,
+                "candidatesTokenCount": 58,
+                "promptTokenCount": 1103,
+                "totalTokenCount": 1161
+              },
+              "invocationId": "e-375aaae6-eb6f-445c-8144-509a31e30491",
+              "author": "understand",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": {
+                "intent": "apply_price",
+                "quotation_number": "QT-20260325-001",
+                "target_total": 200000.0,
+                "concept_ids": []
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/understand@1",
+                "outputFor": [
+                  "pricing_advisor@1/understand@1"
+                ]
+              },
+              "id": "858f1fd9-89e5-4a75-a67b-448a65943555",
+              "timestamp": 1792294572.8681157
+            },
+            {
+              "invocationId": "e-375aaae6-eb6f-445c-8144-509a31e30491",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "pending": {
+                    "intent": "apply_price",
+                    "quotation_number": "QT-20260325-001",
+                    "target_total": null
+                  },
+                  "last_check": null
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "clarify"
+              },
+              "output": {
+                "operation": "apply_price",
+                "missing": [
+                  "target_total"
+                ],
+                "invalid": [],
+                "fields": {
+                  "quotation_number": "QT-20260325-001",
+                  "target_total": null
+                },
+                "hint": "amount"
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/route@1",
+                "outputFor": [
+                  "pricing_advisor@1/route@1"
+                ]
+              },
+              "id": "0805a885-c37f-4c00-a11b-16c4e631805c",
+              "timestamp": 1792294584.3401318
+            },
+            {
+              "invocationId": "e-375aaae6-eb6f-445c-8144-509a31e30491",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "請提供客戶想要的總價（大於 0 的數字，例如 180000），我才能幫你修改報價單總價。\n你給的金額不只一個，或寫法有兩種意思（例如「二百五」「18萬5」），我不自己挑。請只說一個總價，例如 250000。\n目前已知：報價單編號：QT-20260325-001",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/clarify@1",
+                "outputFor": [
+                  "pricing_advisor@1/clarify@1"
+                ]
+              },
+              "id": "b448f80b-bf80-4360-ae22-a746a643b08f",
+              "timestamp": 1792294584.3424578
+            },
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "請提供客戶想要的總價（大於 0 的數字，例如 180000），我才能幫你修改報價單總價。\n你給的金額不只一個，或寫法有兩種意思（例如「二百五」「18萬5」），我不自己挑。請只說一個總價，例如 250000。\n目前已知：報價單編號：QT-20260325-001"
+                  }
+                ],
+                "role": "model"
+              },
+              "invocationId": "e-375aaae6-eb6f-445c-8144-509a31e30491",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/respond@1"
+              },
+              "id": "dd6e72aa-7ce9-474b-88c4-6df9635ea43b",
+              "timestamp": 1792294584.3445525
+            },
+            {
+              "invocationId": "e-375aaae6-eb6f-445c-8144-509a31e30491",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "請提供客戶想要的總價（大於 0 的數字，例如 180000），我才能幫你修改報價單總價。\n你給的金額不只一個，或寫法有兩種意思（例如「二百五」「18萬5」），我不自己挑。請只說一個總價，例如 250000。\n目前已知：報價單編號：QT-20260325-001",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/respond@1",
+                "outputFor": [
+                  "pricing_advisor@1/respond@1",
+                  "pricing_advisor@1"
+                ]
+              },
+              "id": "4f3e19fd-e09a-4c26-b9d8-580e1d624a18",
+              "timestamp": 1792294584.346221
+            }
+          ]
+        }
+      ],
+      "database_checks": [
+        {
+          "type": "no_write",
+          "before_after_sha256": "164f92da85a317393c1a1c6388a6644fd4f5f7c81d9ebed9321ec9ee488185a5"
+        }
+      ]
+    },
+    {
+      "case": "slash_alternatives",
+      "passed": true,
+      "seconds": 14.06,
+      "turns": [
+        {
+          "app": "pricing_advisor",
+          "session_id": "4907c055-4bc6-4c31-8564-4790fc037daf",
+          "user": "把 QT-20260325-001 總價改成200000 / 210000",
+          "reply": "請提供客戶想要的總價（大於 0 的數字，例如 180000），我才能幫你修改報價單總價。\n你給的金額不只一個，或寫法有兩種意思（例如「二百五」「18萬5」），我不自己挑。請只說一個總價，例如 250000。\n目前已知：報價單編號：QT-20260325-001",
+          "events": [
+            {
+              "invocationId": "e-a09e5c07-e6d7-493e-9eaa-009224c787a8",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "last_user_text": "把 QT-20260325-001 總價改成200000 / 210000"
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "classify"
+              },
+              "output": "知識目錄（id｜標題｜描述）：\ncomputations/price-change-impact｜改價影響試算｜給報價單編號與目標總價，算出要用的報價因子、改價後的總價、利潤與毛利率，也標出目標是不是超出可調範圍。\nglossary/pricing-factor｜報價因子（pricing_factor）｜報價單上的折扣倍率，單價 = 定價 × 報價因子。\nglossary/profit-rate｜毛利率（profit_rate）｜利潤除以總價；利潤是總價減掉品項成本。改價核准就是看這個數字。\nplaybooks/price-negotiation｜業務議價處理流程｜客戶要求降價或轉訂單時，議價顧問 Agent 和業務照這個順序處理。\npolicies/discount-approval｜改價核准層級（2026 年版）｜依改價後的毛利率決定業務能不能自己改、要誰核准，毛利率低於 5% 不可報價。\npolicies/discount-approval-2025｜改價核准層級（2025 年版，已作廢）（已作廢）｜舊版的毛利率核准門檻，已由 2026 年版取代，只留著對照，不可再用。\npolicies/order-conversion｜報價單轉訂單規則｜只有已發佈的報價單可以轉訂單，同一張報價單不重複轉。\npolicies/pricing-factor-floor｜報價因子下限｜各客戶等級的報價因子最低可以到多少，低於下限要業務主管核准。\npolicies/promo-2026q3｜2026 第三季新客戶優惠（已過期）｜2026 年第三季把 new 等級客戶的報價因子下限暫時降到 0.85，10 月 1 日起失效。\nsystem/backend-api｜EZStore 後端 REST API（報價與訂單）｜報價單、訂單、客戶與預設報價因子的 REST 端點，以及查詢參數。\nsystem/customer-levels｜客戶等級與預設報價因子｜vip、standard、new 三種客戶等級各自的預設報價因子，以及查詢用的 API。\nsystem/mcp-tools｜EZStore MCP Server 的 6 個報價單工具｜報價單 Agent 背後的 6 個 MCP 工具、先複製再改的做法，以及改總價的二分法設定。\nsystem/orders-table｜訂單資料表（orders、order_items）｜訂單欄位、和報價單的關聯，以及測試資料裡已經轉成訂單的報價單。\nsystem/pricing-formula｜報價金額怎麼算｜單價、小計、總價、利潤與利潤率的計算方式、後端什麼時候會重算，以及已發佈的報價單不能修改或刪除。\nsystem/quotation-agent｜報價單 Agent（quotation_agent）｜第一個 Agent 的 A2A 介面：agent card 位置、6 個 skill、該怎麼下指令、回覆長什麼樣子。\nsystem/quotations-table｜報價單資料表（quotations、quotation_items）｜報價單與報價品項的欄位、狀態，以及測試資料裡存值和重算不一致的報價單。\n\n前一輪：無\n使用者這一句：把 QT-20260325-001 總價改成200000 / 210000",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/load_context@1",
+                "outputFor": [
+                  "pricing_advisor@1/load_context@1"
+                ]
+              },
+              "id": "76225af1-adf1-41a7-bc57-14d0eaefe48c",
+              "timestamp": 1792294585.2990313
+            },
+            {
+              "modelVersion": "qwen3.5-9b",
+              "content": {
+                "parts": [
+                  {
+                    "text": "{\n  \"intent\": \"apply_price\",\n  \"quotation_number\": \"QT-20260325-001\",\n  \"target_total\": 200000,\n  \"concept_ids\": []\n}"
+                  }
+                ],
+                "role": "model"
+              },
+              "partial": false,
+              "finishReason": "STOP",
+              "usageMetadata": {
+                "cachedContentTokenCount": 615,
+                "candidatesTokenCount": 58,
+                "promptTokenCount": 1103,
+                "totalTokenCount": 1161
+              },
+              "invocationId": "e-a09e5c07-e6d7-493e-9eaa-009224c787a8",
+              "author": "understand",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": {
+                "intent": "apply_price",
+                "quotation_number": "QT-20260325-001",
+                "target_total": 200000.0,
+                "concept_ids": []
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/understand@1",
+                "outputFor": [
+                  "pricing_advisor@1/understand@1"
+                ]
+              },
+              "id": "604a4d6a-4b47-4be4-ac1f-513531192577",
+              "timestamp": 1792294585.3039527
+            },
+            {
+              "invocationId": "e-a09e5c07-e6d7-493e-9eaa-009224c787a8",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "pending": {
+                    "intent": "apply_price",
+                    "quotation_number": "QT-20260325-001",
+                    "target_total": null
+                  },
+                  "last_check": null
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "clarify"
+              },
+              "output": {
+                "operation": "apply_price",
+                "missing": [
+                  "target_total"
+                ],
+                "invalid": [],
+                "fields": {
+                  "quotation_number": "QT-20260325-001",
+                  "target_total": null
+                },
+                "hint": "amount"
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/route@1",
+                "outputFor": [
+                  "pricing_advisor@1/route@1"
+                ]
+              },
+              "id": "cdd65ffe-a28b-4cdb-a5aa-558b0de415e7",
+              "timestamp": 1792294598.331344
+            },
+            {
+              "invocationId": "e-a09e5c07-e6d7-493e-9eaa-009224c787a8",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "請提供客戶想要的總價（大於 0 的數字，例如 180000），我才能幫你修改報價單總價。\n你給的金額不只一個，或寫法有兩種意思（例如「二百五」「18萬5」），我不自己挑。請只說一個總價，例如 250000。\n目前已知：報價單編號：QT-20260325-001",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/clarify@1",
+                "outputFor": [
+                  "pricing_advisor@1/clarify@1"
+                ]
+              },
+              "id": "09ea59e7-151a-4c37-90d5-56c391e20ef9",
+              "timestamp": 1792294598.3346097
+            },
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "請提供客戶想要的總價（大於 0 的數字，例如 180000），我才能幫你修改報價單總價。\n你給的金額不只一個，或寫法有兩種意思（例如「二百五」「18萬5」），我不自己挑。請只說一個總價，例如 250000。\n目前已知：報價單編號：QT-20260325-001"
+                  }
+                ],
+                "role": "model"
+              },
+              "invocationId": "e-a09e5c07-e6d7-493e-9eaa-009224c787a8",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/respond@1"
+              },
+              "id": "ca58ff85-3dd3-4cf2-8db1-c5176cc2f02a",
+              "timestamp": 1792294598.3374548
+            },
+            {
+              "invocationId": "e-a09e5c07-e6d7-493e-9eaa-009224c787a8",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "請提供客戶想要的總價（大於 0 的數字，例如 180000），我才能幫你修改報價單總價。\n你給的金額不只一個，或寫法有兩種意思（例如「二百五」「18萬5」），我不自己挑。請只說一個總價，例如 250000。\n目前已知：報價單編號：QT-20260325-001",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/respond@1",
+                "outputFor": [
+                  "pricing_advisor@1/respond@1",
+                  "pricing_advisor@1"
+                ]
+              },
+              "id": "5206531d-e4a6-4080-b24e-4c50878210cf",
+              "timestamp": 1792294598.3383434
+            }
+          ]
+        }
+      ],
+      "database_checks": [
+        {
+          "type": "no_write",
+          "before_after_sha256": "164f92da85a317393c1a1c6388a6644fd4f5f7c81d9ebed9321ec9ee488185a5"
+        }
+      ]
+    },
+    {
+      "case": "scientific_amount",
+      "passed": true,
+      "seconds": 14.14,
+      "turns": [
+        {
+          "app": "pricing_advisor",
+          "session_id": "1a5ec34b-aab2-4616-b8b2-077b131bde99",
+          "user": "把 QT-20260325-001 總價改成2e5",
+          "reply": "請提供客戶想要的總價（大於 0 的數字，例如 180000），我才能幫你修改報價單總價。\n你給的金額不只一個，或寫法有兩種意思（例如「二百五」「18萬5」），我不自己挑。請只說一個總價，例如 250000。\n目前已知：報價單編號：QT-20260325-001",
+          "events": [
+            {
+              "invocationId": "e-f3f39a8a-d57e-497e-af89-a2f6109ce4d9",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "last_user_text": "把 QT-20260325-001 總價改成2e5"
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "classify"
+              },
+              "output": "知識目錄（id｜標題｜描述）：\ncomputations/price-change-impact｜改價影響試算｜給報價單編號與目標總價，算出要用的報價因子、改價後的總價、利潤與毛利率，也標出目標是不是超出可調範圍。\nglossary/pricing-factor｜報價因子（pricing_factor）｜報價單上的折扣倍率，單價 = 定價 × 報價因子。\nglossary/profit-rate｜毛利率（profit_rate）｜利潤除以總價；利潤是總價減掉品項成本。改價核准就是看這個數字。\nplaybooks/price-negotiation｜業務議價處理流程｜客戶要求降價或轉訂單時，議價顧問 Agent 和業務照這個順序處理。\npolicies/discount-approval｜改價核准層級（2026 年版）｜依改價後的毛利率決定業務能不能自己改、要誰核准，毛利率低於 5% 不可報價。\npolicies/discount-approval-2025｜改價核准層級（2025 年版，已作廢）（已作廢）｜舊版的毛利率核准門檻，已由 2026 年版取代，只留著對照，不可再用。\npolicies/order-conversion｜報價單轉訂單規則｜只有已發佈的報價單可以轉訂單，同一張報價單不重複轉。\npolicies/pricing-factor-floor｜報價因子下限｜各客戶等級的報價因子最低可以到多少，低於下限要業務主管核准。\npolicies/promo-2026q3｜2026 第三季新客戶優惠（已過期）｜2026 年第三季把 new 等級客戶的報價因子下限暫時降到 0.85，10 月 1 日起失效。\nsystem/backend-api｜EZStore 後端 REST API（報價與訂單）｜報價單、訂單、客戶與預設報價因子的 REST 端點，以及查詢參數。\nsystem/customer-levels｜客戶等級與預設報價因子｜vip、standard、new 三種客戶等級各自的預設報價因子，以及查詢用的 API。\nsystem/mcp-tools｜EZStore MCP Server 的 6 個報價單工具｜報價單 Agent 背後的 6 個 MCP 工具、先複製再改的做法，以及改總價的二分法設定。\nsystem/orders-table｜訂單資料表（orders、order_items）｜訂單欄位、和報價單的關聯，以及測試資料裡已經轉成訂單的報價單。\nsystem/pricing-formula｜報價金額怎麼算｜單價、小計、總價、利潤與利潤率的計算方式、後端什麼時候會重算，以及已發佈的報價單不能修改或刪除。\nsystem/quotation-agent｜報價單 Agent（quotation_agent）｜第一個 Agent 的 A2A 介面：agent card 位置、6 個 skill、該怎麼下指令、回覆長什麼樣子。\nsystem/quotations-table｜報價單資料表（quotations、quotation_items）｜報價單與報價品項的欄位、狀態，以及測試資料裡存值和重算不一致的報價單。\n\n前一輪：無\n使用者這一句：把 QT-20260325-001 總價改成2e5",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/load_context@1",
+                "outputFor": [
+                  "pricing_advisor@1/load_context@1"
+                ]
+              },
+              "id": "a79724a2-7fd8-4e2c-8c14-85c73d7e4c5e",
+              "timestamp": 1792294599.3995023
+            },
+            {
+              "modelVersion": "qwen3.5-9b",
+              "content": {
+                "parts": [
+                  {
+                    "text": "{\n  \"intent\": \"apply_price\",\n  \"quotation_number\": \"QT-20260325-001\",\n  \"target_total\": 200000,\n  \"concept_ids\": []\n}"
+                  }
+                ],
+                "role": "model"
+              },
+              "partial": false,
+              "finishReason": "STOP",
+              "usageMetadata": {
+                "cachedContentTokenCount": 615,
+                "candidatesTokenCount": 58,
+                "promptTokenCount": 1092,
+                "totalTokenCount": 1150
+              },
+              "invocationId": "e-f3f39a8a-d57e-497e-af89-a2f6109ce4d9",
+              "author": "understand",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": {
+                "intent": "apply_price",
+                "quotation_number": "QT-20260325-001",
+                "target_total": 200000.0,
+                "concept_ids": []
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/understand@1",
+                "outputFor": [
+                  "pricing_advisor@1/understand@1"
+                ]
+              },
+              "id": "5b897e13-d3f4-4a23-b463-081ce0614001",
+              "timestamp": 1792294599.4038336
+            },
+            {
+              "invocationId": "e-f3f39a8a-d57e-497e-af89-a2f6109ce4d9",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "pending": {
+                    "intent": "apply_price",
+                    "quotation_number": "QT-20260325-001",
+                    "target_total": null
+                  },
+                  "last_check": null
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "clarify"
+              },
+              "output": {
+                "operation": "apply_price",
+                "missing": [
+                  "target_total"
+                ],
+                "invalid": [],
+                "fields": {
+                  "quotation_number": "QT-20260325-001",
+                  "target_total": null
+                },
+                "hint": "amount"
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/route@1",
+                "outputFor": [
+                  "pricing_advisor@1/route@1"
+                ]
+              },
+              "id": "1ba4cdb0-af11-48c0-b0b1-bcac24d2918d",
+              "timestamp": 1792294612.553578
+            },
+            {
+              "invocationId": "e-f3f39a8a-d57e-497e-af89-a2f6109ce4d9",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "請提供客戶想要的總價（大於 0 的數字，例如 180000），我才能幫你修改報價單總價。\n你給的金額不只一個，或寫法有兩種意思（例如「二百五」「18萬5」），我不自己挑。請只說一個總價，例如 250000。\n目前已知：報價單編號：QT-20260325-001",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/clarify@1",
+                "outputFor": [
+                  "pricing_advisor@1/clarify@1"
+                ]
+              },
+              "id": "6cb2465d-a0d8-4990-8e81-5c932925c268",
+              "timestamp": 1792294612.5578983
+            },
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "請提供客戶想要的總價（大於 0 的數字，例如 180000），我才能幫你修改報價單總價。\n你給的金額不只一個，或寫法有兩種意思（例如「二百五」「18萬5」），我不自己挑。請只說一個總價，例如 250000。\n目前已知：報價單編號：QT-20260325-001"
+                  }
+                ],
+                "role": "model"
+              },
+              "invocationId": "e-f3f39a8a-d57e-497e-af89-a2f6109ce4d9",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/respond@1"
+              },
+              "id": "fd14d270-a9a0-47d1-8bd8-e0120d72245c",
+              "timestamp": 1792294612.5638866
+            },
+            {
+              "invocationId": "e-f3f39a8a-d57e-497e-af89-a2f6109ce4d9",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "請提供客戶想要的總價（大於 0 的數字，例如 180000），我才能幫你修改報價單總價。\n你給的金額不只一個，或寫法有兩種意思（例如「二百五」「18萬5」），我不自己挑。請只說一個總價，例如 250000。\n目前已知：報價單編號：QT-20260325-001",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/respond@1",
+                "outputFor": [
+                  "pricing_advisor@1/respond@1",
+                  "pricing_advisor@1"
+                ]
+              },
+              "id": "ccf4c81c-385b-4030-8812-333fa14eb853",
+              "timestamp": 1792294612.5674458
+            }
+          ]
+        }
+      ],
+      "database_checks": [
+        {
+          "type": "no_write",
+          "before_after_sha256": "164f92da85a317393c1a1c6388a6644fd4f5f7c81d9ebed9321ec9ee488185a5"
+        }
+      ]
+    },
+    {
+      "case": "invalid_new_amount_after_check",
+      "passed": true,
+      "seconds": 26.84,
+      "turns": [
+        {
+          "app": "pricing_advisor",
+          "session_id": "203ede92-5a36-4357-b223-a14cbaec546f",
+          "user": "QT-20260325-001 壓到200000可以嗎？",
+          "reply": "QT-20260325-001（神盾局科技股份有限公司，vip，草稿）改成 200000 的試算：\n- 報價因子 0.8200 → 0.7752\n- 總價 211560.00 → 200001.60（報價因子取到小數 4 位）\n- 毛利率 32.17% → 28.25%（利潤 56501.60）\n判斷：業務可直接調整\n- 改價核准層級（2026 年版）：改價後毛利率 28.25% → 業務可直接調整（未驗證）\n- 報價因子下限：報價因子 0.7752 沒有低於 vip 的下限 0.70 → 業務可直接調整（未驗證）\n沒有套用：改價核准層級（2025 年版，已作廢）、2026 第三季新客戶優惠（2026-10-01 起過期）\n試算驗證：通過（計算程式 sha256 ae362ce9aa5f…，資料來源 http://backend:8080/api/v1/quotations/9，已重讀核對）\n注意：資料庫存的總價或利潤和品項重算不同，以上用品項重算。\n系統連結：http://localhost:53000/quotations/9\n下一步：可以直接調整。要改的話跟我說「幫我改」，我會經 A2A 請報價單 Agent 先複製再改總價，原單不動。",
+          "events": [
+            {
+              "invocationId": "e-d8253075-31f9-4e59-ba04-c96c8da95f78",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "last_user_text": "QT-20260325-001 壓到200000可以嗎？"
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "classify"
+              },
+              "output": "知識目錄（id｜標題｜描述）：\ncomputations/price-change-impact｜改價影響試算｜給報價單編號與目標總價，算出要用的報價因子、改價後的總價、利潤與毛利率，也標出目標是不是超出可調範圍。\nglossary/pricing-factor｜報價因子（pricing_factor）｜報價單上的折扣倍率，單價 = 定價 × 報價因子。\nglossary/profit-rate｜毛利率（profit_rate）｜利潤除以總價；利潤是總價減掉品項成本。改價核准就是看這個數字。\nplaybooks/price-negotiation｜業務議價處理流程｜客戶要求降價或轉訂單時，議價顧問 Agent 和業務照這個順序處理。\npolicies/discount-approval｜改價核准層級（2026 年版）｜依改價後的毛利率決定業務能不能自己改、要誰核准，毛利率低於 5% 不可報價。\npolicies/discount-approval-2025｜改價核准層級（2025 年版，已作廢）（已作廢）｜舊版的毛利率核准門檻，已由 2026 年版取代，只留著對照，不可再用。\npolicies/order-conversion｜報價單轉訂單規則｜只有已發佈的報價單可以轉訂單，同一張報價單不重複轉。\npolicies/pricing-factor-floor｜報價因子下限｜各客戶等級的報價因子最低可以到多少，低於下限要業務主管核准。\npolicies/promo-2026q3｜2026 第三季新客戶優惠（已過期）｜2026 年第三季把 new 等級客戶的報價因子下限暫時降到 0.85，10 月 1 日起失效。\nsystem/backend-api｜EZStore 後端 REST API（報價與訂單）｜報價單、訂單、客戶與預設報價因子的 REST 端點，以及查詢參數。\nsystem/customer-levels｜客戶等級與預設報價因子｜vip、standard、new 三種客戶等級各自的預設報價因子，以及查詢用的 API。\nsystem/mcp-tools｜EZStore MCP Server 的 6 個報價單工具｜報價單 Agent 背後的 6 個 MCP 工具、先複製再改的做法，以及改總價的二分法設定。\nsystem/orders-table｜訂單資料表（orders、order_items）｜訂單欄位、和報價單的關聯，以及測試資料裡已經轉成訂單的報價單。\nsystem/pricing-formula｜報價金額怎麼算｜單價、小計、總價、利潤與利潤率的計算方式、後端什麼時候會重算，以及已發佈的報價單不能修改或刪除。\nsystem/quotation-agent｜報價單 Agent（quotation_agent）｜第一個 Agent 的 A2A 介面：agent card 位置、6 個 skill、該怎麼下指令、回覆長什麼樣子。\nsystem/quotations-table｜報價單資料表（quotations、quotation_items）｜報價單與報價品項的欄位、狀態，以及測試資料裡存值和重算不一致的報價單。\n\n前一輪：無\n使用者這一句：QT-20260325-001 壓到200000可以嗎？",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/load_context@1",
+                "outputFor": [
+                  "pricing_advisor@1/load_context@1"
+                ]
+              },
+              "id": "c1384d87-7ba7-429d-9ae6-b48f0505fce8",
+              "timestamp": 1792294613.4726677
+            },
+            {
+              "modelVersion": "qwen3.5-9b",
+              "content": {
+                "parts": [
+                  {
+                    "text": "{\n  \"intent\": \"price_check\",\n  \"quotation_number\": \"QT-20260325-001\",\n  \"target_total\": 200000,\n  \"concept_ids\": []\n}"
+                  }
+                ],
+                "role": "model"
+              },
+              "partial": false,
+              "finishReason": "STOP",
+              "usageMetadata": {
+                "cachedContentTokenCount": 615,
+                "candidatesTokenCount": 58,
+                "promptTokenCount": 1096,
+                "totalTokenCount": 1154
+              },
+              "invocationId": "e-d8253075-31f9-4e59-ba04-c96c8da95f78",
+              "author": "understand",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": {
+                "intent": "price_check",
+                "quotation_number": "QT-20260325-001",
+                "target_total": 200000.0,
+                "concept_ids": []
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/understand@1",
+                "outputFor": [
+                  "pricing_advisor@1/understand@1"
+                ]
+              },
+              "id": "809dad25-dcf8-4950-a39b-22ccdcc98de5",
+              "timestamp": 1792294613.4789019
+            },
+            {
+              "invocationId": "e-d8253075-31f9-4e59-ba04-c96c8da95f78",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "pending": null
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "price_check"
+              },
+              "output": {
+                "quotation_number": "QT-20260325-001",
+                "target_total": 200000.0
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/route@1",
+                "outputFor": [
+                  "pricing_advisor@1/route@1"
+                ]
+              },
+              "id": "19474518-5ddf-409d-a1a9-9ab8d845316f",
+              "timestamp": 1792294627.0179372
+            },
+            {
+              "invocationId": "e-d8253075-31f9-4e59-ba04-c96c8da95f78",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "last_quotation": "QT-20260325-001",
+                  "last_check": {
+                    "quotation_number": "QT-20260325-001",
+                    "target_total": 200000.0,
+                    "approval": "none",
+                    "label": "業務可直接調整",
+                    "new_factor": "0.7752",
+                    "new_margin": "0.2825",
+                    "receipt": {
+                      "computation_sha256": "ae362ce9aa5f2a0449493c1fd00b0d879a9f017da966044268a3bef64d468391",
+                      "source_url": "http://backend:8080/api/v1/quotations/9",
+                      "source_sha256": "3a0e599bf9dfac53041437a25ba887e4dd8f822514f73a1a47604b703b1b0098",
+                      "executed_at": "2026-10-18T03:37:07Z",
+                      "attestation": "ok"
+                    },
+                    "at": "2026-10-18T03:37:08.091803+00:00"
+                  }
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "QT-20260325-001（神盾局科技股份有限公司，vip，草稿）改成 200000 的試算：\n- 報價因子 0.8200 → 0.7752\n- 總價 211560.00 → 200001.60（報價因子取到小數 4 位）\n- 毛利率 32.17% → 28.25%（利潤 56501.60）\n判斷：業務可直接調整\n- 改價核准層級（2026 年版）：改價後毛利率 28.25% → 業務可直接調整（未驗證）\n- 報價因子下限：報價因子 0.7752 沒有低於 vip 的下限 0.70 → 業務可直接調整（未驗證）\n沒有套用：改價核准層級（2025 年版，已作廢）、2026 第三季新客戶優惠（2026-10-01 起過期）\n試算驗證：通過（計算程式 sha256 ae362ce9aa5f…，資料來源 http://backend:8080/api/v1/quotations/9，已重讀核對）\n注意：資料庫存的總價或利潤和品項重算不同，以上用品項重算。\n系統連結：http://localhost:53000/quotations/9\n下一步：可以直接調整。要改的話跟我說「幫我改」，我會經 A2A 請報價單 Agent 先複製再改總價，原單不動。",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/price_check@1",
+                "outputFor": [
+                  "pricing_advisor@1/price_check@1"
+                ]
+              },
+              "id": "df828fb4-ed40-4d63-883b-b0eae3afbc31",
+              "timestamp": 1792294628.0920198
+            },
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "QT-20260325-001（神盾局科技股份有限公司，vip，草稿）改成 200000 的試算：\n- 報價因子 0.8200 → 0.7752\n- 總價 211560.00 → 200001.60（報價因子取到小數 4 位）\n- 毛利率 32.17% → 28.25%（利潤 56501.60）\n判斷：業務可直接調整\n- 改價核准層級（2026 年版）：改價後毛利率 28.25% → 業務可直接調整（未驗證）\n- 報價因子下限：報價因子 0.7752 沒有低於 vip 的下限 0.70 → 業務可直接調整（未驗證）\n沒有套用：改價核准層級（2025 年版，已作廢）、2026 第三季新客戶優惠（2026-10-01 起過期）\n試算驗證：通過（計算程式 sha256 ae362ce9aa5f…，資料來源 http://backend:8080/api/v1/quotations/9，已重讀核對）\n注意：資料庫存的總價或利潤和品項重算不同，以上用品項重算。\n系統連結：http://localhost:53000/quotations/9\n下一步：可以直接調整。要改的話跟我說「幫我改」，我會經 A2A 請報價單 Agent 先複製再改總價，原單不動。"
+                  }
+                ],
+                "role": "model"
+              },
+              "invocationId": "e-d8253075-31f9-4e59-ba04-c96c8da95f78",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/respond@1"
+              },
+              "id": "073c1b23-b632-42f5-adc9-a10bbbd12828",
+              "timestamp": 1792294628.094379
+            },
+            {
+              "invocationId": "e-d8253075-31f9-4e59-ba04-c96c8da95f78",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "QT-20260325-001（神盾局科技股份有限公司，vip，草稿）改成 200000 的試算：\n- 報價因子 0.8200 → 0.7752\n- 總價 211560.00 → 200001.60（報價因子取到小數 4 位）\n- 毛利率 32.17% → 28.25%（利潤 56501.60）\n判斷：業務可直接調整\n- 改價核准層級（2026 年版）：改價後毛利率 28.25% → 業務可直接調整（未驗證）\n- 報價因子下限：報價因子 0.7752 沒有低於 vip 的下限 0.70 → 業務可直接調整（未驗證）\n沒有套用：改價核准層級（2025 年版，已作廢）、2026 第三季新客戶優惠（2026-10-01 起過期）\n試算驗證：通過（計算程式 sha256 ae362ce9aa5f…，資料來源 http://backend:8080/api/v1/quotations/9，已重讀核對）\n注意：資料庫存的總價或利潤和品項重算不同，以上用品項重算。\n系統連結：http://localhost:53000/quotations/9\n下一步：可以直接調整。要改的話跟我說「幫我改」，我會經 A2A 請報價單 Agent 先複製再改總價，原單不動。",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/respond@1",
+                "outputFor": [
+                  "pricing_advisor@1/respond@1",
+                  "pricing_advisor@1"
+                ]
+              },
+              "id": "1ff6de69-961c-465e-a561-2dfecd38aaf8",
+              "timestamp": 1792294628.0948813
+            }
+          ]
+        },
+        {
+          "app": "pricing_advisor",
+          "session_id": "203ede92-5a36-4357-b223-a14cbaec546f",
+          "user": "先把 QT-20260325-001 總價改成2026/10/17",
+          "reply": "請提供客戶想要的總價（大於 0 的數字，例如 180000），我才能幫你修改報價單總價。\n你給的金額不只一個，或寫法有兩種意思（例如「二百五」「18萬5」），我不自己挑。請只說一個總價，例如 250000。\n目前已知：報價單編號：QT-20260325-001",
+          "events": [
+            {
+              "invocationId": "e-e143108e-802d-4a02-b9bf-e2110e015277",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "last_user_text": "先把 QT-20260325-001 總價改成2026/10/17"
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "classify"
+              },
+              "output": "知識目錄（id｜標題｜描述）：\ncomputations/price-change-impact｜改價影響試算｜給報價單編號與目標總價，算出要用的報價因子、改價後的總價、利潤與毛利率，也標出目標是不是超出可調範圍。\nglossary/pricing-factor｜報價因子（pricing_factor）｜報價單上的折扣倍率，單價 = 定價 × 報價因子。\nglossary/profit-rate｜毛利率（profit_rate）｜利潤除以總價；利潤是總價減掉品項成本。改價核准就是看這個數字。\nplaybooks/price-negotiation｜業務議價處理流程｜客戶要求降價或轉訂單時，議價顧問 Agent 和業務照這個順序處理。\npolicies/discount-approval｜改價核准層級（2026 年版）｜依改價後的毛利率決定業務能不能自己改、要誰核准，毛利率低於 5% 不可報價。\npolicies/discount-approval-2025｜改價核准層級（2025 年版，已作廢）（已作廢）｜舊版的毛利率核准門檻，已由 2026 年版取代，只留著對照，不可再用。\npolicies/order-conversion｜報價單轉訂單規則｜只有已發佈的報價單可以轉訂單，同一張報價單不重複轉。\npolicies/pricing-factor-floor｜報價因子下限｜各客戶等級的報價因子最低可以到多少，低於下限要業務主管核准。\npolicies/promo-2026q3｜2026 第三季新客戶優惠（已過期）｜2026 年第三季把 new 等級客戶的報價因子下限暫時降到 0.85，10 月 1 日起失效。\nsystem/backend-api｜EZStore 後端 REST API（報價與訂單）｜報價單、訂單、客戶與預設報價因子的 REST 端點，以及查詢參數。\nsystem/customer-levels｜客戶等級與預設報價因子｜vip、standard、new 三種客戶等級各自的預設報價因子，以及查詢用的 API。\nsystem/mcp-tools｜EZStore MCP Server 的 6 個報價單工具｜報價單 Agent 背後的 6 個 MCP 工具、先複製再改的做法，以及改總價的二分法設定。\nsystem/orders-table｜訂單資料表（orders、order_items）｜訂單欄位、和報價單的關聯，以及測試資料裡已經轉成訂單的報價單。\nsystem/pricing-formula｜報價金額怎麼算｜單價、小計、總價、利潤與利潤率的計算方式、後端什麼時候會重算，以及已發佈的報價單不能修改或刪除。\nsystem/quotation-agent｜報價單 Agent（quotation_agent）｜第一個 Agent 的 A2A 介面：agent card 位置、6 個 skill、該怎麼下指令、回覆長什麼樣子。\nsystem/quotations-table｜報價單資料表（quotations、quotation_items）｜報價單與報價品項的欄位、狀態，以及測試資料裡存值和重算不一致的報價單。\n\n前一輪：上一次試算：QT-20260325-001 改成 200000，結果「業務可直接調整」\n使用者這一句：先把 QT-20260325-001 總價改成2026/10/17",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/load_context@1",
+                "outputFor": [
+                  "pricing_advisor@1/load_context@1"
+                ]
+              },
+              "id": "a4dea11a-a77e-4481-8dae-8b0a45616b02",
+              "timestamp": 1792294629.0653896
+            },
+            {
+              "modelVersion": "qwen3.5-9b",
+              "content": {
+                "parts": [
+                  {
+                    "text": "{\n  \"intent\": \"apply_price\",\n  \"quotation_number\": \"QT-20260325-001\",\n  \"target_total\": null,\n  \"concept_ids\": []\n}"
+                  }
+                ],
+                "role": "model"
+              },
+              "partial": false,
+              "finishReason": "STOP",
+              "usageMetadata": {
+                "cachedContentTokenCount": 615,
+                "candidatesTokenCount": 52,
+                "promptTokenCount": 1131,
+                "totalTokenCount": 1183
+              },
+              "invocationId": "e-e143108e-802d-4a02-b9bf-e2110e015277",
+              "author": "understand",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": {
+                "intent": "apply_price",
+                "quotation_number": "QT-20260325-001",
+                "concept_ids": []
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/understand@1",
+                "outputFor": [
+                  "pricing_advisor@1/understand@1"
+                ]
+              },
+              "id": "2afcb511-3657-47b0-b0a8-c410464e5e88",
+              "timestamp": 1792294629.0702605
+            },
+            {
+              "invocationId": "e-e143108e-802d-4a02-b9bf-e2110e015277",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "pending": {
+                    "intent": "apply_price",
+                    "quotation_number": "QT-20260325-001",
+                    "target_total": null
+                  },
+                  "last_check": null
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "clarify"
+              },
+              "output": {
+                "operation": "apply_price",
+                "missing": [
+                  "target_total"
+                ],
+                "invalid": [],
+                "fields": {
+                  "quotation_number": "QT-20260325-001",
+                  "target_total": null
+                },
+                "hint": "amount"
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/route@1",
+                "outputFor": [
+                  "pricing_advisor@1/route@1"
+                ]
+              },
+              "id": "f662d2ea-fbf8-46aa-bdc9-ea923f4183d4",
+              "timestamp": 1792294639.4606137
+            },
+            {
+              "invocationId": "e-e143108e-802d-4a02-b9bf-e2110e015277",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "請提供客戶想要的總價（大於 0 的數字，例如 180000），我才能幫你修改報價單總價。\n你給的金額不只一個，或寫法有兩種意思（例如「二百五」「18萬5」），我不自己挑。請只說一個總價，例如 250000。\n目前已知：報價單編號：QT-20260325-001",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/clarify@1",
+                "outputFor": [
+                  "pricing_advisor@1/clarify@1"
+                ]
+              },
+              "id": "bf3896f8-a6c5-4f23-acfe-3e8daaf8f51e",
+              "timestamp": 1792294639.4627302
+            },
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "請提供客戶想要的總價（大於 0 的數字，例如 180000），我才能幫你修改報價單總價。\n你給的金額不只一個，或寫法有兩種意思（例如「二百五」「18萬5」），我不自己挑。請只說一個總價，例如 250000。\n目前已知：報價單編號：QT-20260325-001"
+                  }
+                ],
+                "role": "model"
+              },
+              "invocationId": "e-e143108e-802d-4a02-b9bf-e2110e015277",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/respond@1"
+              },
+              "id": "78c06e14-7aa2-45a5-ac78-7cee3f5c5d61",
+              "timestamp": 1792294639.4647982
+            },
+            {
+              "invocationId": "e-e143108e-802d-4a02-b9bf-e2110e015277",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "請提供客戶想要的總價（大於 0 的數字，例如 180000），我才能幫你修改報價單總價。\n你給的金額不只一個，或寫法有兩種意思（例如「二百五」「18萬5」），我不自己挑。請只說一個總價，例如 250000。\n目前已知：報價單編號：QT-20260325-001",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/respond@1",
+                "outputFor": [
+                  "pricing_advisor@1/respond@1",
+                  "pricing_advisor@1"
+                ]
+              },
+              "id": "2b040a49-046d-4e89-838b-a63b252075a5",
+              "timestamp": 1792294639.4656422
+            }
+          ]
+        }
+      ],
+      "database_checks": [
+        {
+          "type": "no_write",
+          "before_after_sha256": "164f92da85a317393c1a1c6388a6644fd4f5f7c81d9ebed9321ec9ee488185a5"
+        },
+        {
+          "type": "no_write",
+          "before_after_sha256": "164f92da85a317393c1a1c6388a6644fd4f5f7c81d9ebed9321ec9ee488185a5"
+        }
+      ]
+    },
+    {
+      "case": "factor_storage_failure_before_copy",
+      "passed": true,
+      "seconds": 14.92,
+      "turns": [
+        {
+          "app": "quotation_agent",
+          "session_id": "28529509-e9b0-45e8-849d-43478bfc888e",
+          "user": "把 QT-20260330-001 報價因子改成0.0001",
+          "reply": "未送出操作：改價後的利潤率超過系統可儲存範圍，請提高目標價格；沒有建立副本",
+          "events": [
+            {
+              "invocationId": "e-42f58137-1b52-4a78-b97c-62e741fefdd3",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {
+                  "last_user_text": "把 QT-20260330-001 報價因子改成0.0001",
+                  "clarify_source_text": ""
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "classify"
+              },
+              "output": "待補的前一輪操作：無\n使用者這一句：把 QT-20260330-001 報價因子改成0.0001",
+              "nodeInfo": {
+                "path": "quotation_agent@1/load_context@1",
+                "outputFor": [
+                  "quotation_agent@1/load_context@1"
+                ]
+              },
+              "id": "a933c24a-07ac-4bb7-8156-ca35f665a0e1",
+              "timestamp": 1792294639.9614015
+            },
+            {
+              "modelVersion": "qwen3.5-9b",
+              "content": {
+                "parts": [
+                  {
+                    "text": "{\n  \"intent\": \"update_pricing_factor\",\n  \"quotation_number\": \"QT-20260330-001\",\n  \"customer_name\": \"\",\n  \"new_pricing_factor\": 0.0001,\n  \"target_total_price\": null\n}"
+                  }
+                ],
+                "role": "model"
+              },
+              "partial": false,
+              "finishReason": "STOP",
+              "usageMetadata": {
+                "cachedContentTokenCount": 436,
+                "candidatesTokenCount": 70,
+                "promptTokenCount": 486,
+                "totalTokenCount": 556
+              },
+              "invocationId": "e-42f58137-1b52-4a78-b97c-62e741fefdd3",
+              "author": "classify_intent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": {
+                "intent": "update_pricing_factor",
+                "quotation_number": "QT-20260330-001",
+                "customer_name": "",
+                "new_pricing_factor": 0.0001
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/classify_intent@1",
+                "outputFor": [
+                  "quotation_agent@1/classify_intent@1"
+                ]
+              },
+              "id": "4e51f9e7-1410-4b12-ac28-27ede21591dc",
+              "timestamp": 1792294639.965351
+            },
+            {
+              "invocationId": "e-42f58137-1b52-4a78-b97c-62e741fefdd3",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {
+                  "pending_intent": null
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "update_pricing_factor"
+              },
+              "output": {
+                "quotation_number": "QT-20260330-001",
+                "new_pricing_factor": 0.0001
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/route@1",
+                "outputFor": [
+                  "quotation_agent@1/route@1"
+                ]
+              },
+              "id": "83c11dab-4e6a-43de-9050-0ea254832e62",
+              "timestamp": 1792294654.282026
+            },
+            {
+              "invocationId": "e-42f58137-1b52-4a78-b97c-62e741fefdd3",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "未送出操作：改價後的利潤率超過系統可儲存範圍，請提高目標價格；沒有建立副本",
+              "nodeInfo": {
+                "path": "quotation_agent@1/update_pricing_factor@1",
+                "outputFor": [
+                  "quotation_agent@1/update_pricing_factor@1"
+                ]
+              },
+              "id": "d59188f5-c40c-4d85-b55c-9a5c2c216fa3",
+              "timestamp": 1792294654.364325
+            },
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "未送出操作：改價後的利潤率超過系統可儲存範圍，請提高目標價格；沒有建立副本"
+                  }
+                ],
+                "role": "model"
+              },
+              "invocationId": "e-42f58137-1b52-4a78-b97c-62e741fefdd3",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/respond@1"
+              },
+              "id": "e7f3153c-fcd3-4bbe-a0f8-9c80edcf8705",
+              "timestamp": 1792294654.366759
+            },
+            {
+              "invocationId": "e-42f58137-1b52-4a78-b97c-62e741fefdd3",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "未送出操作：改價後的利潤率超過系統可儲存範圍，請提高目標價格；沒有建立副本",
+              "nodeInfo": {
+                "path": "quotation_agent@1/respond@1",
+                "outputFor": [
+                  "quotation_agent@1/respond@1",
+                  "quotation_agent@1"
+                ]
+              },
+              "id": "69a7a832-ed5a-46bc-bff5-9378e84e74b0",
+              "timestamp": 1792294654.3673387
+            }
+          ]
+        }
+      ],
+      "database_checks": [
+        {
+          "type": "no_write",
+          "before_after_sha256": "164f92da85a317393c1a1c6388a6644fd4f5f7c81d9ebed9321ec9ee488185a5"
+        }
+      ]
+    },
+    {
+      "case": "catalog_drift_before_copy",
+      "passed": true,
+      "seconds": 28.36,
+      "turns": [
+        {
+          "app": "pricing_advisor",
+          "session_id": "e7e3fde1-a3ec-430f-8124-211f17a0f233",
+          "user": "幫我把 QT-20260330-001 總價改成8000",
+          "reply": "沒辦法確認改價會使用相同的成本與牌價：目前商品成本或牌價已不同於原報價快照；請先以最新商品資料建立報價後再試算，這次沒有改資料。這次不會自動改價。",
+          "events": [
+            {
+              "invocationId": "e-7a137164-be81-4fcf-a429-5f1fd551776c",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "last_user_text": "幫我把 QT-20260330-001 總價改成8000"
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "classify"
+              },
+              "output": "知識目錄（id｜標題｜描述）：\ncomputations/price-change-impact｜改價影響試算｜給報價單編號與目標總價，算出要用的報價因子、改價後的總價、利潤與毛利率，也標出目標是不是超出可調範圍。\nglossary/pricing-factor｜報價因子（pricing_factor）｜報價單上的折扣倍率，單價 = 定價 × 報價因子。\nglossary/profit-rate｜毛利率（profit_rate）｜利潤除以總價；利潤是總價減掉品項成本。改價核准就是看這個數字。\nplaybooks/price-negotiation｜業務議價處理流程｜客戶要求降價或轉訂單時，議價顧問 Agent 和業務照這個順序處理。\npolicies/discount-approval｜改價核准層級（2026 年版）｜依改價後的毛利率決定業務能不能自己改、要誰核准，毛利率低於 5% 不可報價。\npolicies/discount-approval-2025｜改價核准層級（2025 年版，已作廢）（已作廢）｜舊版的毛利率核准門檻，已由 2026 年版取代，只留著對照，不可再用。\npolicies/order-conversion｜報價單轉訂單規則｜只有已發佈的報價單可以轉訂單，同一張報價單不重複轉。\npolicies/pricing-factor-floor｜報價因子下限｜各客戶等級的報價因子最低可以到多少，低於下限要業務主管核准。\npolicies/promo-2026q3｜2026 第三季新客戶優惠（已過期）｜2026 年第三季把 new 等級客戶的報價因子下限暫時降到 0.85，10 月 1 日起失效。\nsystem/backend-api｜EZStore 後端 REST API（報價與訂單）｜報價單、訂單、客戶與預設報價因子的 REST 端點，以及查詢參數。\nsystem/customer-levels｜客戶等級與預設報價因子｜vip、standard、new 三種客戶等級各自的預設報價因子，以及查詢用的 API。\nsystem/mcp-tools｜EZStore MCP Server 的 6 個報價單工具｜報價單 Agent 背後的 6 個 MCP 工具、先複製再改的做法，以及改總價的二分法設定。\nsystem/orders-table｜訂單資料表（orders、order_items）｜訂單欄位、和報價單的關聯，以及測試資料裡已經轉成訂單的報價單。\nsystem/pricing-formula｜報價金額怎麼算｜單價、小計、總價、利潤與利潤率的計算方式、後端什麼時候會重算，以及已發佈的報價單不能修改或刪除。\nsystem/quotation-agent｜報價單 Agent（quotation_agent）｜第一個 Agent 的 A2A 介面：agent card 位置、6 個 skill、該怎麼下指令、回覆長什麼樣子。\nsystem/quotations-table｜報價單資料表（quotations、quotation_items）｜報價單與報價品項的欄位、狀態，以及測試資料裡存值和重算不一致的報價單。\n\n前一輪：無\n使用者這一句：幫我把 QT-20260330-001 總價改成8000",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/load_context@1",
+                "outputFor": [
+                  "pricing_advisor@1/load_context@1"
+                ]
+              },
+              "id": "e85aa079-a2d1-471f-9273-770b4bec7758",
+              "timestamp": 1792294655.290216
+            },
+            {
+              "modelVersion": "qwen3.5-9b",
+              "content": {
+                "parts": [
+                  {
+                    "text": "{\n  \"intent\": \"apply_price\",\n  \"quotation_number\": \"QT-20260330-001\",\n  \"target_total\": 8000,\n  \"concept_ids\": []\n}"
+                  }
+                ],
+                "role": "model"
+              },
+              "partial": false,
+              "finishReason": "STOP",
+              "usageMetadata": {
+                "cachedContentTokenCount": 615,
+                "candidatesTokenCount": 56,
+                "promptTokenCount": 1094,
+                "totalTokenCount": 1150
+              },
+              "invocationId": "e-7a137164-be81-4fcf-a429-5f1fd551776c",
+              "author": "understand",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": {
+                "intent": "apply_price",
+                "quotation_number": "QT-20260330-001",
+                "target_total": 8000.0,
+                "concept_ids": []
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/understand@1",
+                "outputFor": [
+                  "pricing_advisor@1/understand@1"
+                ]
+              },
+              "id": "f3b4e802-6f3b-49c2-be66-98cd67e77acb",
+              "timestamp": 1792294655.2944586
+            },
+            {
+              "invocationId": "e-7a137164-be81-4fcf-a429-5f1fd551776c",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "pending": null
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "apply_price"
+              },
+              "output": {
+                "quotation_number": "QT-20260330-001",
+                "target_total": 8000.0
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/route@1",
+                "outputFor": [
+                  "pricing_advisor@1/route@1"
+                ]
+              },
+              "id": "d8accc69-7963-4f54-a173-c1ee01249edf",
+              "timestamp": 1792294668.1192431
+            },
+            {
+              "invocationId": "e-7a137164-be81-4fcf-a429-5f1fd551776c",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "last_quotation": "QT-20260330-001",
+                  "last_check": null
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "done"
+              },
+              "output": "沒辦法確認改價會使用相同的成本與牌價：目前商品成本或牌價已不同於原報價快照；請先以最新商品資料建立報價後再試算，這次沒有改資料。這次不會自動改價。",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/apply_price@1",
+                "outputFor": [
+                  "pricing_advisor@1/apply_price@1"
+                ]
+              },
+              "id": "18284ac4-dfd6-4c56-b375-ec7b7b30b6d6",
+              "timestamp": 1792294668.942691
+            },
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "沒辦法確認改價會使用相同的成本與牌價：目前商品成本或牌價已不同於原報價快照；請先以最新商品資料建立報價後再試算，這次沒有改資料。這次不會自動改價。"
+                  }
+                ],
+                "role": "model"
+              },
+              "invocationId": "e-7a137164-be81-4fcf-a429-5f1fd551776c",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/respond@1"
+              },
+              "id": "5932cab9-008b-4710-8cb0-a0581b59adc7",
+              "timestamp": 1792294668.9451842
+            },
+            {
+              "invocationId": "e-7a137164-be81-4fcf-a429-5f1fd551776c",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "沒辦法確認改價會使用相同的成本與牌價：目前商品成本或牌價已不同於原報價快照；請先以最新商品資料建立報價後再試算，這次沒有改資料。這次不會自動改價。",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/respond@1",
+                "outputFor": [
+                  "pricing_advisor@1/respond@1",
+                  "pricing_advisor@1"
+                ]
+              },
+              "id": "85f39035-4fcc-423b-aa88-6c691be5b78a",
+              "timestamp": 1792294668.9457145
+            }
+          ]
+        },
+        {
+          "app": "quotation_agent",
+          "session_id": "8a3da87c-b93a-499e-b2cf-e02161b49618",
+          "user": "幫我把 QT-20260330-001 總價改成8000",
+          "reply": "未送出操作：商品成本或牌價已變更，請先建立最新報價再改價；沒有建立副本",
+          "events": [
+            {
+              "invocationId": "e-9ecbbf66-1e09-4d5a-93bc-b0bf8e56179a",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {
+                  "last_user_text": "幫我把 QT-20260330-001 總價改成8000",
+                  "clarify_source_text": ""
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "classify"
+              },
+              "output": "待補的前一輪操作：無\n使用者這一句：幫我把 QT-20260330-001 總價改成8000",
+              "nodeInfo": {
+                "path": "quotation_agent@1/load_context@1",
+                "outputFor": [
+                  "quotation_agent@1/load_context@1"
+                ]
+              },
+              "id": "a5772252-28f1-43b0-a0fe-405576de73d3",
+              "timestamp": 1792294669.440535
+            },
+            {
+              "modelVersion": "qwen3.5-9b",
+              "content": {
+                "parts": [
+                  {
+                    "text": "{\n  \"intent\": \"adjust_total_price\",\n  \"quotation_number\": \"QT-20260330-001\",\n  \"customer_name\": \"\",\n  \"new_pricing_factor\": null,\n  \"target_total_price\": 8000\n}"
+                  }
+                ],
+                "role": "model"
+              },
+              "partial": false,
+              "finishReason": "STOP",
+              "usageMetadata": {
+                "cachedContentTokenCount": 436,
+                "candidatesTokenCount": 67,
+                "promptTokenCount": 485,
+                "totalTokenCount": 552
+              },
+              "invocationId": "e-9ecbbf66-1e09-4d5a-93bc-b0bf8e56179a",
+              "author": "classify_intent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": {
+                "intent": "adjust_total_price",
+                "quotation_number": "QT-20260330-001",
+                "customer_name": "",
+                "target_total_price": 8000.0
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/classify_intent@1",
+                "outputFor": [
+                  "quotation_agent@1/classify_intent@1"
+                ]
+              },
+              "id": "eb7500cd-a899-45ca-b27e-80e1625937d9",
+              "timestamp": 1792294669.4433455
+            },
+            {
+              "invocationId": "e-9ecbbf66-1e09-4d5a-93bc-b0bf8e56179a",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {
+                  "pending_intent": null
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "adjust_total_price"
+              },
+              "output": {
+                "quotation_number": "QT-20260330-001",
+                "target_total_price": 8000.0
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/route@1",
+                "outputFor": [
+                  "quotation_agent@1/route@1"
+                ]
+              },
+              "id": "2b6e8577-30f1-401b-8473-72e3e54ab519",
+              "timestamp": 1792294682.6113694
+            },
+            {
+              "invocationId": "e-9ecbbf66-1e09-4d5a-93bc-b0bf8e56179a",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "未送出操作：商品成本或牌價已變更，請先建立最新報價再改價；沒有建立副本",
+              "nodeInfo": {
+                "path": "quotation_agent@1/adjust_total_price@1",
+                "outputFor": [
+                  "quotation_agent@1/adjust_total_price@1"
+                ]
+              },
+              "id": "6b2dccf3-dc63-4a13-842b-cabfd7726da1",
+              "timestamp": 1792294682.7139347
+            },
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "未送出操作：商品成本或牌價已變更，請先建立最新報價再改價；沒有建立副本"
+                  }
+                ],
+                "role": "model"
+              },
+              "invocationId": "e-9ecbbf66-1e09-4d5a-93bc-b0bf8e56179a",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/respond@1"
+              },
+              "id": "1b37d8fa-292f-4446-861a-81f9166af736",
+              "timestamp": 1792294682.7156332
+            },
+            {
+              "invocationId": "e-9ecbbf66-1e09-4d5a-93bc-b0bf8e56179a",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "未送出操作：商品成本或牌價已變更，請先建立最新報價再改價；沒有建立副本",
+              "nodeInfo": {
+                "path": "quotation_agent@1/respond@1",
+                "outputFor": [
+                  "quotation_agent@1/respond@1",
+                  "quotation_agent@1"
+                ]
+              },
+              "id": "0c6a16b0-41b8-4d4c-9a41-06486dff0b39",
+              "timestamp": 1792294682.7160091
+            }
+          ]
+        }
+      ],
+      "database_checks": [
+        {
+          "type": "no_write",
+          "before_after_sha256": "164f92da85a317393c1a1c6388a6644fd4f5f7c81d9ebed9321ec9ee488185a5"
+        },
+        {
+          "type": "no_write",
+          "before_after_sha256": "164f92da85a317393c1a1c6388a6644fd4f5f7c81d9ebed9321ec9ee488185a5"
+        }
+      ]
+    },
+    {
+      "case": "first_effect_question",
+      "passed": true,
+      "seconds": 9.25,
+      "turns": [
+        {
+          "app": "quotation_agent",
+          "session_id": "4dc5170d-ff1c-4820-9a1c-9ba0b825f157",
+          "user": "複製報價單 QT-20260330-001 會產生哪些資料？",
+          "reply": "這句是在問做法或假設的情況，我沒有執行任何操作。\n要我實際操作，請直接說，例如「我要複製報價單，報價單編號：QT-20260330-001」。",
+          "events": [
+            {
+              "invocationId": "e-4c57c27e-4971-4757-a60c-187b3cac2ff8",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {
+                  "last_user_text": "複製報價單 QT-20260330-001 會產生哪些資料？",
+                  "clarify_source_text": ""
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "classify"
+              },
+              "output": "待補的前一輪操作：無\n使用者這一句：複製報價單 QT-20260330-001 會產生哪些資料？",
+              "nodeInfo": {
+                "path": "quotation_agent@1/load_context@1",
+                "outputFor": [
+                  "quotation_agent@1/load_context@1"
+                ]
+              },
+              "id": "1c68804f-ba92-4f3f-88b9-14bc5b0747af",
+              "timestamp": 1792294683.2897456
+            },
+            {
+              "modelVersion": "qwen3.5-9b",
+              "content": {
+                "parts": [
+                  {
+                    "text": "{\n  \"intent\": \"off_topic\",\n  \"quotation_number\": \"\",\n  \"customer_name\": \"\",\n  \"new_pricing_factor\": null,\n  \"target_total_price\": null\n}"
+                  }
+                ],
+                "role": "model"
+              },
+              "partial": false,
+              "finishReason": "STOP",
+              "usageMetadata": {
+                "cachedContentTokenCount": 436,
+                "candidatesTokenCount": 47,
+                "promptTokenCount": 484,
+                "totalTokenCount": 531
+              },
+              "invocationId": "e-4c57c27e-4971-4757-a60c-187b3cac2ff8",
+              "author": "classify_intent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": {
+                "intent": "off_topic",
+                "quotation_number": "",
+                "customer_name": ""
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/classify_intent@1",
+                "outputFor": [
+                  "quotation_agent@1/classify_intent@1"
+                ]
+              },
+              "id": "5f38ac75-4ffa-418a-b90a-97defab831c2",
+              "timestamp": 1792294683.3009136
+            },
+            {
+              "invocationId": "e-4c57c27e-4971-4757-a60c-187b3cac2ff8",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {
+                  "pending_intent": null,
+                  "clarify_source_text": ""
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "off_topic"
+              },
+              "output": "這句是在問做法或假設的情況，我沒有執行任何操作。\n要我實際操作，請直接說，例如「我要複製報價單，報價單編號：QT-20260330-001」。",
+              "nodeInfo": {
+                "path": "quotation_agent@1/route@1",
+                "outputFor": [
+                  "quotation_agent@1/route@1"
+                ]
+              },
+              "id": "42097031-4158-43c7-84e5-5a00393091c6",
+              "timestamp": 1792294691.904014
+            },
+            {
+              "invocationId": "e-4c57c27e-4971-4757-a60c-187b3cac2ff8",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "這句是在問做法或假設的情況，我沒有執行任何操作。\n要我實際操作，請直接說，例如「我要複製報價單，報價單編號：QT-20260330-001」。",
+              "nodeInfo": {
+                "path": "quotation_agent@1/off_topic@1",
+                "outputFor": [
+                  "quotation_agent@1/off_topic@1"
+                ]
+              },
+              "id": "a5ea5abb-b66d-4a77-a973-b4407ee3f336",
+              "timestamp": 1792294691.9066203
+            },
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "這句是在問做法或假設的情況，我沒有執行任何操作。\n要我實際操作，請直接說，例如「我要複製報價單，報價單編號：QT-20260330-001」。"
+                  }
+                ],
+                "role": "model"
+              },
+              "invocationId": "e-4c57c27e-4971-4757-a60c-187b3cac2ff8",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/respond@1"
+              },
+              "id": "583cdaba-2ae5-4659-a159-9c192c8220f7",
+              "timestamp": 1792294691.9089744
+            },
+            {
+              "invocationId": "e-4c57c27e-4971-4757-a60c-187b3cac2ff8",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "這句是在問做法或假設的情況，我沒有執行任何操作。\n要我實際操作，請直接說，例如「我要複製報價單，報價單編號：QT-20260330-001」。",
+              "nodeInfo": {
+                "path": "quotation_agent@1/respond@1",
+                "outputFor": [
+                  "quotation_agent@1/respond@1",
+                  "quotation_agent@1"
+                ]
+              },
+              "id": "99351286-b7b4-41ce-bfef-7cdd0ef5508f",
+              "timestamp": 1792294691.9098907
+            }
+          ]
+        }
+      ],
+      "database_checks": [
+        {
+          "type": "no_write",
+          "before_after_sha256": "164f92da85a317393c1a1c6388a6644fd4f5f7c81d9ebed9321ec9ee488185a5"
+        }
+      ]
+    },
+    {
+      "case": "advisor_effect_question",
+      "passed": true,
+      "seconds": 18.47,
+      "turns": [
+        {
+          "app": "pricing_advisor",
+          "session_id": "943635d7-9594-440d-a2ac-7460c8809598",
+          "user": "複製報價單 QT-20260330-001 會產生哪些資料？",
+          "reply": "這句是在問做法或假設的情況，我沒有操作任何資料。\n要我實際做，請直接說，例如「幫我複製報價單 QT-20260330-001」。",
+          "events": [
+            {
+              "invocationId": "e-94d6a10e-891b-4fe1-bf1f-e973dee9c9e9",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "last_user_text": "複製報價單 QT-20260330-001 會產生哪些資料？"
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "classify"
+              },
+              "output": "知識目錄（id｜標題｜描述）：\ncomputations/price-change-impact｜改價影響試算｜給報價單編號與目標總價，算出要用的報價因子、改價後的總價、利潤與毛利率，也標出目標是不是超出可調範圍。\nglossary/pricing-factor｜報價因子（pricing_factor）｜報價單上的折扣倍率，單價 = 定價 × 報價因子。\nglossary/profit-rate｜毛利率（profit_rate）｜利潤除以總價；利潤是總價減掉品項成本。改價核准就是看這個數字。\nplaybooks/price-negotiation｜業務議價處理流程｜客戶要求降價或轉訂單時，議價顧問 Agent 和業務照這個順序處理。\npolicies/discount-approval｜改價核准層級（2026 年版）｜依改價後的毛利率決定業務能不能自己改、要誰核准，毛利率低於 5% 不可報價。\npolicies/discount-approval-2025｜改價核准層級（2025 年版，已作廢）（已作廢）｜舊版的毛利率核准門檻，已由 2026 年版取代，只留著對照，不可再用。\npolicies/order-conversion｜報價單轉訂單規則｜只有已發佈的報價單可以轉訂單，同一張報價單不重複轉。\npolicies/pricing-factor-floor｜報價因子下限｜各客戶等級的報價因子最低可以到多少，低於下限要業務主管核准。\npolicies/promo-2026q3｜2026 第三季新客戶優惠（已過期）｜2026 年第三季把 new 等級客戶的報價因子下限暫時降到 0.85，10 月 1 日起失效。\nsystem/backend-api｜EZStore 後端 REST API（報價與訂單）｜報價單、訂單、客戶與預設報價因子的 REST 端點，以及查詢參數。\nsystem/customer-levels｜客戶等級與預設報價因子｜vip、standard、new 三種客戶等級各自的預設報價因子，以及查詢用的 API。\nsystem/mcp-tools｜EZStore MCP Server 的 6 個報價單工具｜報價單 Agent 背後的 6 個 MCP 工具、先複製再改的做法，以及改總價的二分法設定。\nsystem/orders-table｜訂單資料表（orders、order_items）｜訂單欄位、和報價單的關聯，以及測試資料裡已經轉成訂單的報價單。\nsystem/pricing-formula｜報價金額怎麼算｜單價、小計、總價、利潤與利潤率的計算方式、後端什麼時候會重算，以及已發佈的報價單不能修改或刪除。\nsystem/quotation-agent｜報價單 Agent（quotation_agent）｜第一個 Agent 的 A2A 介面：agent card 位置、6 個 skill、該怎麼下指令、回覆長什麼樣子。\nsystem/quotations-table｜報價單資料表（quotations、quotation_items）｜報價單與報價品項的欄位、狀態，以及測試資料裡存值和重算不一致的報價單。\n\n前一輪：無\n使用者這一句：複製報價單 QT-20260330-001 會產生哪些資料？",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/load_context@1",
+                "outputFor": [
+                  "pricing_advisor@1/load_context@1"
+                ]
+              },
+              "id": "b86eb926-395a-42bc-b4d7-b351e030d5a9",
+              "timestamp": 1792294693.2741773
+            },
+            {
+              "modelVersion": "qwen3.5-9b",
+              "content": {
+                "parts": [
+                  {
+                    "text": "{\n  \"intent\": \"quotation_request\",\n  \"quotation_number\": \"QT-20260330-001\",\n  \"target_total\": null,\n  \"concept_ids\": [\n    \"system/quotation-agent\",\n    \"system/quotation-agent\",\n    \"system/quotation-agent\"\n  ]\n}"
+                  }
+                ],
+                "role": "model"
+              },
+              "partial": false,
+              "finishReason": "STOP",
+              "usageMetadata": {
+                "cachedContentTokenCount": 615,
+                "candidatesTokenCount": 80,
+                "promptTokenCount": 1093,
+                "totalTokenCount": 1173
+              },
+              "invocationId": "e-94d6a10e-891b-4fe1-bf1f-e973dee9c9e9",
+              "author": "understand",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": {
+                "intent": "quotation_request",
+                "quotation_number": "QT-20260330-001",
+                "concept_ids": [
+                  "system/quotation-agent",
+                  "system/quotation-agent",
+                  "system/quotation-agent"
+                ]
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/understand@1",
+                "outputFor": [
+                  "pricing_advisor@1/understand@1"
+                ]
+              },
+              "id": "8e1051b1-1ff8-41e6-8f17-80a923e203b0",
+              "timestamp": 1792294693.2821014
+            },
+            {
+              "invocationId": "e-94d6a10e-891b-4fe1-bf1f-e973dee9c9e9",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "pending": null,
+                  "last_check": null
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "off_topic"
+              },
+              "output": "這句是在問做法或假設的情況，我沒有操作任何資料。\n要我實際做，請直接說，例如「幫我複製報價單 QT-20260330-001」。",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/route@1",
+                "outputFor": [
+                  "pricing_advisor@1/route@1"
+                ]
+              },
+              "id": "ae4bb93b-008e-4a16-8d65-269191e576fa",
+              "timestamp": 1792294710.393241
+            },
+            {
+              "invocationId": "e-94d6a10e-891b-4fe1-bf1f-e973dee9c9e9",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "這句是在問做法或假設的情況，我沒有操作任何資料。\n要我實際做，請直接說，例如「幫我複製報價單 QT-20260330-001」。",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/off_topic@1",
+                "outputFor": [
+                  "pricing_advisor@1/off_topic@1"
+                ]
+              },
+              "id": "0d177852-9195-4327-a96c-e917b806e6fd",
+              "timestamp": 1792294710.396279
+            },
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "這句是在問做法或假設的情況，我沒有操作任何資料。\n要我實際做，請直接說，例如「幫我複製報價單 QT-20260330-001」。"
+                  }
+                ],
+                "role": "model"
+              },
+              "invocationId": "e-94d6a10e-891b-4fe1-bf1f-e973dee9c9e9",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/respond@1"
+              },
+              "id": "83c7822b-c4d9-4a6c-b583-5679279c374b",
+              "timestamp": 1792294710.4023113
+            },
+            {
+              "invocationId": "e-94d6a10e-891b-4fe1-bf1f-e973dee9c9e9",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "這句是在問做法或假設的情況，我沒有操作任何資料。\n要我實際做，請直接說，例如「幫我複製報價單 QT-20260330-001」。",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/respond@1",
+                "outputFor": [
+                  "pricing_advisor@1/respond@1",
+                  "pricing_advisor@1"
+                ]
+              },
+              "id": "caff6b28-5232-4390-8535-3c79cdf7ced0",
+              "timestamp": 1792294710.4060235
+            }
+          ]
+        }
+      ],
+      "database_checks": [
+        {
+          "type": "no_write",
+          "before_after_sha256": "164f92da85a317393c1a1c6388a6644fd4f5f7c81d9ebed9321ec9ee488185a5"
+        }
+      ]
+    },
+    {
+      "case": "first_support_question",
+      "passed": true,
+      "seconds": 9.75,
+      "turns": [
+        {
+          "app": "quotation_agent",
+          "session_id": "fcfa900a-1be5-4b1a-8934-c891090d84bc",
+          "user": "系統支援複製報價單 QT-20260330-001 嗎？",
+          "reply": "這句是在問做法或假設的情況，我沒有執行任何操作。\n要我實際操作，請直接說，例如「我要複製報價單，報價單編號：QT-20260330-001」。",
+          "events": [
+            {
+              "invocationId": "e-3e3912c0-ed56-4347-900a-3baaf9730c21",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {
+                  "last_user_text": "系統支援複製報價單 QT-20260330-001 嗎？",
+                  "clarify_source_text": ""
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "classify"
+              },
+              "output": "待補的前一輪操作：無\n使用者這一句：系統支援複製報價單 QT-20260330-001 嗎？",
+              "nodeInfo": {
+                "path": "quotation_agent@1/load_context@1",
+                "outputFor": [
+                  "quotation_agent@1/load_context@1"
+                ]
+              },
+              "id": "7ae276cb-f13b-4805-91da-b09691d6729a",
+              "timestamp": 1792294711.0048544
+            },
+            {
+              "modelVersion": "qwen3.5-9b",
+              "content": {
+                "parts": [
+                  {
+                    "text": "{\n  \"intent\": \"off_topic\",\n  \"quotation_number\": \"\",\n  \"customer_name\": \"\",\n  \"new_pricing_factor\": null,\n  \"target_total_price\": null\n}"
+                  }
+                ],
+                "role": "model"
+              },
+              "partial": false,
+              "finishReason": "STOP",
+              "usageMetadata": {
+                "cachedContentTokenCount": 436,
+                "candidatesTokenCount": 47,
+                "promptTokenCount": 483,
+                "totalTokenCount": 530
+              },
+              "invocationId": "e-3e3912c0-ed56-4347-900a-3baaf9730c21",
+              "author": "classify_intent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": {
+                "intent": "off_topic",
+                "quotation_number": "",
+                "customer_name": ""
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/classify_intent@1",
+                "outputFor": [
+                  "quotation_agent@1/classify_intent@1"
+                ]
+              },
+              "id": "74942506-aba4-4a21-8e0e-17fb8b6cdd0f",
+              "timestamp": 1792294711.0088377
+            },
+            {
+              "invocationId": "e-3e3912c0-ed56-4347-900a-3baaf9730c21",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {
+                  "pending_intent": null,
+                  "clarify_source_text": ""
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "off_topic"
+              },
+              "output": "這句是在問做法或假設的情況，我沒有執行任何操作。\n要我實際操作，請直接說，例如「我要複製報價單，報價單編號：QT-20260330-001」。",
+              "nodeInfo": {
+                "path": "quotation_agent@1/route@1",
+                "outputFor": [
+                  "quotation_agent@1/route@1"
+                ]
+              },
+              "id": "dff858bb-f264-4009-b982-28ce8626abfa",
+              "timestamp": 1792294720.1431677
+            },
+            {
+              "invocationId": "e-3e3912c0-ed56-4347-900a-3baaf9730c21",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "這句是在問做法或假設的情況，我沒有執行任何操作。\n要我實際操作，請直接說，例如「我要複製報價單，報價單編號：QT-20260330-001」。",
+              "nodeInfo": {
+                "path": "quotation_agent@1/off_topic@1",
+                "outputFor": [
+                  "quotation_agent@1/off_topic@1"
+                ]
+              },
+              "id": "fabe24c0-1edf-4c9f-aedb-ea03ddba921e",
+              "timestamp": 1792294720.1466465
+            },
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "這句是在問做法或假設的情況，我沒有執行任何操作。\n要我實際操作，請直接說，例如「我要複製報價單，報價單編號：QT-20260330-001」。"
+                  }
+                ],
+                "role": "model"
+              },
+              "invocationId": "e-3e3912c0-ed56-4347-900a-3baaf9730c21",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/respond@1"
+              },
+              "id": "386b2f0c-5ccd-40f5-a490-6fef8653b3ae",
+              "timestamp": 1792294720.1493783
+            },
+            {
+              "invocationId": "e-3e3912c0-ed56-4347-900a-3baaf9730c21",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "這句是在問做法或假設的情況，我沒有執行任何操作。\n要我實際操作，請直接說，例如「我要複製報價單，報價單編號：QT-20260330-001」。",
+              "nodeInfo": {
+                "path": "quotation_agent@1/respond@1",
+                "outputFor": [
+                  "quotation_agent@1/respond@1",
+                  "quotation_agent@1"
+                ]
+              },
+              "id": "af9478eb-24b2-4f19-acfa-928ee54ddbe2",
+              "timestamp": 1792294720.1501667
+            }
+          ]
+        }
+      ],
+      "database_checks": [
+        {
+          "type": "no_write",
+          "before_after_sha256": "164f92da85a317393c1a1c6388a6644fd4f5f7c81d9ebed9321ec9ee488185a5"
+        }
+      ]
+    },
+    {
+      "case": "advisor_past_narration",
+      "passed": true,
+      "seconds": 12.66,
+      "turns": [
+        {
+          "app": "pricing_advisor",
+          "session_id": "15dd0333-153e-4e63-9f44-12251dba3bd8",
+          "user": "昨天同事複製了報價單 QT-20260330-001，我只是描述這件事。",
+          "reply": "這句是在問做法或假設的情況，我沒有操作任何資料。\n要我實際做，請直接說，例如「幫我複製報價單 QT-20260330-001」。",
+          "events": [
+            {
+              "invocationId": "e-d93abe15-7077-4ec4-a4cb-4c19be001c29",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "last_user_text": "昨天同事複製了報價單 QT-20260330-001，我只是描述這件事。"
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "classify"
+              },
+              "output": "知識目錄（id｜標題｜描述）：\ncomputations/price-change-impact｜改價影響試算｜給報價單編號與目標總價，算出要用的報價因子、改價後的總價、利潤與毛利率，也標出目標是不是超出可調範圍。\nglossary/pricing-factor｜報價因子（pricing_factor）｜報價單上的折扣倍率，單價 = 定價 × 報價因子。\nglossary/profit-rate｜毛利率（profit_rate）｜利潤除以總價；利潤是總價減掉品項成本。改價核准就是看這個數字。\nplaybooks/price-negotiation｜業務議價處理流程｜客戶要求降價或轉訂單時，議價顧問 Agent 和業務照這個順序處理。\npolicies/discount-approval｜改價核准層級（2026 年版）｜依改價後的毛利率決定業務能不能自己改、要誰核准，毛利率低於 5% 不可報價。\npolicies/discount-approval-2025｜改價核准層級（2025 年版，已作廢）（已作廢）｜舊版的毛利率核准門檻，已由 2026 年版取代，只留著對照，不可再用。\npolicies/order-conversion｜報價單轉訂單規則｜只有已發佈的報價單可以轉訂單，同一張報價單不重複轉。\npolicies/pricing-factor-floor｜報價因子下限｜各客戶等級的報價因子最低可以到多少，低於下限要業務主管核准。\npolicies/promo-2026q3｜2026 第三季新客戶優惠（已過期）｜2026 年第三季把 new 等級客戶的報價因子下限暫時降到 0.85，10 月 1 日起失效。\nsystem/backend-api｜EZStore 後端 REST API（報價與訂單）｜報價單、訂單、客戶與預設報價因子的 REST 端點，以及查詢參數。\nsystem/customer-levels｜客戶等級與預設報價因子｜vip、standard、new 三種客戶等級各自的預設報價因子，以及查詢用的 API。\nsystem/mcp-tools｜EZStore MCP Server 的 6 個報價單工具｜報價單 Agent 背後的 6 個 MCP 工具、先複製再改的做法，以及改總價的二分法設定。\nsystem/orders-table｜訂單資料表（orders、order_items）｜訂單欄位、和報價單的關聯，以及測試資料裡已經轉成訂單的報價單。\nsystem/pricing-formula｜報價金額怎麼算｜單價、小計、總價、利潤與利潤率的計算方式、後端什麼時候會重算，以及已發佈的報價單不能修改或刪除。\nsystem/quotation-agent｜報價單 Agent（quotation_agent）｜第一個 Agent 的 A2A 介面：agent card 位置、6 個 skill、該怎麼下指令、回覆長什麼樣子。\nsystem/quotations-table｜報價單資料表（quotations、quotation_items）｜報價單與報價品項的欄位、狀態，以及測試資料裡存值和重算不一致的報價單。\n\n前一輪：無\n使用者這一句：昨天同事複製了報價單 QT-20260330-001，我只是描述這件事。",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/load_context@1",
+                "outputFor": [
+                  "pricing_advisor@1/load_context@1"
+                ]
+              },
+              "id": "e636a611-d3d6-401c-b396-9c7adb692416",
+              "timestamp": 1792294721.1249895
+            },
+            {
+              "modelVersion": "qwen3.5-9b",
+              "content": {
+                "parts": [
+                  {
+                    "text": "{\n  \"intent\": \"provide_info\",\n  \"quotation_number\": \"QT-20260330-001\",\n  \"target_total\": null,\n  \"concept_ids\": []\n}"
+                  }
+                ],
+                "role": "model"
+              },
+              "partial": false,
+              "finishReason": "STOP",
+              "usageMetadata": {
+                "cachedContentTokenCount": 615,
+                "candidatesTokenCount": 52,
+                "promptTokenCount": 1095,
+                "totalTokenCount": 1147
+              },
+              "invocationId": "e-d93abe15-7077-4ec4-a4cb-4c19be001c29",
+              "author": "understand",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": {
+                "intent": "provide_info",
+                "quotation_number": "QT-20260330-001",
+                "concept_ids": []
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/understand@1",
+                "outputFor": [
+                  "pricing_advisor@1/understand@1"
+                ]
+              },
+              "id": "319a8a96-568c-4c76-af7a-5fab4db19f5a",
+              "timestamp": 1792294721.1290462
+            },
+            {
+              "invocationId": "e-d93abe15-7077-4ec4-a4cb-4c19be001c29",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "pending": null,
+                  "last_check": null
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "off_topic"
+              },
+              "output": "這句是在問做法或假設的情況，我沒有操作任何資料。\n要我實際做，請直接說，例如「幫我複製報價單 QT-20260330-001」。",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/route@1",
+                "outputFor": [
+                  "pricing_advisor@1/route@1"
+                ]
+              },
+              "id": "dcf6bdb6-fe2f-4c23-9548-8570989901e9",
+              "timestamp": 1792294732.8282518
+            },
+            {
+              "invocationId": "e-d93abe15-7077-4ec4-a4cb-4c19be001c29",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "這句是在問做法或假設的情況，我沒有操作任何資料。\n要我實際做，請直接說，例如「幫我複製報價單 QT-20260330-001」。",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/off_topic@1",
+                "outputFor": [
+                  "pricing_advisor@1/off_topic@1"
+                ]
+              },
+              "id": "ec3e8531-46d0-46d5-bc4d-5c38f62fa2b9",
+              "timestamp": 1792294732.8320184
+            },
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "這句是在問做法或假設的情況，我沒有操作任何資料。\n要我實際做，請直接說，例如「幫我複製報價單 QT-20260330-001」。"
+                  }
+                ],
+                "role": "model"
+              },
+              "invocationId": "e-d93abe15-7077-4ec4-a4cb-4c19be001c29",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/respond@1"
+              },
+              "id": "58671b53-1027-4090-bc20-d04bf1c958bf",
+              "timestamp": 1792294732.8351593
+            },
+            {
+              "invocationId": "e-d93abe15-7077-4ec4-a4cb-4c19be001c29",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "這句是在問做法或假設的情況，我沒有操作任何資料。\n要我實際做，請直接說，例如「幫我複製報價單 QT-20260330-001」。",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/respond@1",
+                "outputFor": [
+                  "pricing_advisor@1/respond@1",
+                  "pricing_advisor@1"
+                ]
+              },
+              "id": "aa7eecfe-8e86-4b6e-8efe-767e2e053bdf",
+              "timestamp": 1792294732.8360462
+            }
+          ]
+        }
+      ],
+      "database_checks": [
+        {
+          "type": "no_write",
+          "before_after_sha256": "164f92da85a317393c1a1c6388a6644fd4f5f7c81d9ebed9321ec9ee488185a5"
+        }
+      ]
+    },
+    {
+      "case": "first_describe_conversion",
+      "passed": true,
+      "seconds": 13.3,
+      "turns": [
+        {
+          "app": "quotation_agent",
+          "session_id": "ddeefda5-3349-4287-b385-60bfab738aa9",
+          "user": "請描述將報價單 QT-20260330-001 轉訂單的結果。",
+          "reply": "這句是在問做法或假設的情況，我沒有執行任何操作。\n要我實際操作，請直接說，例如「我要複製報價單，報價單編號：QT-20260330-001」。",
+          "events": [
+            {
+              "invocationId": "e-a0138aa3-1a48-4259-90f2-e0c344b5dea6",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {
+                  "last_user_text": "請描述將報價單 QT-20260330-001 轉訂單的結果。",
+                  "clarify_source_text": ""
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "classify"
+              },
+              "output": "待補的前一輪操作：無\n使用者這一句：請描述將報價單 QT-20260330-001 轉訂單的結果。",
+              "nodeInfo": {
+                "path": "quotation_agent@1/load_context@1",
+                "outputFor": [
+                  "quotation_agent@1/load_context@1"
+                ]
+              },
+              "id": "48726a7c-7189-44cf-8867-5fbfce4628bd",
+              "timestamp": 1792294733.4658778
+            },
+            {
+              "modelVersion": "qwen3.5-9b",
+              "content": {
+                "parts": [
+                  {
+                    "text": "{\n  \"intent\": \"off_topic\",\n  \"quotation_number\": \"QT-20260330-001\",\n  \"customer_name\": \"\",\n  \"new_pricing_factor\": null,\n  \"target_total_price\": null\n}"
+                  }
+                ],
+                "role": "model"
+              },
+              "partial": false,
+              "finishReason": "STOP",
+              "usageMetadata": {
+                "cachedContentTokenCount": 436,
+                "candidatesTokenCount": 62,
+                "promptTokenCount": 485,
+                "totalTokenCount": 547
+              },
+              "invocationId": "e-a0138aa3-1a48-4259-90f2-e0c344b5dea6",
+              "author": "classify_intent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": {
+                "intent": "off_topic",
+                "quotation_number": "QT-20260330-001",
+                "customer_name": ""
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/classify_intent@1",
+                "outputFor": [
+                  "quotation_agent@1/classify_intent@1"
+                ]
+              },
+              "id": "7d54cef6-94c8-4bbb-bb3a-eed70c67068e",
+              "timestamp": 1792294733.469816
+            },
+            {
+              "invocationId": "e-a0138aa3-1a48-4259-90f2-e0c344b5dea6",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {
+                  "pending_intent": null,
+                  "clarify_source_text": ""
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "off_topic"
+              },
+              "output": "這句是在問做法或假設的情況，我沒有執行任何操作。\n要我實際操作，請直接說，例如「我要複製報價單，報價單編號：QT-20260330-001」。",
+              "nodeInfo": {
+                "path": "quotation_agent@1/route@1",
+                "outputFor": [
+                  "quotation_agent@1/route@1"
+                ]
+              },
+              "id": "ae0402bd-4889-46fe-b59b-d41d176385a8",
+              "timestamp": 1792294746.1883268
+            },
+            {
+              "invocationId": "e-a0138aa3-1a48-4259-90f2-e0c344b5dea6",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "這句是在問做法或假設的情況，我沒有執行任何操作。\n要我實際操作，請直接說，例如「我要複製報價單，報價單編號：QT-20260330-001」。",
+              "nodeInfo": {
+                "path": "quotation_agent@1/off_topic@1",
+                "outputFor": [
+                  "quotation_agent@1/off_topic@1"
+                ]
+              },
+              "id": "f9612ded-3d63-4b6f-bfaa-469bf457680f",
+              "timestamp": 1792294746.1941726
+            },
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "這句是在問做法或假設的情況，我沒有執行任何操作。\n要我實際操作，請直接說，例如「我要複製報價單，報價單編號：QT-20260330-001」。"
+                  }
+                ],
+                "role": "model"
+              },
+              "invocationId": "e-a0138aa3-1a48-4259-90f2-e0c344b5dea6",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/respond@1"
+              },
+              "id": "ccf23fbd-f909-4e83-8a9e-ccb19fda17de",
+              "timestamp": 1792294746.1963663
+            },
+            {
+              "invocationId": "e-a0138aa3-1a48-4259-90f2-e0c344b5dea6",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "這句是在問做法或假設的情況，我沒有執行任何操作。\n要我實際操作，請直接說，例如「我要複製報價單，報價單編號：QT-20260330-001」。",
+              "nodeInfo": {
+                "path": "quotation_agent@1/respond@1",
+                "outputFor": [
+                  "quotation_agent@1/respond@1",
+                  "quotation_agent@1"
+                ]
+              },
+              "id": "a855a45c-82a4-4fb5-ac27-bf436062297b",
+              "timestamp": 1792294746.1971502
+            }
+          ]
+        }
+      ],
+      "database_checks": [
+        {
+          "type": "no_write",
+          "before_after_sha256": "164f92da85a317393c1a1c6388a6644fd4f5f7c81d9ebed9321ec9ee488185a5"
+        }
+      ]
+    },
+    {
+      "case": "invalid_replacement_after_check",
+      "passed": true,
+      "seconds": 26.48,
+      "turns": [
+        {
+          "app": "pricing_advisor",
+          "session_id": "6aa71fb9-5905-4ec0-bc80-926ad563036f",
+          "user": "QT-20260325-001 壓到200000可以嗎？",
+          "reply": "QT-20260325-001（神盾局科技股份有限公司，vip，草稿）改成 200000 的試算：\n- 報價因子 0.8200 → 0.7752\n- 總價 211560.00 → 200001.60（報價因子取到小數 4 位）\n- 毛利率 32.17% → 28.25%（利潤 56501.60）\n判斷：業務可直接調整\n- 改價核准層級（2026 年版）：改價後毛利率 28.25% → 業務可直接調整（未驗證）\n- 報價因子下限：報價因子 0.7752 沒有低於 vip 的下限 0.70 → 業務可直接調整（未驗證）\n沒有套用：改價核准層級（2025 年版，已作廢）、2026 第三季新客戶優惠（2026-10-01 起過期）\n試算驗證：通過（計算程式 sha256 ae362ce9aa5f…，資料來源 http://backend:8080/api/v1/quotations/9，已重讀核對）\n注意：資料庫存的總價或利潤和品項重算不同，以上用品項重算。\n系統連結：http://localhost:53000/quotations/9\n下一步：可以直接調整。要改的話跟我說「幫我改」，我會經 A2A 請報價單 Agent 先複製再改總價，原單不動。",
+          "events": [
+            {
+              "invocationId": "e-489e0f7d-cde9-412b-9ad3-0be7d98d5b99",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "last_user_text": "QT-20260325-001 壓到200000可以嗎？"
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "classify"
+              },
+              "output": "知識目錄（id｜標題｜描述）：\ncomputations/price-change-impact｜改價影響試算｜給報價單編號與目標總價，算出要用的報價因子、改價後的總價、利潤與毛利率，也標出目標是不是超出可調範圍。\nglossary/pricing-factor｜報價因子（pricing_factor）｜報價單上的折扣倍率，單價 = 定價 × 報價因子。\nglossary/profit-rate｜毛利率（profit_rate）｜利潤除以總價；利潤是總價減掉品項成本。改價核准就是看這個數字。\nplaybooks/price-negotiation｜業務議價處理流程｜客戶要求降價或轉訂單時，議價顧問 Agent 和業務照這個順序處理。\npolicies/discount-approval｜改價核准層級（2026 年版）｜依改價後的毛利率決定業務能不能自己改、要誰核准，毛利率低於 5% 不可報價。\npolicies/discount-approval-2025｜改價核准層級（2025 年版，已作廢）（已作廢）｜舊版的毛利率核准門檻，已由 2026 年版取代，只留著對照，不可再用。\npolicies/order-conversion｜報價單轉訂單規則｜只有已發佈的報價單可以轉訂單，同一張報價單不重複轉。\npolicies/pricing-factor-floor｜報價因子下限｜各客戶等級的報價因子最低可以到多少，低於下限要業務主管核准。\npolicies/promo-2026q3｜2026 第三季新客戶優惠（已過期）｜2026 年第三季把 new 等級客戶的報價因子下限暫時降到 0.85，10 月 1 日起失效。\nsystem/backend-api｜EZStore 後端 REST API（報價與訂單）｜報價單、訂單、客戶與預設報價因子的 REST 端點，以及查詢參數。\nsystem/customer-levels｜客戶等級與預設報價因子｜vip、standard、new 三種客戶等級各自的預設報價因子，以及查詢用的 API。\nsystem/mcp-tools｜EZStore MCP Server 的 6 個報價單工具｜報價單 Agent 背後的 6 個 MCP 工具、先複製再改的做法，以及改總價的二分法設定。\nsystem/orders-table｜訂單資料表（orders、order_items）｜訂單欄位、和報價單的關聯，以及測試資料裡已經轉成訂單的報價單。\nsystem/pricing-formula｜報價金額怎麼算｜單價、小計、總價、利潤與利潤率的計算方式、後端什麼時候會重算，以及已發佈的報價單不能修改或刪除。\nsystem/quotation-agent｜報價單 Agent（quotation_agent）｜第一個 Agent 的 A2A 介面：agent card 位置、6 個 skill、該怎麼下指令、回覆長什麼樣子。\nsystem/quotations-table｜報價單資料表（quotations、quotation_items）｜報價單與報價品項的欄位、狀態，以及測試資料裡存值和重算不一致的報價單。\n\n前一輪：無\n使用者這一句：QT-20260325-001 壓到200000可以嗎？",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/load_context@1",
+                "outputFor": [
+                  "pricing_advisor@1/load_context@1"
+                ]
+              },
+              "id": "79a58e6b-6812-4063-a04e-14e41d1ec591",
+              "timestamp": 1792294747.028369
+            },
+            {
+              "modelVersion": "qwen3.5-9b",
+              "content": {
+                "parts": [
+                  {
+                    "text": "{\n  \"intent\": \"price_check\",\n  \"quotation_number\": \"QT-20260325-001\",\n  \"target_total\": 200000,\n  \"concept_ids\": []\n}"
+                  }
+                ],
+                "role": "model"
+              },
+              "partial": false,
+              "finishReason": "STOP",
+              "usageMetadata": {
+                "cachedContentTokenCount": 615,
+                "candidatesTokenCount": 58,
+                "promptTokenCount": 1096,
+                "totalTokenCount": 1154
+              },
+              "invocationId": "e-489e0f7d-cde9-412b-9ad3-0be7d98d5b99",
+              "author": "understand",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": {
+                "intent": "price_check",
+                "quotation_number": "QT-20260325-001",
+                "target_total": 200000.0,
+                "concept_ids": []
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/understand@1",
+                "outputFor": [
+                  "pricing_advisor@1/understand@1"
+                ]
+              },
+              "id": "32ee5cc7-470b-42da-a37a-4f405d6c3112",
+              "timestamp": 1792294747.0348759
+            },
+            {
+              "invocationId": "e-489e0f7d-cde9-412b-9ad3-0be7d98d5b99",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "pending": null
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "price_check"
+              },
+              "output": {
+                "quotation_number": "QT-20260325-001",
+                "target_total": 200000.0
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/route@1",
+                "outputFor": [
+                  "pricing_advisor@1/route@1"
+                ]
+              },
+              "id": "f811de4d-b2e6-4e27-b755-18427409968f",
+              "timestamp": 1792294759.9623327
+            },
+            {
+              "invocationId": "e-489e0f7d-cde9-412b-9ad3-0be7d98d5b99",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "last_quotation": "QT-20260325-001",
+                  "last_check": {
+                    "quotation_number": "QT-20260325-001",
+                    "target_total": 200000.0,
+                    "approval": "none",
+                    "label": "業務可直接調整",
+                    "new_factor": "0.7752",
+                    "new_margin": "0.2825",
+                    "receipt": {
+                      "computation_sha256": "ae362ce9aa5f2a0449493c1fd00b0d879a9f017da966044268a3bef64d468391",
+                      "source_url": "http://backend:8080/api/v1/quotations/9",
+                      "source_sha256": "3a0e599bf9dfac53041437a25ba887e4dd8f822514f73a1a47604b703b1b0098",
+                      "executed_at": "2026-10-18T03:39:20Z",
+                      "attestation": "ok"
+                    },
+                    "at": "2026-10-18T03:39:20.580377+00:00"
+                  }
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "QT-20260325-001（神盾局科技股份有限公司，vip，草稿）改成 200000 的試算：\n- 報價因子 0.8200 → 0.7752\n- 總價 211560.00 → 200001.60（報價因子取到小數 4 位）\n- 毛利率 32.17% → 28.25%（利潤 56501.60）\n判斷：業務可直接調整\n- 改價核准層級（2026 年版）：改價後毛利率 28.25% → 業務可直接調整（未驗證）\n- 報價因子下限：報價因子 0.7752 沒有低於 vip 的下限 0.70 → 業務可直接調整（未驗證）\n沒有套用：改價核准層級（2025 年版，已作廢）、2026 第三季新客戶優惠（2026-10-01 起過期）\n試算驗證：通過（計算程式 sha256 ae362ce9aa5f…，資料來源 http://backend:8080/api/v1/quotations/9，已重讀核對）\n注意：資料庫存的總價或利潤和品項重算不同，以上用品項重算。\n系統連結：http://localhost:53000/quotations/9\n下一步：可以直接調整。要改的話跟我說「幫我改」，我會經 A2A 請報價單 Agent 先複製再改總價，原單不動。",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/price_check@1",
+                "outputFor": [
+                  "pricing_advisor@1/price_check@1"
+                ]
+              },
+              "id": "ee09a29d-9fd7-4778-868f-a3770fc9763b",
+              "timestamp": 1792294760.5806754
+            },
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "QT-20260325-001（神盾局科技股份有限公司，vip，草稿）改成 200000 的試算：\n- 報價因子 0.8200 → 0.7752\n- 總價 211560.00 → 200001.60（報價因子取到小數 4 位）\n- 毛利率 32.17% → 28.25%（利潤 56501.60）\n判斷：業務可直接調整\n- 改價核准層級（2026 年版）：改價後毛利率 28.25% → 業務可直接調整（未驗證）\n- 報價因子下限：報價因子 0.7752 沒有低於 vip 的下限 0.70 → 業務可直接調整（未驗證）\n沒有套用：改價核准層級（2025 年版，已作廢）、2026 第三季新客戶優惠（2026-10-01 起過期）\n試算驗證：通過（計算程式 sha256 ae362ce9aa5f…，資料來源 http://backend:8080/api/v1/quotations/9，已重讀核對）\n注意：資料庫存的總價或利潤和品項重算不同，以上用品項重算。\n系統連結：http://localhost:53000/quotations/9\n下一步：可以直接調整。要改的話跟我說「幫我改」，我會經 A2A 請報價單 Agent 先複製再改總價，原單不動。"
+                  }
+                ],
+                "role": "model"
+              },
+              "invocationId": "e-489e0f7d-cde9-412b-9ad3-0be7d98d5b99",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/respond@1"
+              },
+              "id": "7cfc1535-efe2-4434-bcd4-f4a907291dce",
+              "timestamp": 1792294760.5850835
+            },
+            {
+              "invocationId": "e-489e0f7d-cde9-412b-9ad3-0be7d98d5b99",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "QT-20260325-001（神盾局科技股份有限公司，vip，草稿）改成 200000 的試算：\n- 報價因子 0.8200 → 0.7752\n- 總價 211560.00 → 200001.60（報價因子取到小數 4 位）\n- 毛利率 32.17% → 28.25%（利潤 56501.60）\n判斷：業務可直接調整\n- 改價核准層級（2026 年版）：改價後毛利率 28.25% → 業務可直接調整（未驗證）\n- 報價因子下限：報價因子 0.7752 沒有低於 vip 的下限 0.70 → 業務可直接調整（未驗證）\n沒有套用：改價核准層級（2025 年版，已作廢）、2026 第三季新客戶優惠（2026-10-01 起過期）\n試算驗證：通過（計算程式 sha256 ae362ce9aa5f…，資料來源 http://backend:8080/api/v1/quotations/9，已重讀核對）\n注意：資料庫存的總價或利潤和品項重算不同，以上用品項重算。\n系統連結：http://localhost:53000/quotations/9\n下一步：可以直接調整。要改的話跟我說「幫我改」，我會經 A2A 請報價單 Agent 先複製再改總價，原單不動。",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/respond@1",
+                "outputFor": [
+                  "pricing_advisor@1/respond@1",
+                  "pricing_advisor@1"
+                ]
+              },
+              "id": "40499dcd-4a2f-4b86-b310-c8fef6a84480",
+              "timestamp": 1792294760.5859551
+            }
+          ]
+        },
+        {
+          "app": "pricing_advisor",
+          "session_id": "6aa71fb9-5905-4ec0-bc80-926ad563036f",
+          "user": "幫我把 QT-20260325-001 總價改到明天",
+          "reply": "請提供客戶想要的總價（大於 0 的數字，例如 180000），我才能幫你修改報價單總價。\n你給的金額不只一個，或寫法有兩種意思（例如「二百五」「18萬5」），我不自己挑。請只說一個總價，例如 250000。\n目前已知：報價單編號：QT-20260325-001",
+          "events": [
+            {
+              "invocationId": "e-f277776d-26e9-475d-a493-c2a5a728c944",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "last_user_text": "幫我把 QT-20260325-001 總價改到明天"
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "classify"
+              },
+              "output": "知識目錄（id｜標題｜描述）：\ncomputations/price-change-impact｜改價影響試算｜給報價單編號與目標總價，算出要用的報價因子、改價後的總價、利潤與毛利率，也標出目標是不是超出可調範圍。\nglossary/pricing-factor｜報價因子（pricing_factor）｜報價單上的折扣倍率，單價 = 定價 × 報價因子。\nglossary/profit-rate｜毛利率（profit_rate）｜利潤除以總價；利潤是總價減掉品項成本。改價核准就是看這個數字。\nplaybooks/price-negotiation｜業務議價處理流程｜客戶要求降價或轉訂單時，議價顧問 Agent 和業務照這個順序處理。\npolicies/discount-approval｜改價核准層級（2026 年版）｜依改價後的毛利率決定業務能不能自己改、要誰核准，毛利率低於 5% 不可報價。\npolicies/discount-approval-2025｜改價核准層級（2025 年版，已作廢）（已作廢）｜舊版的毛利率核准門檻，已由 2026 年版取代，只留著對照，不可再用。\npolicies/order-conversion｜報價單轉訂單規則｜只有已發佈的報價單可以轉訂單，同一張報價單不重複轉。\npolicies/pricing-factor-floor｜報價因子下限｜各客戶等級的報價因子最低可以到多少，低於下限要業務主管核准。\npolicies/promo-2026q3｜2026 第三季新客戶優惠（已過期）｜2026 年第三季把 new 等級客戶的報價因子下限暫時降到 0.85，10 月 1 日起失效。\nsystem/backend-api｜EZStore 後端 REST API（報價與訂單）｜報價單、訂單、客戶與預設報價因子的 REST 端點，以及查詢參數。\nsystem/customer-levels｜客戶等級與預設報價因子｜vip、standard、new 三種客戶等級各自的預設報價因子，以及查詢用的 API。\nsystem/mcp-tools｜EZStore MCP Server 的 6 個報價單工具｜報價單 Agent 背後的 6 個 MCP 工具、先複製再改的做法，以及改總價的二分法設定。\nsystem/orders-table｜訂單資料表（orders、order_items）｜訂單欄位、和報價單的關聯，以及測試資料裡已經轉成訂單的報價單。\nsystem/pricing-formula｜報價金額怎麼算｜單價、小計、總價、利潤與利潤率的計算方式、後端什麼時候會重算，以及已發佈的報價單不能修改或刪除。\nsystem/quotation-agent｜報價單 Agent（quotation_agent）｜第一個 Agent 的 A2A 介面：agent card 位置、6 個 skill、該怎麼下指令、回覆長什麼樣子。\nsystem/quotations-table｜報價單資料表（quotations、quotation_items）｜報價單與報價品項的欄位、狀態，以及測試資料裡存值和重算不一致的報價單。\n\n前一輪：上一次試算：QT-20260325-001 改成 200000，結果「業務可直接調整」\n使用者這一句：幫我把 QT-20260325-001 總價改到明天",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/load_context@1",
+                "outputFor": [
+                  "pricing_advisor@1/load_context@1"
+                ]
+              },
+              "id": "b76d369a-0107-4d21-9694-557ccb6e59c8",
+              "timestamp": 1792294761.4599924
+            },
+            {
+              "modelVersion": "qwen3.5-9b",
+              "content": {
+                "parts": [
+                  {
+                    "text": "{\n  \"intent\": \"apply_price\",\n  \"quotation_number\": \"QT-20260325-001\",\n  \"target_total\": null,\n  \"concept_ids\": []\n}"
+                  }
+                ],
+                "role": "model"
+              },
+              "partial": false,
+              "finishReason": "STOP",
+              "usageMetadata": {
+                "cachedContentTokenCount": 615,
+                "candidatesTokenCount": 52,
+                "promptTokenCount": 1124,
+                "totalTokenCount": 1176
+              },
+              "invocationId": "e-f277776d-26e9-475d-a493-c2a5a728c944",
+              "author": "understand",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": {
+                "intent": "apply_price",
+                "quotation_number": "QT-20260325-001",
+                "concept_ids": []
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/understand@1",
+                "outputFor": [
+                  "pricing_advisor@1/understand@1"
+                ]
+              },
+              "id": "084bee46-d3b0-46b6-b823-63dd3ecb6bd9",
+              "timestamp": 1792294761.4682415
+            },
+            {
+              "invocationId": "e-f277776d-26e9-475d-a493-c2a5a728c944",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "pending": {
+                    "intent": "apply_price",
+                    "quotation_number": "QT-20260325-001",
+                    "target_total": null
+                  },
+                  "last_check": null
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "clarify"
+              },
+              "output": {
+                "operation": "apply_price",
+                "missing": [
+                  "target_total"
+                ],
+                "invalid": [],
+                "fields": {
+                  "quotation_number": "QT-20260325-001",
+                  "target_total": null
+                },
+                "hint": "amount"
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/route@1",
+                "outputFor": [
+                  "pricing_advisor@1/route@1"
+                ]
+              },
+              "id": "3aa429e2-8446-4cf7-945a-c510d7c74d06",
+              "timestamp": 1792294772.6815069
+            },
+            {
+              "invocationId": "e-f277776d-26e9-475d-a493-c2a5a728c944",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "請提供客戶想要的總價（大於 0 的數字，例如 180000），我才能幫你修改報價單總價。\n你給的金額不只一個，或寫法有兩種意思（例如「二百五」「18萬5」），我不自己挑。請只說一個總價，例如 250000。\n目前已知：報價單編號：QT-20260325-001",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/clarify@1",
+                "outputFor": [
+                  "pricing_advisor@1/clarify@1"
+                ]
+              },
+              "id": "96c54ec5-c22e-4bb5-a114-d5a1f97f5974",
+              "timestamp": 1792294772.6882706
+            },
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "請提供客戶想要的總價（大於 0 的數字，例如 180000），我才能幫你修改報價單總價。\n你給的金額不只一個，或寫法有兩種意思（例如「二百五」「18萬5」），我不自己挑。請只說一個總價，例如 250000。\n目前已知：報價單編號：QT-20260325-001"
+                  }
+                ],
+                "role": "model"
+              },
+              "invocationId": "e-f277776d-26e9-475d-a493-c2a5a728c944",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/respond@1"
+              },
+              "id": "31d57603-7bf8-43c6-a4d2-b98344b28afb",
+              "timestamp": 1792294772.691061
+            },
+            {
+              "invocationId": "e-f277776d-26e9-475d-a493-c2a5a728c944",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "請提供客戶想要的總價（大於 0 的數字，例如 180000），我才能幫你修改報價單總價。\n你給的金額不只一個，或寫法有兩種意思（例如「二百五」「18萬5」），我不自己挑。請只說一個總價，例如 250000。\n目前已知：報價單編號：QT-20260325-001",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/respond@1",
+                "outputFor": [
+                  "pricing_advisor@1/respond@1",
+                  "pricing_advisor@1"
+                ]
+              },
+              "id": "120bd1ed-be00-41bc-b28b-3c71779fb20d",
+              "timestamp": 1792294772.6917117
+            }
+          ]
+        }
+      ],
+      "database_checks": [
+        {
+          "type": "no_write",
+          "before_after_sha256": "164f92da85a317393c1a1c6388a6644fd4f5f7c81d9ebed9321ec9ee488185a5"
+        },
+        {
+          "type": "no_write",
+          "before_after_sha256": "164f92da85a317393c1a1c6388a6644fd4f5f7c81d9ebed9321ec9ee488185a5"
+        }
+      ]
+    },
+    {
+      "case": "first_stated_price",
+      "passed": true,
+      "seconds": 13.22,
+      "turns": [
+        {
+          "app": "quotation_agent",
+          "session_id": "2cb163b7-2f9a-4376-8118-e9d96026eb7a",
+          "user": "QT-20260325-001 的總價是200000",
+          "reply": "報價單編號: QT-20260325-001\n客戶: 神盾局科技股份有限公司\n客戶等級: vip\n報價因子: 0.82\n總價: 211560\n利潤: 66060 (利潤率: 0.3123)\n狀態: draft\n備註: 待客戶確認的設備報價\n品項:\n  1. 商用雷射印表機 LJ-5200 — 單價: 18040, 數量: 3, 小計: 54120\n  2. 多功能事務機 MF-3800 — 單價: 36900, 數量: 1, 小計: 36900\n  3. 27吋商用液晶螢幕 M27-Pro — 單價: 8036, 數量: 15, 小計: 120540\n系統連結: http://localhost:53000/quotations/9",
+          "events": [
+            {
+              "invocationId": "e-01149974-78ca-45c2-aa3b-c81666fa6add",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {
+                  "last_user_text": "QT-20260325-001 的總價是200000",
+                  "clarify_source_text": ""
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "classify"
+              },
+              "output": "待補的前一輪操作：無\n使用者這一句：QT-20260325-001 的總價是200000",
+              "nodeInfo": {
+                "path": "quotation_agent@1/load_context@1",
+                "outputFor": [
+                  "quotation_agent@1/load_context@1"
+                ]
+              },
+              "id": "f8658725-728a-43ef-9e54-1d66b64130d0",
+              "timestamp": 1792294773.2725272
+            },
+            {
+              "modelVersion": "qwen3.5-9b",
+              "content": {
+                "parts": [
+                  {
+                    "text": "{\n  \"intent\": \"get_quotation\",\n  \"quotation_number\": \"QT-20260325-001\",\n  \"customer_name\": \"\",\n  \"new_pricing_factor\": null,\n  \"target_total_price\": null\n}"
+                  }
+                ],
+                "role": "model"
+              },
+              "partial": false,
+              "finishReason": "STOP",
+              "usageMetadata": {
+                "cachedContentTokenCount": 436,
+                "candidatesTokenCount": 63,
+                "promptTokenCount": 486,
+                "totalTokenCount": 549
+              },
+              "invocationId": "e-01149974-78ca-45c2-aa3b-c81666fa6add",
+              "author": "classify_intent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": {
+                "intent": "get_quotation",
+                "quotation_number": "QT-20260325-001",
+                "customer_name": ""
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/classify_intent@1",
+                "outputFor": [
+                  "quotation_agent@1/classify_intent@1"
+                ]
+              },
+              "id": "e748baa4-6933-4c34-b7e6-daf2797604b7",
+              "timestamp": 1792294773.2778735
+            },
+            {
+              "invocationId": "e-01149974-78ca-45c2-aa3b-c81666fa6add",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {
+                  "pending_intent": null
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "get_quotation"
+              },
+              "output": {
+                "quotation_number": "QT-20260325-001"
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/route@1",
+                "outputFor": [
+                  "quotation_agent@1/route@1"
+                ]
+              },
+              "id": "36d30523-cea3-497c-aa6e-8b2ad01dffb8",
+              "timestamp": 1792294785.820907
+            },
+            {
+              "invocationId": "e-01149974-78ca-45c2-aa3b-c81666fa6add",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "報價單編號: QT-20260325-001\n客戶: 神盾局科技股份有限公司\n客戶等級: vip\n報價因子: 0.82\n總價: 211560\n利潤: 66060 (利潤率: 0.3123)\n狀態: draft\n備註: 待客戶確認的設備報價\n品項:\n  1. 商用雷射印表機 LJ-5200 — 單價: 18040, 數量: 3, 小計: 54120\n  2. 多功能事務機 MF-3800 — 單價: 36900, 數量: 1, 小計: 36900\n  3. 27吋商用液晶螢幕 M27-Pro — 單價: 8036, 數量: 15, 小計: 120540\n系統連結: http://localhost:53000/quotations/9",
+              "nodeInfo": {
+                "path": "quotation_agent@1/get_quotation@1",
+                "outputFor": [
+                  "quotation_agent@1/get_quotation@1"
+                ]
+              },
+              "id": "dec338a8-f49a-4646-a2cb-658ab6b10cd1",
+              "timestamp": 1792294785.905107
+            },
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "報價單編號: QT-20260325-001\n客戶: 神盾局科技股份有限公司\n客戶等級: vip\n報價因子: 0.82\n總價: 211560\n利潤: 66060 (利潤率: 0.3123)\n狀態: draft\n備註: 待客戶確認的設備報價\n品項:\n  1. 商用雷射印表機 LJ-5200 — 單價: 18040, 數量: 3, 小計: 54120\n  2. 多功能事務機 MF-3800 — 單價: 36900, 數量: 1, 小計: 36900\n  3. 27吋商用液晶螢幕 M27-Pro — 單價: 8036, 數量: 15, 小計: 120540\n系統連結: http://localhost:53000/quotations/9"
+                  }
+                ],
+                "role": "model"
+              },
+              "invocationId": "e-01149974-78ca-45c2-aa3b-c81666fa6add",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/respond@1"
+              },
+              "id": "c0b4b36c-6187-4c15-a636-3afd802440f5",
+              "timestamp": 1792294785.909162
+            },
+            {
+              "invocationId": "e-01149974-78ca-45c2-aa3b-c81666fa6add",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "報價單編號: QT-20260325-001\n客戶: 神盾局科技股份有限公司\n客戶等級: vip\n報價因子: 0.82\n總價: 211560\n利潤: 66060 (利潤率: 0.3123)\n狀態: draft\n備註: 待客戶確認的設備報價\n品項:\n  1. 商用雷射印表機 LJ-5200 — 單價: 18040, 數量: 3, 小計: 54120\n  2. 多功能事務機 MF-3800 — 單價: 36900, 數量: 1, 小計: 36900\n  3. 27吋商用液晶螢幕 M27-Pro — 單價: 8036, 數量: 15, 小計: 120540\n系統連結: http://localhost:53000/quotations/9",
+              "nodeInfo": {
+                "path": "quotation_agent@1/respond@1",
+                "outputFor": [
+                  "quotation_agent@1/respond@1",
+                  "quotation_agent@1"
+                ]
+              },
+              "id": "1e04f7ca-73bb-4fcb-967f-73bf75f07740",
+              "timestamp": 1792294785.9103312
+            }
+          ]
+        }
+      ],
+      "database_checks": [
+        {
+          "type": "no_write",
+          "before_after_sha256": "164f92da85a317393c1a1c6388a6644fd4f5f7c81d9ebed9321ec9ee488185a5"
+        }
+      ]
+    },
+    {
+      "case": "advisor_stated_price",
+      "passed": true,
+      "seconds": 14.94,
+      "turns": [
+        {
+          "app": "pricing_advisor",
+          "session_id": "0a4e44b7-9bfb-4245-93fd-59d23a14b637",
+          "user": "QT-20260325-001 的總價是200000",
+          "reply": "QT-20260325-001（神盾局科技股份有限公司，vip，草稿）改成 200000 的試算：\n- 報價因子 0.8200 → 0.7752\n- 總價 211560.00 → 200001.60（報價因子取到小數 4 位）\n- 毛利率 32.17% → 28.25%（利潤 56501.60）\n判斷：業務可直接調整\n- 改價核准層級（2026 年版）：改價後毛利率 28.25% → 業務可直接調整（未驗證）\n- 報價因子下限：報價因子 0.7752 沒有低於 vip 的下限 0.70 → 業務可直接調整（未驗證）\n沒有套用：改價核准層級（2025 年版，已作廢）、2026 第三季新客戶優惠（2026-10-01 起過期）\n試算驗證：通過（計算程式 sha256 ae362ce9aa5f…，資料來源 http://backend:8080/api/v1/quotations/9，已重讀核對）\n注意：資料庫存的總價或利潤和品項重算不同，以上用品項重算。\n系統連結：http://localhost:53000/quotations/9\n下一步：可以直接調整。要改的話跟我說「幫我改」，我會經 A2A 請報價單 Agent 先複製再改總價，原單不動。",
+          "events": [
+            {
+              "invocationId": "e-8de64e8d-2aa5-4c60-8932-fa4457a3d581",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "last_user_text": "QT-20260325-001 的總價是200000"
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "classify"
+              },
+              "output": "知識目錄（id｜標題｜描述）：\ncomputations/price-change-impact｜改價影響試算｜給報價單編號與目標總價，算出要用的報價因子、改價後的總價、利潤與毛利率，也標出目標是不是超出可調範圍。\nglossary/pricing-factor｜報價因子（pricing_factor）｜報價單上的折扣倍率，單價 = 定價 × 報價因子。\nglossary/profit-rate｜毛利率（profit_rate）｜利潤除以總價；利潤是總價減掉品項成本。改價核准就是看這個數字。\nplaybooks/price-negotiation｜業務議價處理流程｜客戶要求降價或轉訂單時，議價顧問 Agent 和業務照這個順序處理。\npolicies/discount-approval｜改價核准層級（2026 年版）｜依改價後的毛利率決定業務能不能自己改、要誰核准，毛利率低於 5% 不可報價。\npolicies/discount-approval-2025｜改價核准層級（2025 年版，已作廢）（已作廢）｜舊版的毛利率核准門檻，已由 2026 年版取代，只留著對照，不可再用。\npolicies/order-conversion｜報價單轉訂單規則｜只有已發佈的報價單可以轉訂單，同一張報價單不重複轉。\npolicies/pricing-factor-floor｜報價因子下限｜各客戶等級的報價因子最低可以到多少，低於下限要業務主管核准。\npolicies/promo-2026q3｜2026 第三季新客戶優惠（已過期）｜2026 年第三季把 new 等級客戶的報價因子下限暫時降到 0.85，10 月 1 日起失效。\nsystem/backend-api｜EZStore 後端 REST API（報價與訂單）｜報價單、訂單、客戶與預設報價因子的 REST 端點，以及查詢參數。\nsystem/customer-levels｜客戶等級與預設報價因子｜vip、standard、new 三種客戶等級各自的預設報價因子，以及查詢用的 API。\nsystem/mcp-tools｜EZStore MCP Server 的 6 個報價單工具｜報價單 Agent 背後的 6 個 MCP 工具、先複製再改的做法，以及改總價的二分法設定。\nsystem/orders-table｜訂單資料表（orders、order_items）｜訂單欄位、和報價單的關聯，以及測試資料裡已經轉成訂單的報價單。\nsystem/pricing-formula｜報價金額怎麼算｜單價、小計、總價、利潤與利潤率的計算方式、後端什麼時候會重算，以及已發佈的報價單不能修改或刪除。\nsystem/quotation-agent｜報價單 Agent（quotation_agent）｜第一個 Agent 的 A2A 介面：agent card 位置、6 個 skill、該怎麼下指令、回覆長什麼樣子。\nsystem/quotations-table｜報價單資料表（quotations、quotation_items）｜報價單與報價品項的欄位、狀態，以及測試資料裡存值和重算不一致的報價單。\n\n前一輪：無\n使用者這一句：QT-20260325-001 的總價是200000",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/load_context@1",
+                "outputFor": [
+                  "pricing_advisor@1/load_context@1"
+                ]
+              },
+              "id": "2ddd391a-c19d-44bc-8f63-41356d88d712",
+              "timestamp": 1792294786.870291
+            },
+            {
+              "modelVersion": "qwen3.5-9b",
+              "content": {
+                "parts": [
+                  {
+                    "text": "{\n  \"intent\": \"provide_info\",\n  \"quotation_number\": \"QT-20260325-001\",\n  \"target_total\": null,\n  \"concept_ids\": []\n}"
+                  }
+                ],
+                "role": "model"
+              },
+              "partial": false,
+              "finishReason": "STOP",
+              "usageMetadata": {
+                "cachedContentTokenCount": 615,
+                "candidatesTokenCount": 52,
+                "promptTokenCount": 1095,
+                "totalTokenCount": 1147
+              },
+              "invocationId": "e-8de64e8d-2aa5-4c60-8932-fa4457a3d581",
+              "author": "understand",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": {
+                "intent": "provide_info",
+                "quotation_number": "QT-20260325-001",
+                "concept_ids": []
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/understand@1",
+                "outputFor": [
+                  "pricing_advisor@1/understand@1"
+                ]
+              },
+              "id": "0d0e4591-64df-4082-8735-f0088b8814c6",
+              "timestamp": 1792294786.8752372
+            },
+            {
+              "invocationId": "e-8de64e8d-2aa5-4c60-8932-fa4457a3d581",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "pending": null
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "price_check"
+              },
+              "output": {
+                "quotation_number": "QT-20260325-001",
+                "target_total": 200000.0
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/route@1",
+                "outputFor": [
+                  "pricing_advisor@1/route@1"
+                ]
+              },
+              "id": "e918e1fe-1fad-4f0d-b122-05a493b55777",
+              "timestamp": 1792294799.9441833
+            },
+            {
+              "invocationId": "e-8de64e8d-2aa5-4c60-8932-fa4457a3d581",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "last_quotation": "QT-20260325-001",
+                  "last_check": {
+                    "quotation_number": "QT-20260325-001",
+                    "target_total": 200000.0,
+                    "approval": "none",
+                    "label": "業務可直接調整",
+                    "new_factor": "0.7752",
+                    "new_margin": "0.2825",
+                    "receipt": {
+                      "computation_sha256": "ae362ce9aa5f2a0449493c1fd00b0d879a9f017da966044268a3bef64d468391",
+                      "source_url": "http://backend:8080/api/v1/quotations/9",
+                      "source_sha256": "3a0e599bf9dfac53041437a25ba887e4dd8f822514f73a1a47604b703b1b0098",
+                      "executed_at": "2026-10-18T03:40:00Z",
+                      "attestation": "ok"
+                    },
+                    "at": "2026-10-18T03:40:00.868609+00:00"
+                  }
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "QT-20260325-001（神盾局科技股份有限公司，vip，草稿）改成 200000 的試算：\n- 報價因子 0.8200 → 0.7752\n- 總價 211560.00 → 200001.60（報價因子取到小數 4 位）\n- 毛利率 32.17% → 28.25%（利潤 56501.60）\n判斷：業務可直接調整\n- 改價核准層級（2026 年版）：改價後毛利率 28.25% → 業務可直接調整（未驗證）\n- 報價因子下限：報價因子 0.7752 沒有低於 vip 的下限 0.70 → 業務可直接調整（未驗證）\n沒有套用：改價核准層級（2025 年版，已作廢）、2026 第三季新客戶優惠（2026-10-01 起過期）\n試算驗證：通過（計算程式 sha256 ae362ce9aa5f…，資料來源 http://backend:8080/api/v1/quotations/9，已重讀核對）\n注意：資料庫存的總價或利潤和品項重算不同，以上用品項重算。\n系統連結：http://localhost:53000/quotations/9\n下一步：可以直接調整。要改的話跟我說「幫我改」，我會經 A2A 請報價單 Agent 先複製再改總價，原單不動。",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/price_check@1",
+                "outputFor": [
+                  "pricing_advisor@1/price_check@1"
+                ]
+              },
+              "id": "fc07e687-204c-47cf-843a-7636f22799dd",
+              "timestamp": 1792294800.8687809
+            },
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "QT-20260325-001（神盾局科技股份有限公司，vip，草稿）改成 200000 的試算：\n- 報價因子 0.8200 → 0.7752\n- 總價 211560.00 → 200001.60（報價因子取到小數 4 位）\n- 毛利率 32.17% → 28.25%（利潤 56501.60）\n判斷：業務可直接調整\n- 改價核准層級（2026 年版）：改價後毛利率 28.25% → 業務可直接調整（未驗證）\n- 報價因子下限：報價因子 0.7752 沒有低於 vip 的下限 0.70 → 業務可直接調整（未驗證）\n沒有套用：改價核准層級（2025 年版，已作廢）、2026 第三季新客戶優惠（2026-10-01 起過期）\n試算驗證：通過（計算程式 sha256 ae362ce9aa5f…，資料來源 http://backend:8080/api/v1/quotations/9，已重讀核對）\n注意：資料庫存的總價或利潤和品項重算不同，以上用品項重算。\n系統連結：http://localhost:53000/quotations/9\n下一步：可以直接調整。要改的話跟我說「幫我改」，我會經 A2A 請報價單 Agent 先複製再改總價，原單不動。"
+                  }
+                ],
+                "role": "model"
+              },
+              "invocationId": "e-8de64e8d-2aa5-4c60-8932-fa4457a3d581",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/respond@1"
+              },
+              "id": "7d2ad311-e148-4748-a08c-1b2f91348431",
+              "timestamp": 1792294800.8713121
+            },
+            {
+              "invocationId": "e-8de64e8d-2aa5-4c60-8932-fa4457a3d581",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "QT-20260325-001（神盾局科技股份有限公司，vip，草稿）改成 200000 的試算：\n- 報價因子 0.8200 → 0.7752\n- 總價 211560.00 → 200001.60（報價因子取到小數 4 位）\n- 毛利率 32.17% → 28.25%（利潤 56501.60）\n判斷：業務可直接調整\n- 改價核准層級（2026 年版）：改價後毛利率 28.25% → 業務可直接調整（未驗證）\n- 報價因子下限：報價因子 0.7752 沒有低於 vip 的下限 0.70 → 業務可直接調整（未驗證）\n沒有套用：改價核准層級（2025 年版，已作廢）、2026 第三季新客戶優惠（2026-10-01 起過期）\n試算驗證：通過（計算程式 sha256 ae362ce9aa5f…，資料來源 http://backend:8080/api/v1/quotations/9，已重讀核對）\n注意：資料庫存的總價或利潤和品項重算不同，以上用品項重算。\n系統連結：http://localhost:53000/quotations/9\n下一步：可以直接調整。要改的話跟我說「幫我改」，我會經 A2A 請報價單 Agent 先複製再改總價，原單不動。",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/respond@1",
+                "outputFor": [
+                  "pricing_advisor@1/respond@1",
+                  "pricing_advisor@1"
+                ]
+              },
+              "id": "4d80fc4f-cfed-4dab-93f8-0269b50e269f",
+              "timestamp": 1792294800.8718228
+            }
+          ]
+        }
+      ],
+      "database_checks": [
+        {
+          "type": "no_write",
+          "before_after_sha256": "164f92da85a317393c1a1c6388a6644fd4f5f7c81d9ebed9321ec9ee488185a5"
+        }
+      ]
+    },
+    {
+      "case": "first_completed_copy",
+      "passed": true,
+      "seconds": 14.27,
+      "turns": [
+        {
+          "app": "quotation_agent",
+          "session_id": "d16ae58e-7b2f-457e-9eb1-9ddfc49faba7",
+          "user": "報價單 QT-20260330-001 複製完了",
+          "reply": "這句是在問做法或假設的情況，我沒有執行任何操作。\n要我實際操作，請直接說，例如「我要複製報價單，報價單編號：QT-20260330-001」。",
+          "events": [
+            {
+              "invocationId": "e-af6deacc-3d2e-4835-9cb0-8cc77bd8e922",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {
+                  "last_user_text": "報價單 QT-20260330-001 複製完了",
+                  "clarify_source_text": ""
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "classify"
+              },
+              "output": "待補的前一輪操作：無\n使用者這一句：報價單 QT-20260330-001 複製完了",
+              "nodeInfo": {
+                "path": "quotation_agent@1/load_context@1",
+                "outputFor": [
+                  "quotation_agent@1/load_context@1"
+                ]
+              },
+              "id": "c8dc2f83-9911-4d20-a1eb-273421fa3e71",
+              "timestamp": 1792294801.4048455
+            },
+            {
+              "modelVersion": "qwen3.5-9b",
+              "content": {
+                "parts": [
+                  {
+                    "text": "{\n  \"intent\": \"duplicate_quotation\",\n  \"quotation_number\": \"QT-20260330-001\",\n  \"customer_name\": \"\",\n  \"new_pricing_factor\": null,\n  \"target_total_price\": null\n}"
+                  }
+                ],
+                "role": "model"
+              },
+              "partial": false,
+              "finishReason": "STOP",
+              "usageMetadata": {
+                "cachedContentTokenCount": 436,
+                "candidatesTokenCount": 63,
+                "promptTokenCount": 480,
+                "totalTokenCount": 543
+              },
+              "invocationId": "e-af6deacc-3d2e-4835-9cb0-8cc77bd8e922",
+              "author": "classify_intent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": {
+                "intent": "duplicate_quotation",
+                "quotation_number": "QT-20260330-001",
+                "customer_name": ""
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/classify_intent@1",
+                "outputFor": [
+                  "quotation_agent@1/classify_intent@1"
+                ]
+              },
+              "id": "1c343d43-6f4a-4f2d-abcf-504a3292e3ec",
+              "timestamp": 1792294801.412149
+            },
+            {
+              "invocationId": "e-af6deacc-3d2e-4835-9cb0-8cc77bd8e922",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {
+                  "pending_intent": null,
+                  "clarify_source_text": ""
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "off_topic"
+              },
+              "output": "這句是在問做法或假設的情況，我沒有執行任何操作。\n要我實際操作，請直接說，例如「我要複製報價單，報價單編號：QT-20260330-001」。",
+              "nodeInfo": {
+                "path": "quotation_agent@1/route@1",
+                "outputFor": [
+                  "quotation_agent@1/route@1"
+                ]
+              },
+              "id": "2fa0f60e-7018-471c-b2dc-1552989260a0",
+              "timestamp": 1792294815.1126575
+            },
+            {
+              "invocationId": "e-af6deacc-3d2e-4835-9cb0-8cc77bd8e922",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "這句是在問做法或假設的情況，我沒有執行任何操作。\n要我實際操作，請直接說，例如「我要複製報價單，報價單編號：QT-20260330-001」。",
+              "nodeInfo": {
+                "path": "quotation_agent@1/off_topic@1",
+                "outputFor": [
+                  "quotation_agent@1/off_topic@1"
+                ]
+              },
+              "id": "4b918953-07fd-4f8e-b269-0b88b64fcfec",
+              "timestamp": 1792294815.1151483
+            },
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "這句是在問做法或假設的情況，我沒有執行任何操作。\n要我實際操作，請直接說，例如「我要複製報價單，報價單編號：QT-20260330-001」。"
+                  }
+                ],
+                "role": "model"
+              },
+              "invocationId": "e-af6deacc-3d2e-4835-9cb0-8cc77bd8e922",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "nodeInfo": {
+                "path": "quotation_agent@1/respond@1"
+              },
+              "id": "cddc0d54-f348-404f-9132-19dfd94c6acc",
+              "timestamp": 1792294815.117285
+            },
+            {
+              "invocationId": "e-af6deacc-3d2e-4835-9cb0-8cc77bd8e922",
+              "author": "quotation_agent",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "這句是在問做法或假設的情況，我沒有執行任何操作。\n要我實際操作，請直接說，例如「我要複製報價單，報價單編號：QT-20260330-001」。",
+              "nodeInfo": {
+                "path": "quotation_agent@1/respond@1",
+                "outputFor": [
+                  "quotation_agent@1/respond@1",
+                  "quotation_agent@1"
+                ]
+              },
+              "id": "7d5336c2-c83b-4e08-b8ca-0728640ad370",
+              "timestamp": 1792294815.1181118
+            }
+          ]
+        }
+      ],
+      "database_checks": [
+        {
+          "type": "no_write",
+          "before_after_sha256": "164f92da85a317393c1a1c6388a6644fd4f5f7c81d9ebed9321ec9ee488185a5"
+        }
+      ]
+    },
+    {
+      "case": "advisor_completed_copy",
+      "passed": true,
+      "seconds": 12.5,
+      "turns": [
+        {
+          "app": "pricing_advisor",
+          "session_id": "8201d417-30e1-4d24-97d2-767d6bdc89e5",
+          "user": "報價單 QT-20260330-001 複製完了",
+          "reply": "這句是在問做法或假設的情況，我沒有操作任何資料。\n要我實際做，請直接說，例如「幫我複製報價單 QT-20260330-001」。",
+          "events": [
+            {
+              "invocationId": "e-718b63f0-a0ec-49a8-bebc-6ff46047ee38",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "last_user_text": "報價單 QT-20260330-001 複製完了"
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "classify"
+              },
+              "output": "知識目錄（id｜標題｜描述）：\ncomputations/price-change-impact｜改價影響試算｜給報價單編號與目標總價，算出要用的報價因子、改價後的總價、利潤與毛利率，也標出目標是不是超出可調範圍。\nglossary/pricing-factor｜報價因子（pricing_factor）｜報價單上的折扣倍率，單價 = 定價 × 報價因子。\nglossary/profit-rate｜毛利率（profit_rate）｜利潤除以總價；利潤是總價減掉品項成本。改價核准就是看這個數字。\nplaybooks/price-negotiation｜業務議價處理流程｜客戶要求降價或轉訂單時，議價顧問 Agent 和業務照這個順序處理。\npolicies/discount-approval｜改價核准層級（2026 年版）｜依改價後的毛利率決定業務能不能自己改、要誰核准，毛利率低於 5% 不可報價。\npolicies/discount-approval-2025｜改價核准層級（2025 年版，已作廢）（已作廢）｜舊版的毛利率核准門檻，已由 2026 年版取代，只留著對照，不可再用。\npolicies/order-conversion｜報價單轉訂單規則｜只有已發佈的報價單可以轉訂單，同一張報價單不重複轉。\npolicies/pricing-factor-floor｜報價因子下限｜各客戶等級的報價因子最低可以到多少，低於下限要業務主管核准。\npolicies/promo-2026q3｜2026 第三季新客戶優惠（已過期）｜2026 年第三季把 new 等級客戶的報價因子下限暫時降到 0.85，10 月 1 日起失效。\nsystem/backend-api｜EZStore 後端 REST API（報價與訂單）｜報價單、訂單、客戶與預設報價因子的 REST 端點，以及查詢參數。\nsystem/customer-levels｜客戶等級與預設報價因子｜vip、standard、new 三種客戶等級各自的預設報價因子，以及查詢用的 API。\nsystem/mcp-tools｜EZStore MCP Server 的 6 個報價單工具｜報價單 Agent 背後的 6 個 MCP 工具、先複製再改的做法，以及改總價的二分法設定。\nsystem/orders-table｜訂單資料表（orders、order_items）｜訂單欄位、和報價單的關聯，以及測試資料裡已經轉成訂單的報價單。\nsystem/pricing-formula｜報價金額怎麼算｜單價、小計、總價、利潤與利潤率的計算方式、後端什麼時候會重算，以及已發佈的報價單不能修改或刪除。\nsystem/quotation-agent｜報價單 Agent（quotation_agent）｜第一個 Agent 的 A2A 介面：agent card 位置、6 個 skill、該怎麼下指令、回覆長什麼樣子。\nsystem/quotations-table｜報價單資料表（quotations、quotation_items）｜報價單與報價品項的欄位、狀態，以及測試資料裡存值和重算不一致的報價單。\n\n前一輪：無\n使用者這一句：報價單 QT-20260330-001 複製完了",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/load_context@1",
+                "outputFor": [
+                  "pricing_advisor@1/load_context@1"
+                ]
+              },
+              "id": "860e0747-3b68-4a1c-9962-4ff32ebe6e14",
+              "timestamp": 1792294816.0344288
+            },
+            {
+              "modelVersion": "qwen3.5-9b",
+              "content": {
+                "parts": [
+                  {
+                    "text": "{\n  \"intent\": \"provide_info\",\n  \"quotation_number\": \"QT-20260330-001\",\n  \"target_total\": null,\n  \"concept_ids\": []\n}"
+                  }
+                ],
+                "role": "model"
+              },
+              "partial": false,
+              "finishReason": "STOP",
+              "usageMetadata": {
+                "cachedContentTokenCount": 615,
+                "candidatesTokenCount": 52,
+                "promptTokenCount": 1089,
+                "totalTokenCount": 1141
+              },
+              "invocationId": "e-718b63f0-a0ec-49a8-bebc-6ff46047ee38",
+              "author": "understand",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": {
+                "intent": "provide_info",
+                "quotation_number": "QT-20260330-001",
+                "concept_ids": []
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/understand@1",
+                "outputFor": [
+                  "pricing_advisor@1/understand@1"
+                ]
+              },
+              "id": "488562ec-d0e6-41ef-a992-da0a903f0528",
+              "timestamp": 1792294816.047211
+            },
+            {
+              "invocationId": "e-718b63f0-a0ec-49a8-bebc-6ff46047ee38",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {
+                  "pending": null,
+                  "last_check": null
+                },
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {},
+                "route": "off_topic"
+              },
+              "output": "這句是在問做法或假設的情況，我沒有操作任何資料。\n要我實際做，請直接說，例如「幫我複製報價單 QT-20260330-001」。",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/route@1",
+                "outputFor": [
+                  "pricing_advisor@1/route@1"
+                ]
+              },
+              "id": "782e407e-b690-4086-a310-181cae1f8ce3",
+              "timestamp": 1792294827.4621458
+            },
+            {
+              "invocationId": "e-718b63f0-a0ec-49a8-bebc-6ff46047ee38",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "這句是在問做法或假設的情況，我沒有操作任何資料。\n要我實際做，請直接說，例如「幫我複製報價單 QT-20260330-001」。",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/off_topic@1",
+                "outputFor": [
+                  "pricing_advisor@1/off_topic@1"
+                ]
+              },
+              "id": "b964cfc2-fc42-4f31-80d5-44e60e8d3c7b",
+              "timestamp": 1792294827.4728372
+            },
+            {
+              "content": {
+                "parts": [
+                  {
+                    "text": "這句是在問做法或假設的情況，我沒有操作任何資料。\n要我實際做，請直接說，例如「幫我複製報價單 QT-20260330-001」。"
+                  }
+                ],
+                "role": "model"
+              },
+              "invocationId": "e-718b63f0-a0ec-49a8-bebc-6ff46047ee38",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "nodeInfo": {
+                "path": "pricing_advisor@1/respond@1"
+              },
+              "id": "28db14ec-e332-477a-8c5f-d30649fe8735",
+              "timestamp": 1792294827.477522
+            },
+            {
+              "invocationId": "e-718b63f0-a0ec-49a8-bebc-6ff46047ee38",
+              "author": "pricing_advisor",
+              "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+              },
+              "output": "這句是在問做法或假設的情況，我沒有操作任何資料。\n要我實際做，請直接說，例如「幫我複製報價單 QT-20260330-001」。",
+              "nodeInfo": {
+                "path": "pricing_advisor@1/respond@1",
+                "outputFor": [
+                  "pricing_advisor@1/respond@1",
+                  "pricing_advisor@1"
+                ]
+              },
+              "id": "85d8c99f-5f4f-4b41-adb4-7a40221dd3f0",
+              "timestamp": 1792294827.4785628
+            }
+          ]
+        }
+      ],
+      "database_checks": [
+        {
+          "type": "no_write",
+          "before_after_sha256": "164f92da85a317393c1a1c6388a6644fd4f5f7c81d9ebed9321ec9ee488185a5"
+        }
+      ]
+    }
+  ]
+}

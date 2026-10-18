@@ -24,7 +24,7 @@ START → load_context ──（no_credentials）──────────�
 | `load_context` | 函式 | 取出使用者這一句。沒有任何模型憑證就直接走 `no_credentials` 到 `respond`，回覆設定說明。有待補的前一輪操作（`state.pending_intent`）就附在提示裡；state 是空的（例如評分題庫預先寫好第一輪）、但上一輪助手像在要資料（沒有系統連結，而且是「請提供」「請問」、問句結尾或「需要…編號」），改附上一輪的對話 |
 | `classify_intent` | `LlmAgent` | 唯一呼叫 LLM 的節點。輸出 Pydantic 的 `Intent`：八種意圖之一（6 個操作、`provide_info`、`off_topic`）加上抽出來的欄位 |
 | `route` | 函式 | 依 `Intent` 決定下一個節點與工具參數，全部是程式判斷：<br>1. 程式拒答：提示注入（先統一全形半形、大小寫、空白再比對）、客戶／產品增修刪。<br>2. 分類器判成離題時的補救：句子明確是六種操作之一（`_KEYWORD_OPERATIONS`）就改判；正在追問、使用者只回一個編號／數字／客戶名稱，就接回原本的操作（`_bare_answer`）。<br>3. 否定句（「不要複製」）和說明、假設句（「教我如何複製」「如果複製會怎樣」）不會變成寫入。<br>4. 報價單編號和數字一律從使用者原文抓，模型抽到的數字不直接用；含糊、兩個值或相對的說法就追問。<br>缺欄位或數字不合法就走 `clarify` 並存下 `pending_intent`，齊了就走對應的操作節點並清掉 `pending_intent` |
-| 6 個操作節點 | 函式 | 各呼叫一個 MCP 工具（`McpToolset.get_tools()` 取得工具後 `run_async`），回傳工具的文字。工具錯誤轉成「操作失敗：…」；會寫入的操作（`_WRITE_TOOLS`）遇到逾時、連不上或後端 5xx，加一句請使用者先查詢確認，因為可能已經建了新單 |
+| 6 個操作節點 | 函式 | 各呼叫一個 MCP 工具（`McpToolset.get_tools()` 取得工具後 `run_async`），回傳工具的文字。工具錯誤轉成「操作失敗：…」；會寫入的操作（`_WRITE_TOOLS`）遇到逾時、連不上或後端 4xx／5xx，加一句請使用者先查詢確認，因為可能已經建了新單 |
 | `clarify` | 函式 | 回「請提供…」列出缺的欄位與已知資料；沒有操作可接時回「請告訴我您要對報價單做什麼操作」 |
 | `off_topic` | 函式 | 固定的拒答文字（含「只能協助報價單相關的操作」） |
 | `respond` | 函式 | 唯一輸出給使用者看的節點。Chat UI 依事件的 `nodeInfo.path` 只顯示 `respond@N` 的文字 |
@@ -83,4 +83,14 @@ agents-cli eval run --dataset tests/eval/datasets/quotation-guardrails.json
 
 模型由 `AGENT_MODEL` 決定，預設 `gemini-3.8-flash`（講義指定）。設成 `openai/<模型>` 會經 LiteLLM 改走 OpenAI 相容 API（位址 `LOCAL_LLM_BASE`），例如本機 llama.cpp 的 `openai/qwen3.5-9b`。`MODEL_MAX_ATTEMPTS` 是每次呼叫 Gemini 最多試幾次，預設 6，遇到 429 會退避重試；額度少的時候設成 1。評估指標的評審模型用 `JUDGE_MODEL`，沒設就跟 `AGENT_MODEL` 一樣。
 
-測試時為了省額度，`.env` 設 `AGENT_MODEL=gemini-3.1-flash-lite`，這是帳號可用的模型裡最便宜的（`gemini-2.5-flash-lite` 對新帳號已停用，回 404）。Compose 讀根目錄的 `.env`，在這個資料夾直接跑讀 `agent/.env`。
+測試時為了省額度，`.env` 設 `AGENT_MODEL=gemini-3.1-flash-lite`，這是本作業選用的省額度測試模型；可用性與額度以帳號當下回覆為準。Compose 讀根目錄的 `.env`，在這個資料夾直接跑讀 `agent/.env`。
+
+## 2026-10-18 規格差異與防護
+
+講義 2.9 不准改 `backend/`、`frontend/`、`mcp_server/`。使用者授權修了幾個 bug，改了哪些檔案以 `scripts/check_assignment.py` 的 `USER_FIXES` 為準，這不代表老師同意。`uv run python ../scripts/check_assignment.py` 是嚴格比對（會回報差異），加 `--allow-user-fixes` 只允許清單裡的檔案。
+
+寫入防護：模型判成會改資料的操作時，程式再用 `write_intent.py` 判斷這句是不是真的要求執行。問做法、問會怎樣、描述結果、講已經做完的事、轉述客戶想要的價格，都不寫入；客氣的問句（「可以幫我複製…嗎？」）、開頭打招呼、轉述的指示照常執行。議價顧問用同一個檔案。
+
+改價節點先用 `BACKEND_API`（預設 `http://localhost:8080/api/v1`）唯讀讀報價單和商品，檢查欄位存得下、商品成本和牌價沒變，再呼叫對應的單一 MCP 工具。這是 MCP 以外多出來的唯讀連線，不寫後端，也不取代二分法；不通過時回「未送出操作：…」，不會建立副本。
+
+老師指定的 `quotation-guardrails.json` 僅保留兩個拒答與一個查詢追問，共三題。查無資料與因子追問改價移至 `quotation-additional-guardrails.json`；後者會建立副本，請只在隔離測試庫執行，不可混入老師的無寫入護欄組。

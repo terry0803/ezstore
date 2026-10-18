@@ -28,6 +28,12 @@ def _rate(profit: Decimal, total: Decimal) -> str:
     return str((profit / total).quantize(_FACTOR, ROUND_HALF_UP))
 
 
+def _total(items: list, factor: Decimal) -> Decimal:
+    # Match the stored unit price before multiplying by quantity.
+    return sum(((_d(i["list_price"]) * factor).quantize(_CENT, ROUND_HALF_UP)
+                * i["quantity"] for i in items), Decimal(0))
+
+
 def compute(quotation: dict, target_total) -> dict:
     items = quotation.get("items") or []
     if not items:
@@ -36,21 +42,21 @@ def compute(quotation: dict, target_total) -> dict:
     if target <= 0:
         raise ValueError("目標總價必須大於 0")
 
-    # 定價合計 L、成本合計 C；總價 = L × 報價因子，利潤 = 總價 − C
+    # L is used to estimate the factor; totals sum rounded unit prices × quantity.
     list_total = sum((_d(i["list_price"]) * i["quantity"] for i in items), Decimal(0))
     cost_total = sum((_d(i["product_cost"]) * i["quantity"] for i in items), Decimal(0))
     if list_total <= 0:
         raise ValueError("定價合計是 0，沒辦法試算")
 
     current_factor = _d(quotation["pricing_factor"])
-    current_total = list_total * current_factor
+    current_total = _total(items, current_factor)
     current_profit = current_total - cost_total
 
     # 後端的報價因子存到小數 4 位
     raw_factor = target / list_total
     reachable = FACTOR_MIN <= raw_factor <= FACTOR_MAX
     new_factor = min(max(raw_factor, FACTOR_MIN), FACTOR_MAX).quantize(_FACTOR, ROUND_HALF_UP)
-    new_total = list_total * new_factor
+    new_total = _total(items, new_factor)
     new_profit = new_total - cost_total
 
     # 測試資料有些報價單存的總價、利潤和品項重算不同，標出來
@@ -74,9 +80,10 @@ def compute(quotation: dict, target_total) -> dict:
         "reachable": reachable,
         "new_factor": str(new_factor),
         "new_total": _money(new_total),
+        "conservative_total": _money(_total(items, max(new_factor - _FACTOR, _FACTOR))),
         "new_profit": _money(new_profit),
         "new_margin": _rate(new_profit, new_total),
-        "max_total": _money(list_total * FACTOR_MAX),
-        "min_total": _money(list_total * FACTOR_MIN),
+        "max_total": _money(_total(items, FACTOR_MAX)),
+        "min_total": _money(_total(items, FACTOR_MIN)),
         "stored_mismatch": stored_mismatch,
     }

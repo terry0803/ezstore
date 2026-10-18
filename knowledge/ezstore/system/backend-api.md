@@ -6,7 +6,7 @@ resource: http://localhost:8080/api/v1
 tags: [api, quotation, order]
 generated: { by: claude-code/claude-opus-5-5, at: 2026-10-16T17:10:00Z }
 verified:
-  - { by: process:okf-verify, at: 2026-10-17T12:32:06Z }
+  - { by: process:okf-verify, at: 2026-10-18T05:31:55Z }
 status: stable
 stale_after: 2027-04-01T00:00:00Z
 sources:
@@ -43,6 +43,8 @@ sources:
 `GET /orders` 不能用報價單篩選。要找某張報價單有沒有訂單，先用報價單的 `customer_id` 篩，再比對每筆訂單的 `quotation_id`。[^order-repo]
 
 清單回傳格式是 `{"data": [...], "total": N, "page": 1, "page_size": 20}`。
+
+本地修正版的建立／更新報價 API 在寫入前拒絕非正因子、超過 9.9999 或四位小數捨入後為零的因子。此修正位於 `backend/services/quotation_service.go`，屬使用者要求的基底修補，並非上述講師來源已包含的行為。
 
 議價顧問 Agent 只用 `GET`。會改資料的動作一律經 [報價單 Agent](/system/quotation-agent.md) 處理。
 

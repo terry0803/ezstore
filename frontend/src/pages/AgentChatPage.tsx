@@ -77,11 +77,6 @@ export default function AgentChatPage() {
           setError(err.message);
           setLoading(false);
         },
-        async () => {
-          const replacement = await createSession(APP_NAME, USER_ID);
-          setSessionId(replacement.id);
-          return replacement.id;
-        },
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -90,8 +85,6 @@ export default function AgentChatPage() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Enter can confirm an IME candidate before it is meant to send the message.
-    if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return;
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();

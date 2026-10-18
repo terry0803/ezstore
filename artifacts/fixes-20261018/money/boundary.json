@@ -1,0 +1,23 @@
+{
+  "teacher_baseline": "09f6588c94ecb74b071246c55c32d838fc31e8f7",
+  "protected_directories": [
+    "backend",
+    "frontend",
+    "mcp_server"
+  ],
+  "strict_teacher_match": false,
+  "protected_differences": [
+    "backend/services/order_service.go",
+    "backend/services/pricing_factor_validation_test.go",
+    "backend/services/quotation_service.go",
+    "frontend/e2e/review-regressions.spec.ts",
+    "frontend/src/api/agentApi.ts",
+    "frontend/src/pages/QuotationFormPage.tsx",
+    "mcp_server/server.py",
+    "mcp_server/tests/test_lookup_regressions.py"
+  ],
+  "mode": "user_authorized_fixes",
+  "note": "User authorized these bug fixes; this is not instructor approval.",
+  "passed": true,
+  "failures": []
+}

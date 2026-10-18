@@ -33,6 +33,8 @@ from google.adk.tools.mcp_tool.mcp_session_manager import (
 from google.adk.workflow import Workflow
 from google.genai import types
 from pydantic import BaseModel, Field
+from .preflight import PreflightError, validate_change
+from .write_intent import is_write_request
 
 load_dotenv()
 
@@ -301,8 +303,9 @@ _NEGATED_ACTION_RE = re.compile(
     re.IGNORECASE,
 )
 _EXPLANATION_REQUEST_RE = re.compile(
-    r"^\s*(?:請|麻煩|我想|想要)?\s*(?:如何|怎麼|教我|說明|解釋|如果|假設)"
-    r"|^\s*(?:please\s+)?(?:how\s+to|explain|what\s+if)\b",
+    r"如何|怎麼|教我|操作(?:流程|方法|步驟)|(?:流程|步驟)(?:是|為)什麼"
+    r"|^\s*(?:請問?|麻煩|我想|想要)?\s*(?:說明|解釋|如果|假設)"
+    r"|\b(?:how\s+(?:to|do|can|would|should)|explain|what\s+(?:if|happens))\b",
     re.IGNORECASE,
 )
 _PRESERVE_ORIGINAL_RE = re.compile(
@@ -312,8 +315,8 @@ _PRESERVE_ORIGINAL_RE = re.compile(
 # 取消剛才的要求：「先不要改了」「不用轉了」「算了」「取消，QT-…」。待補的操作要清掉，不能再沿用上一輪的值。
 _CANCEL_RE = re.compile(
     r"^\s*(?:算了|取消|不用了|不要了|免了|作罷|先這樣)(?=\s*(?:[，,。.!！]|QT-|$))"
-    r"|(?:不要|不用|別|不必|不想)[^，。；;,\n]{0,4}(?:改|轉|動|複製|做|處理)了"
-    r"|不(?:改|轉|複製|做)了"
+    r"|(?:不要|不用|別|不必|不想)[^，。；;,\n]{0,4}(?:改|轉|動|複製|做|處理)(?:價|單|訂單)?了"
+    r"|不(?:改|轉|複製|做)(?:價|單|訂單)?了"
     r"|取消(?:修改|操作|這次|剛剛|剛才|前面|上一個)"
 )
 # 「如果可以／如果方便的話，請…」是禮貌的請求；後面接說明、流程或問句的才是假設或發問。
@@ -555,7 +558,7 @@ def _format_number(value: float) -> str:
 
 
 _WRITE_TOOLS = ("duplicate_quotation", "update_pricing_factor", "adjust_total_price", "convert_to_order")
-_PARTIAL_WRITE_RE = re.compile(r"逾時|無法連線|後端回應 5\d\d")
+_PARTIAL_WRITE_RE = re.compile(r"逾時|無法連線|後端回應 [45]\d\d")
 _PARTIAL_WRITE_HINT = "這次操作可能已經建立了新的報價單或訂單，請先查詢確認，再決定要不要重試，免得重複建立。"
 
 
@@ -577,7 +580,8 @@ async def _call_mcp_tool(ctx: Context, tool_name: str, args: dict[str, Any]) -> 
         return "操作失敗：報價單系統暫時無法完成請求，請稍後再試。"
     if isinstance(result, dict):
         if result.get("error"):
-            return f"操作失敗：{result['error']}"
+            hint = f"\n{_PARTIAL_WRITE_HINT}" if tool_name in _WRITE_TOOLS else ""
+            return f"操作失敗：{result['error']}{hint}"
         texts = [
             c.get("text", "")
             for c in result.get("content", [])
@@ -639,12 +643,23 @@ def _is_clarification(text: str) -> bool:
     return bool(_CLARIFY_REPLY_RE.search(text))
 
 
+def _pending_operation(pending: dict, source: str) -> str | None:
+    if pending.get("intent"):
+        return pending["intent"]
+    # Imported evaluation history may omit the quotation number entirely.
+    # It can resume a write only when the original sentence requested one.
+    if is_write_request(_request_guard_text(source)):
+        return next((op for op, pattern in _KEYWORD_OPERATIONS if pattern.search(source)), None)
+    operation = _keyword_operation(source)
+    return operation if operation not in _WRITE_TOOLS else None
+
+
 def _bare_answer(text: str, pending: dict, clarify_source: str) -> tuple[str, str] | None:
     """追問之後使用者只回一個資料（編號、數字、客戶名稱），分類器卻判成離題時，由程式接回原本的操作。
 
     回傳（操作, 補上的欄位）；不像是在回答缺少的欄位就回 None，照樣拒答。
     """
-    operation = pending.get("intent") or (_keyword_operation(clarify_source) if clarify_source else None)
+    operation = _pending_operation(pending, clarify_source)
     if operation not in OPERATIONS:
         return None
     answer = text.strip().strip("。.!！")
@@ -729,7 +744,7 @@ def route(ctx: Context, node_input: Any):
     clarify_source = ctx.state.get("clarify_source_text", "") or ""
     if operation == "provide_info":
         # 外部帶進來的對話沒有 pending_intent，改從上一輪使用者的原文判斷要接哪個操作
-        operation = pending.get("intent") or (_keyword_operation(clarify_source) if clarify_source else None)
+        operation = _pending_operation(pending, clarify_source)
         if not operation:
             return Event(
                 output={"operation": None, "missing": [], "fields": {}},
@@ -749,8 +764,21 @@ def route(ctx: Context, node_input: Any):
     # or an explanation-only request. Clear pending state so a later bare
     # confirmation cannot revive the operation that was just cancelled.
     guard_text = _request_guard_text(text)
-    if operation in _WRITE_TOOLS and _EXPLANATION_REQUEST_RE.search(guard_text):
-        return Event(output=EXPLAIN_TEXT, route="off_topic", state={"pending_intent": None})
+    if operation in _WRITE_TOOLS:
+        continuation = _bare_answer(text, pending, clarify_source)
+        if (not is_write_request(guard_text)
+                and not (continuation and continuation[0] == operation)):
+            if (re.search(r"因子|總價|\bfactor\b|\btotal\b", guard_text, re.I)
+                    and not _EXPLANATION_REQUEST_RE.search(guard_text)):
+                # Naming a price does not authorize changing it. Do not keep
+                # a writable intent when asking what operation is wanted.
+                return Event(output={"operation": None, "missing": [], "fields": {}},
+                             route="clarify", state={"pending_intent": None, "clarify_source_text": ""})
+            if intent.intent == "provide_info" and pending:
+                return Event(output={"operation": operation, "missing": REQUIRED_FIELDS[operation], "fields": {}},
+                             route="clarify", state={"pending_intent": None, "clarify_source_text": ""})
+            return Event(output=EXPLAIN_TEXT, route="off_topic",
+                         state={"pending_intent": None, "clarify_source_text": ""})
 
     if "quotation_number" in REQUIRED_FIELDS[operation] and any(
         not QUOTATION_NUMBER_RE.fullmatch(token) for token in QUOTATION_TOKEN_RE.findall(text)
@@ -817,6 +845,8 @@ MAX_PRICING_FACTOR = Decimal("9.9999")
 
 def _factor_storable(value: float) -> bool:
     """四捨五入到小數 4 位後要在 0.0001 到 9.9999 之間，後端的 decimal(5,4) 欄位才存得下。"""
+    if not math.isfinite(value) or value <= 0 or value >= 10:
+        return False
     factor = Decimal(str(value)).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
     return Decimal(0) < factor <= MAX_PRICING_FACTOR
 
@@ -834,11 +864,19 @@ async def duplicate_quotation(ctx: Context, node_input: dict) -> str:
 
 
 async def update_pricing_factor(ctx: Context, node_input: dict) -> str:
-    return await _call_mcp_tool(ctx, "update_pricing_factor", node_input)
+    try:
+        args = await validate_change("update_pricing_factor", node_input)
+    except PreflightError as e:
+        return f"未送出操作：{e}"
+    return await _call_mcp_tool(ctx, "update_pricing_factor", args)
 
 
 async def adjust_total_price(ctx: Context, node_input: dict) -> str:
-    return await _call_mcp_tool(ctx, "adjust_total_price", node_input)
+    try:
+        args = await validate_change("adjust_total_price", node_input)
+    except PreflightError as e:
+        return f"未送出操作：{e}"
+    return await _call_mcp_tool(ctx, "adjust_total_price", args)
 
 
 async def convert_to_order(ctx: Context, node_input: dict) -> str:

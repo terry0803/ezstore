@@ -1,0 +1,362 @@
+{
+  "evaluation_dataset": [
+    {
+      "eval_cases": [
+        {
+          "prompt": {
+            "parts": [
+              {
+                "text": "今天台北天氣如何？"
+              }
+            ],
+            "role": "user"
+          },
+          "responses": [
+            {
+              "response": {
+                "parts": [
+                  {
+                    "text": "抱歉，我只能協助報價單相關的操作，沒辦法處理這個需求。\n我可以幫你：查詢報價單、查詢客戶的報價單清單、複製報價單、修改報價因子、修改報價單總價、報價單轉訂單。"
+                  }
+                ],
+                "role": "model"
+              }
+            }
+          ],
+          "reference": {
+            "response": {
+              "parts": [
+                {
+                  "text": "禮貌拒絕，說明只能協助報價單相關操作，不回答天氣、不呼叫任何工具。"
+                }
+              ],
+              "role": "model"
+            }
+          },
+          "eval_case_id": "off_topic_weather",
+          "agent_data": {
+            "turns": [
+              {
+                "turn_index": 0,
+                "turn_id": "turn_0",
+                "events": [
+                  {
+                    "author": "quotation_agent",
+                    "event_time": "2026-10-18T03:40:40.775018Z",
+                    "state_delta": {
+                      "last_user_text": "今天台北天氣如何？",
+                      "clarify_source_text": ""
+                    }
+                  },
+                  {
+                    "author": "classify_intent",
+                    "content": {
+                      "parts": [
+                        {
+                          "text": "{\n  \"intent\": \"off_topic\",\n  \"quotation_number\": \"\",\n  \"customer_name\": \"\",\n  \"new_pricing_factor\": null,\n  \"target_total_price\": null\n}"
+                        }
+                      ],
+                      "role": "model"
+                    },
+                    "event_time": "2026-10-18T03:40:40.777191Z"
+                  },
+                  {
+                    "author": "quotation_agent",
+                    "event_time": "2026-10-18T03:40:46.294785Z",
+                    "state_delta": {
+                      "pending_intent": null
+                    }
+                  },
+                  {
+                    "author": "quotation_agent",
+                    "content": {
+                      "parts": [
+                        {
+                          "text": "抱歉，我只能協助報價單相關的操作，沒辦法處理這個需求。\n我可以幫你：查詢報價單、查詢客戶的報價單清單、複製報價單、修改報價因子、修改報價單總價、報價單轉訂單。"
+                        }
+                      ],
+                      "role": "model"
+                    },
+                    "event_time": "2026-10-18T03:40:46.298623Z"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "prompt": {
+            "parts": [
+              {
+                "text": "幫我新增一個客戶，名稱叫測試公司，電話 02-1234-5678"
+              }
+            ],
+            "role": "user"
+          },
+          "responses": [
+            {
+              "response": {
+                "parts": [
+                  {
+                    "text": "抱歉，我只能協助報價單相關的操作，沒辦法處理這個需求。\n我可以幫你：查詢報價單、查詢客戶的報價單清單、複製報價單、修改報價因子、修改報價單總價、報價單轉訂單。"
+                  }
+                ],
+                "role": "model"
+              }
+            }
+          ],
+          "reference": {
+            "response": {
+              "parts": [
+                {
+                  "text": "禮貌拒絕，說明只能協助報價單相關操作，不能新增或修改客戶，不呼叫任何工具。"
+                }
+              ],
+              "role": "model"
+            }
+          },
+          "eval_case_id": "off_topic_customer_crud",
+          "agent_data": {
+            "turns": [
+              {
+                "turn_index": 0,
+                "turn_id": "turn_0",
+                "events": [
+                  {
+                    "author": "quotation_agent",
+                    "event_time": "2026-10-18T03:40:46.403994Z",
+                    "state_delta": {
+                      "last_user_text": "幫我新增一個客戶，名稱叫測試公司，電話 02-1234-5678",
+                      "clarify_source_text": ""
+                    }
+                  },
+                  {
+                    "author": "classify_intent",
+                    "content": {
+                      "parts": [
+                        {
+                          "text": "{\n  \"intent\": \"off_topic\",\n  \"quotation_number\": \"\",\n  \"customer_name\": \"\",\n  \"new_pricing_factor\": null,\n  \"target_total_price\": null\n}"
+                        }
+                      ],
+                      "role": "model"
+                    },
+                    "event_time": "2026-10-18T03:40:46.414012Z"
+                  },
+                  {
+                    "author": "quotation_agent",
+                    "event_time": "2026-10-18T03:40:56.979155Z",
+                    "state_delta": {
+                      "pending_intent": null
+                    }
+                  },
+                  {
+                    "author": "quotation_agent",
+                    "content": {
+                      "parts": [
+                        {
+                          "text": "抱歉，我只能協助報價單相關的操作，沒辦法處理這個需求。\n我可以幫你：查詢報價單、查詢客戶的報價單清單、複製報價單、修改報價因子、修改報價單總價、報價單轉訂單。"
+                        }
+                      ],
+                      "role": "model"
+                    },
+                    "event_time": "2026-10-18T03:40:56.994732Z"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "responses": [
+            {
+              "response": {
+                "parts": [
+                  {
+                    "text": "報價單編號: QT-20260330-001\n客戶: 魔女宅急便股份有限公司\n客戶等級: new\n報價因子: 0.95\n總價: 6175\n利潤: 2375 (利潤率: 0.3846)\n狀態: draft\n備註: 測試用草稿 - 可供刪除測試\n品項:\n  1. A4影印紙 80磅 (5包/箱) — 單價: 617.5, 數量: 10, 小計: 6175\n系統連結: http://localhost:53000/quotations/12"
+                  }
+                ],
+                "role": "model"
+              }
+            }
+          ],
+          "reference": {
+            "response": {
+              "parts": [
+                {
+                  "text": "接續上一輪的查詢，回覆 QT-20260330-001 的詳細資訊與純文字連結 http://localhost:3000/quotations/12，不再追問。"
+                }
+              ],
+              "role": "model"
+            }
+          },
+          "eval_case_id": "clarify_then_complete",
+          "agent_data": {
+            "turns": [
+              {
+                "turn_index": 0,
+                "events": [
+                  {
+                    "author": "user",
+                    "content": {
+                      "parts": [
+                        {
+                          "text": "我要查詢報價單"
+                        }
+                      ],
+                      "role": "user"
+                    }
+                  },
+                  {
+                    "author": "quotation_agent",
+                    "content": {
+                      "parts": [
+                        {
+                          "text": "請提供報價單編號（例如 QT-20260330-001），我才能幫你查詢報價單。"
+                        }
+                      ],
+                      "role": "model"
+                    }
+                  }
+                ]
+              },
+              {
+                "turn_index": 1,
+                "events": [
+                  {
+                    "author": "user",
+                    "content": {
+                      "parts": [
+                        {
+                          "text": "QT-20260330-001"
+                        }
+                      ],
+                      "role": "user"
+                    }
+                  },
+                  {
+                    "author": "quotation_agent",
+                    "event_time": "2026-10-18T03:40:57.065241Z",
+                    "state_delta": {
+                      "last_user_text": "QT-20260330-001",
+                      "clarify_source_text": "我要查詢報價單"
+                    }
+                  },
+                  {
+                    "author": "classify_intent",
+                    "content": {
+                      "parts": [
+                        {
+                          "text": "{\n  \"intent\": \"get_quotation\",\n  \"quotation_number\": \"QT-20260330-001\",\n  \"customer_name\": \"\",\n  \"new_pricing_factor\": null,\n  \"target_total_price\": null\n}"
+                        }
+                      ],
+                      "role": "model"
+                    },
+                    "event_time": "2026-10-18T03:40:57.076956Z"
+                  },
+                  {
+                    "author": "quotation_agent",
+                    "event_time": "2026-10-18T03:41:13.121782Z",
+                    "state_delta": {
+                      "pending_intent": null
+                    }
+                  },
+                  {
+                    "author": "quotation_agent",
+                    "content": {
+                      "parts": [
+                        {
+                          "text": "報價單編號: QT-20260330-001\n客戶: 魔女宅急便股份有限公司\n客戶等級: new\n報價因子: 0.95\n總價: 6175\n利潤: 2375 (利潤率: 0.3846)\n狀態: draft\n備註: 測試用草稿 - 可供刪除測試\n品項:\n  1. A4影印紙 80磅 (5包/箱) — 單價: 617.5, 數量: 10, 小計: 6175\n系統連結: http://localhost:53000/quotations/12"
+                        }
+                      ],
+                      "role": "model"
+                    },
+                    "event_time": "2026-10-18T03:41:13.233091Z"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "eval_case_results": [
+    {
+      "response_candidate_results": [
+        {
+          "metric_results": {
+            "custom_response_quality": {
+              "score": 5,
+              "explanation": "The agent correctly identified the off-topic query, politely refused to answer, and listed its specific capabilities as expected."
+            },
+            "refusal_or_action": {
+              "score": 1,
+              "explanation": "助手正確識別非報價單相關請求並禮貌拒絕，符合規則。"
+            },
+            "link_present": {
+              "score": 1,
+              "explanation": "拒答案例不需要連結"
+            },
+            "agent_turn_count": {
+              "score": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "response_candidate_results": [
+        {
+          "metric_results": {
+            "custom_response_quality": {
+              "score": 5,
+              "explanation": "The response accurately refuses the request to add a customer and correctly explains the agent's limited scope regarding quotations, aligning perfectly with the expected answer."
+            },
+            "refusal_or_action": {
+              "score": 1,
+              "explanation": "助手正確拒絕了新增客戶的非報價單管理請求並禮貌說明功能範圍。"
+            },
+            "link_present": {
+              "score": 1,
+              "explanation": "拒答案例不需要連結"
+            },
+            "agent_turn_count": {
+              "score": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "response_candidate_results": [
+        {
+          "metric_results": {
+            "custom_response_quality": {
+              "score": 4,
+              "explanation": "The response is highly accurate and informative but received a slight penalty because the URL port number (53000) differs from the ground truth (3000)."
+            },
+            "refusal_or_action": {
+              "score": 1,
+              "explanation": "助手正確查詢報價單並附上純文字系統連結，符合所有評分規則。"
+            },
+            "link_present": {
+              "score": 1,
+              "explanation": "回覆包含純文字系統連結"
+            },
+            "agent_turn_count": {
+              "score": 2
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "execution_mode": "local_adapters_not_managed_teacher_grader",
+  "agent_model": "openai/qwen3.5-9b",
+  "judge_model": "openai/qwen3.5-9b",
+  "source_sha256": {
+    "run.py": "e60f19aad3d96b5ef5f42440e4008d27ed081664204a8f1f6d5c57de95be49ef",
+    "refusal_or_action_local.py": "421c4a28f95ece493c698e1e538394f726c543e14064a621424ce043ae13f472",
+    "response_quality.py": "830fc2191800afff375dc27b686008327824d66f13e3a64388c7bef031aba2d6"
+  }
+}

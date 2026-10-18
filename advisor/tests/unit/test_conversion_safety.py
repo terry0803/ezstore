@@ -160,13 +160,15 @@ async def test_rule_reload_failure_does_not_escape_or_send(conversion, monkeypat
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("text,still_blocked", [
-    ("操作失敗：後端回應 400：關聯報價單與訂單必須屬於同一客戶", False),
+    ("操作失敗：後端回應 400：關聯報價單與訂單必須屬於同一客戶", True),
+    # convert_to_order 的 404 只會出在建訂單之前的讀取（POST /orders 只回 201 或 400），確定沒寫入
     ("操作失敗：找不到資料", False),
+    ("未送出操作：找不到報價單編號 QT-20990101-001", False),
     ("操作失敗：後端服務逾時，請稍後再試\n這次操作可能已經建立了新的報價單或訂單，請先查詢確認，再決定要不要重試，免得重複建立。", True),
     ("操作中斷，尚無法確認是否已完成。請先查詢報價單或訂單確認結果，再決定是否重試，避免重複建立資料。", True),
 ])
 async def test_completed_definite_failure_releases_guard(conversion, monkeypatch, text, still_blocked):
-    """對方已完成且明確回報沒寫入的失敗，馬上可以再轉；中斷或逾時要等後端的逾時過了。"""
+    """Preflight rejections and pre-write lookups release the guard; generic failures do not."""
     _, _, _, request = conversion
 
     async def reply(n):
@@ -179,13 +181,13 @@ async def test_completed_definite_failure_releases_guard(conversion, monkeypatch
     second = await agent.delegate_a2a(None, await request())
     assert len(peer.calls) == (1 if still_blocked else 2)
     if still_blocked:
-        assert "沒有再次送出" in second.output and "約 2 分鐘後再試" in second.output
+        assert "沒有再次送出" in second.output and "結果仍未確認" in second.output
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("final_state", ["completed", "failed", "canceled", "not_found"])
-async def test_guard_waits_for_the_task_then_the_mcp_window(conversion, monkeypatch, final_state):
-    """逾時後先問 task 狀態：還在跑就擋；停了（或對方沒有這個 task）再等 MCP 的逾時，重讀仍沒有訂單才轉。"""
+async def test_stopped_or_missing_task_never_proves_database_rollback(conversion, monkeypatch, final_state):
+    """No elapsed time permits a second write without evidence of the first result."""
     _, _, commit, request = conversion
     clock = use_clock(monkeypatch)
 
@@ -207,15 +209,20 @@ async def test_guard_waits_for_the_task_then_the_mcp_window(conversion, monkeypa
 
     peer.state = final_state
     stopped = await agent.delegate_a2a(None, await request())
-    assert len(peer.calls) == 1 and "約 2 分鐘後再試" in stopped.output
+    assert len(peer.calls) == 1 and "沒有再次送出" in stopped.output
 
     clock[0] += 60
     early = await agent.delegate_a2a(None, await request())
-    assert len(peer.calls) == 1 and "約 1 分鐘後再試" in early.output
+    assert len(peer.calls) == 1 and "沒有再次送出" in early.output
 
     clock[0] += 61
     late = await agent.delegate_a2a(None, await request())
-    assert len(peer.calls) == 2 and "改完後核對：後端查得到" in late.output
+    assert len(peer.calls) == 1 and "沒有再次送出" in late.output
+    assert NUMBER in agent._CONVERT_UNCERTAIN
+    body = await request()
+    commit()  # delayed original request finally commits; it is reconciled, never repeated
+    reconciled = await agent.delegate_a2a(None, body)
+    assert len(peer.calls) == 1 and "已經有訂單" in reconciled.output
     assert NUMBER not in agent._CONVERT_UNCERTAIN
 
 
@@ -240,8 +247,8 @@ async def test_unreachable_peer_keeps_blocking(conversion, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_stopped_remote_task_waits_for_the_mcp_window(conversion, monkeypatch):
-    """對方 task 停在 failed：不會再發新的呼叫，但最後一個 MCP 呼叫可能還沒結束，先等。"""
+async def test_stopped_remote_task_does_not_expire_uncertainty(conversion, monkeypatch):
+    """A stopped A2A task does not cancel its last backend request."""
     _, _, commit, request = conversion
     clock = use_clock(monkeypatch)
 
@@ -259,7 +266,7 @@ async def test_stopped_remote_task_waits_for_the_mcp_window(conversion, monkeypa
     assert peer.state_queries == []
     clock[0] += 121
     late = await agent.delegate_a2a(None, await request())
-    assert len(peer.calls) == 2 and "改完後核對：後端查得到" in late.output
+    assert len(peer.calls) == 1 and "沒有再次送出" in late.output
 
 
 @pytest.mark.asyncio

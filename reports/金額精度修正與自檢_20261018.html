@@ -1,0 +1,16 @@
+<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EZStore 金額精度修正與自檢</title><style>body{font:16px/1.8 system-ui,'Microsoft JhengHei',sans-serif;color:#203344;background:#edf2f6;margin:0}main{max-width:1050px;margin:28px auto;padding:32px;background:white;border-radius:14px}table{border-collapse:collapse;width:100%}td,th{padding:10px;border:1px solid #ccd8e1;text-align:left}th{background:#e8f0f6}a{color:#126183}.ok{background:#e1f3ea;padding:16px}code{overflow-wrap:anywhere}</style><main>
+<p class="warn"><strong>歷史紀錄。</strong>這頁是當時的檢查結果，之後又修改過。目前的狀態、與講義不同的地方和最新測試數字，請看 <a href="目前狀態.md">目前狀態</a>。</p>
+
+<h1>金額精度修正與自檢</h1><p>2026-10-18｜本機修正版。最新結果取代舊報告的「尚未修正」狀態。</p>
+<p class="ok">已修正並通過指定回歸案例。單價先 HALF_UP 到小數兩位，再乘數量及加總。定價 650 × 因子 0.3333 → 單價 216.65；數量 3 → 報價小計、總價與轉出訂單均為 649.95。</p>
+<h2>變更範圍</h2><ul><li>後端報價新增、修改、複製與直接訂單建立／修改採用相同貨幣精度。</li><li>前端預覽改用整數分計算，總價與利潤依逐項捨入後的單價加總。</li><li>第一 Agent 的數值預檢及第二 Agent 的 OKF 試算同步修正。</li><li>核准門檻採用實際捨入後總價；執行完成後使用實際報價因子與總價，不用總價反推因子，避免捨入造成多個因子對應同一金額。</li><li>顧問嚴格核對單價 × 數量、小計加總、報價與訂單；不再用容差放行不一致的歷史資料。</li></ul>
+<h2>這次實際驗證</h2><table><tr><th>項目</th><th>結果與原始紀錄</th></tr>
+<tr><td>Python</td><td>549 項＋4 子測試：<a href="../artifacts/fixes-20261018/money/agent-only.log">Agent 278</a>、<a href="../artifacts/fixes-20261018/money/advisor-all.log">顧問 251</a>、<a href="../artifacts/fixes-20261018/money/support-tests.log">MCP／腳本 20＋4 子測試</a>，均通過。</td></tr>
+<tr><td>Go／前端建置</td><td><a href="../artifacts/fixes-20261018/money/go-tests.log">11 項 Go 測試通過</a>；<a href="../artifacts/fixes-20261018/money/build-frontend.log">TypeScript 與前端建置通過</a>。</td></tr>
+<tr><td>瀏覽器</td><td><a href="../artifacts/fixes-20261018/money/e2e-all.log">20／20 通過</a>，含 650×0.3333、1×1.005、0.01×0.5 的預覽與利潤檢查。</td></tr>
+<tr><td>實際 API／MCP</td><td><a href="../artifacts/fixes-20261018/money/money-api.json">21／21 通過</a>。隔離資料庫實測新增、更新、複製、多品項、直接訂單、MCP 改因子、二分法改總價、轉訂單；操作後重新 GET 核對，原單不變。可重跑 scripts/verify_money_precision.py。</td></tr>
+<tr><td>OKF</td><td><a href="../artifacts/fixes-20261018/money/okf-validate.log">17 條目，0 錯誤／0 警告</a>；<a href="../artifacts/fixes-20261018/money/okf-verify.log">機器核對 10／10</a>。更新程式版本雜湊，未代做人類簽核。</td></tr>
+<tr><td>主服務與原始資料</td><td><a href="../artifacts/fixes-20261018/money/runtime-integrity.json">測試映像、執行中原始碼、知識快照一致，4 個 HTTP 健康檢查均 200</a>。15 客戶、20 商品、12 報價、10 訂單逐筆與修正前相同。</td></tr></table>
+<h2>模型及雲端</h2><p>主服務仍為 Gemini Flash Lite 的 API key 路徑。這次金額驗證直接呼叫程式、API 與 MCP，沒有重新跑完整 LLM 評鑑；不將上一版 Qwen 30／30、19／19 或本地 95／100 視為這版重新評測的結果。未設定 GCP、ADC 或計費。套件可能列印自動探測 ADC 失敗的訊息；本輪 MCP 及 OKF 功能仍實際通過。</p>
+<h2>保留限制與作業差異</h2><p>原課程種子資料的歷史總價／利潤差異仍保留並在 OKF 記錄，沒有批次覆寫原始資料。二分法最多 20 次，因子四位、單價兩位，目標總價不一定能精確到達；不一致的結果會在後驗證被拒絕確認。分步寫入及外部併發仍不保證完整交易原子性。</p><p>依使用者授權，與老師基底相比共有 5 個功能檔及 3 個測試檔差異；<a href="../artifacts/fixes-20261018/money/boundary.json">允許指定修補的檢查通過</a>，嚴格原版比對仍不一致。這不代表老師已核准例外。六工具、先複製再改、20 次二分法與雙 Agent 分工保留。錄影與字幕由使用者後續製作。</p>
+<p><a href="可信賴度報告_20261018.pdf">一頁可信賴度報告</a> · <a href="修正與完整自檢_20261018.html">前一輪 14 項修補與歷史證據</a> · <a href="再檢查與GCP說明_20261018.html">修正前重現紀錄與 GCP 說明</a></p></main></html>

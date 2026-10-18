@@ -12,7 +12,7 @@ data_source:
   resource: /system/backend-api.md
   request: GET /api/v1/quotations?quotation_number=<quotation_number>&page_size=1，再 GET /api/v1/quotations/<id>
 computation: /references/computations/price_change_impact.py
-computation_sha256: ae362ce9aa5f2a0449493c1fd00b0d879a9f017da966044268a3bef64d468391
+computation_sha256: 599f7193e7e7af8e0de65de23d27df524b5eb4d501d4684d3fc54b83415ece82
 attester_sha256: dddfbdb01d8fbea533a6114b72fae9fe7ffcb0ef065b053b5bcc771051c05224
 executor:
   resource: /references/skills/run-python-computation.md
@@ -21,7 +21,7 @@ attester:
   resource: /references/attesters/recompute.py
 generated: { by: claude-code/claude-opus-5-5, at: 2026-10-16T17:30:00Z }
 verified:
-  - { by: process:okf-verify, at: 2026-10-17T12:32:06Z }
+  - { by: process:okf-verify, at: 2026-10-18T05:31:55Z }
 status: stable
 stale_after: 2027-04-01T00:00:00Z
 sources:
@@ -45,9 +45,10 @@ sources:
 
 1. 定價合計 L = Σ 定價 × 數量，成本合計 C = Σ 成本 × 數量，都用品項重算，不用資料庫存的總價與利潤。
 2. 需要的報價因子 = 目標總價 ÷ L，取到小數 4 位。
-3. 改價後總價 = L × 報價因子，利潤 = 總價 − C，毛利率 = 利潤 ÷ 總價（小數 4 位）。
+3. 每項單價 = 定價 × 報價因子，以 ROUND_HALF_UP 捨入到小數兩位；改價後總價 = Σ 捨入後單價 × 數量，利潤 = 總價 − C，毛利率 = 利潤 ÷ 總價（小數 4 位）。和後端存檔使用同一順序，不能改用 L × 因子作為實際總價。
 4. 報價因子只能在 0.01 到 5.0 之間，和 `adjust_total_price` 的二分法範圍一樣。[^mcp-tools] 超出時 `reachable` 是 false，結果停在邊界。
-5. 資料庫存的總價或利潤和重算不同時，寫在 `stored_mismatch`。
+5. 核准判斷使用相同捨入規則計算因子少一格的 conservative_total；改價完成後使用 current_factor 與 current_total 核對實際結果。
+6. 資料庫存的總價或利潤和重算不同時，寫在 `stored_mismatch`。
 
 # 收據與驗證
 

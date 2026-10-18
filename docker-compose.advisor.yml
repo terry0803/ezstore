@@ -24,9 +24,11 @@ services:
       OKF_BUNDLE: /knowledge/ezstore
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       APP_URL: http://localhost:8502
+      CONVERSION_JOURNAL: /state/conversions.sqlite3
     volumes:
       # 知識庫唯讀掛載：在本機簽核或修改條目，不用重建映像
       - ./knowledge/ezstore:/knowledge/ezstore:ro
+      - advisor-state:/state
     ports:
       # 只開給本機：網頁介面和 A2A 端點都沒有登入機制，A2A 還能請報價單 Agent 改資料
       - "127.0.0.1:8502:8080"
@@ -37,3 +39,6 @@ services:
         condition: service_healthy
       backend:
         condition: service_started
+
+volumes:
+  advisor-state:

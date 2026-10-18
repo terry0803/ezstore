@@ -1,9 +1,12 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('Start', 'Restart', 'Status', 'Logs')]
+    [ValidateSet('Start', 'Restart', 'SyncKnowledge', 'Status', 'Logs')]
     [string]$Action = 'Start',
     [switch]$SkipBuild,
-    [switch]$Follow
+    [switch]$Follow,
+    # Optional workaround when Docker Desktop cannot mount the source drive.
+    # Each Start refreshes a private snapshot; edit the original source as usual.
+    [string]$DockerBindCache
 )
 
 Set-StrictMode -Version Latest
@@ -17,6 +20,10 @@ if ($Follow -and $Action -ne 'Logs') {
 }
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
+$cacheSetting = Join-Path $projectRoot '.docker/bind-cache-path.txt'
+if (-not $DockerBindCache -and (Test-Path -LiteralPath $cacheSetting -PathType Leaf)) {
+    $DockerBindCache = (Get-Content -LiteralPath $cacheSetting -Raw).Trim()
+}
 $envFile = Join-Path $projectRoot '.env'
 if (-not (Test-Path -LiteralPath $envFile -PathType Leaf)) {
     throw 'Create the root .env from .env.example and configure your model first. Existing settings are never overwritten.'
@@ -35,6 +42,32 @@ foreach ($name in @('docker-compose.yml', 'docker-compose.build.yml', 'docker-co
     $composeArgs += @('-f', $path)
 }
 
+if ($DockerBindCache) {
+    $cacheRoot = [IO.Path]::GetFullPath($DockerBindCache)
+    $sourceRoot = [IO.Path]::GetFullPath($projectRoot).TrimEnd('\') + '\'
+    if (($cacheRoot.TrimEnd('\') + '\').StartsWith($sourceRoot, [StringComparison]::OrdinalIgnoreCase)) {
+        throw 'DockerBindCache must be outside the source repository.'
+    }
+    $overridePath = Join-Path $cacheRoot 'compose.bind-cache.json'
+    if ($Action -in @('Start', 'Restart', 'SyncKnowledge')) {
+        $snapshotPath = Join-Path $cacheRoot ('snapshot-' + [Guid]::NewGuid().ToString('N'))
+        New-Item -ItemType Directory -Path $snapshotPath -Force | Out-Null
+        Copy-Item -LiteralPath (Join-Path $projectRoot 'scripts') -Destination (Join-Path $snapshotPath 'scripts') -Recurse
+        Copy-Item -LiteralPath (Join-Path $projectRoot 'knowledge/ezstore') -Destination (Join-Path $snapshotPath 'knowledge') -Recurse
+        $override = @{ services = @{
+            db = @{ volumes = @(@{ type = 'bind'; source = (Join-Path $snapshotPath 'scripts'); target = '/scripts'; read_only = $true }) }
+            advisor = @{ volumes = @(@{ type = 'bind'; source = (Join-Path $snapshotPath 'knowledge'); target = '/knowledge/ezstore'; read_only = $true }) }
+        } }
+        $override | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $overridePath -Encoding utf8
+        New-Item -ItemType Directory -Path (Split-Path -Parent $cacheSetting) -Force | Out-Null
+        Set-Content -LiteralPath $cacheSetting -Value $cacheRoot -Encoding utf8
+        Write-Host "Docker bind snapshots refreshed in $snapshotPath"
+    } elseif (-not (Test-Path -LiteralPath $overridePath -PathType Leaf)) {
+        throw 'Run -Action Start with this DockerBindCache first.'
+    }
+    $composeArgs += @('-f', $overridePath)
+}
+
 switch ($Action) {
     'Start' {
         if ($SkipBuild) {
@@ -44,7 +77,13 @@ switch ($Action) {
             $operationArgs = @('up', '-d', '--build')
         }
     }
-    'Restart' { $operationArgs = @('restart') }
+    'Restart' {
+        # A refreshed snapshot changes the mount source; restart alone ignores it.
+        $operationArgs = if ($DockerBindCache) { @('up', '-d', '--no-build', '--pull', 'never', '--force-recreate') } else { @('restart') }
+    }
+    'SyncKnowledge' {
+        $operationArgs = @('up', '-d', '--no-build', '--pull', 'never', '--no-deps', '--force-recreate', 'advisor')
+    }
     'Status' { $operationArgs = @('ps') }
     'Logs' {
         $operationArgs = @('logs', '--tail', '100')
@@ -57,4 +96,12 @@ switch ($Action) {
 & $dockerCommand.Source @composeArgs @operationArgs
 if ($LASTEXITCODE -ne 0) {
     throw "Docker Compose action '$Action' failed (exit code $LASTEXITCODE)."
+}
+
+# Start and Restart recreate db and advisor on the new snapshot, so older
+# snapshots are no longer mounted. SyncKnowledge keeps db on its old snapshot.
+if ($DockerBindCache -and $Action -in @('Start', 'Restart')) {
+    Get-ChildItem -LiteralPath $cacheRoot -Directory -Filter 'snapshot-*' |
+        Where-Object { $_.FullName -ne $snapshotPath } |
+        ForEach-Object { Remove-Item -LiteralPath $_.FullName -Recurse -Force -Confirm:$false }
 }

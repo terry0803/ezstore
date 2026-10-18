@@ -24,7 +24,7 @@ def copied(quotation, *, refresh_price=False):
     factor = (Decimal("200000") / list_total).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
     total = Decimal(0)
     for row in fresh["items"]:
-        unit = Decimal(row["list_price"]) * factor
+        unit = (Decimal(row["list_price"]) * factor).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         row.update(unit_price=str(unit), subtotal=str(unit * row["quantity"]))
         total += unit * row["quantity"]
     cost = sum(Decimal(row["product_cost"]) * row["quantity"] for row in fresh["items"])
@@ -60,7 +60,8 @@ async def test_quote_success_uses_actual_copy_prices_and_quantization(postwrite,
 
 
 @pytest.mark.asyncio
-async def test_quote_accepts_independent_database_cent_rounding(postwrite):
+@pytest.mark.parametrize('round_unit_first', [False, True])
+async def test_quote_requires_consistent_cent_rounding(postwrite, round_unit_first):
     backend, request = postwrite
     fresh = copied(backend.quotations[ORIGINAL])
     fresh["items"][2]["list_price"] = "9800.01"
@@ -69,6 +70,8 @@ async def test_quote_accepts_independent_database_cent_rounding(postwrite):
     total = Decimal(0)
     for row in fresh["items"]:
         exact_unit = Decimal(row["list_price"]) * factor
+        if round_unit_first:
+            exact_unit = exact_unit.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         exact_subtotal = exact_unit * row["quantity"]
         row.update(unit_price=str(exact_unit.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
                    subtotal=str(exact_subtotal.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)))
@@ -78,8 +81,11 @@ async def test_quote_accepts_independent_database_cent_rounding(postwrite):
                  profit_amount=str((total - cost).quantize(Decimal("0.01"))))
     backend.quotations[NEW] = fresh
     reply = await agent._verify_after_write("apply_price", request, f"新報價單: {NEW}")
-    assert "核對失敗" not in reply
-    assert "總價符合指定目標" in reply
+    if round_unit_first:
+        assert "核對失敗" not in reply
+        assert "總價符合指定目標" in reply
+    else:
+        assert "核對失敗" in reply
 
 
 @pytest.mark.asyncio
@@ -231,7 +237,7 @@ async def test_convert_false_success_is_rejected(converted, change):
 
 
 @pytest.mark.asyncio
-async def test_convert_accounts_for_rounded_source_unit_prices(converted):
+async def test_convert_rejects_inconsistent_historical_source(converted):
     backend, request, order = converted
     source = backend.quotations[ORDER_SOURCE]
     source["items"] = [{"product_id": 1, "quantity": 100, "unit_price": "1.23", "subtotal": "123.49"}]
@@ -240,8 +246,7 @@ async def test_convert_accounts_for_rounded_source_unit_prices(converted):
     order["items"] = [{"product_id": 1, "quantity": 100, "unit_price": "1.23", "subtotal": "123.00"}]
     order["total_price"] = "123.00"
     reply = await agent._verify_after_write("convert_order", request, f"訂單編號: {ORDER}")
-    assert "核對失敗" not in reply
-    assert "新訂單客戶、產品、數量、單價與總價均符合" in reply
+    assert "核對失敗" in reply
 
 
 @pytest.mark.asyncio

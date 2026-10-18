@@ -1,0 +1,59 @@
+─────────────────────────── Step 1/2: eval generate ───────────────────────────
+Booting local ADK server (app_name=quotation_agent)
+Running inference on dataset: D:\筆電2\資料探勘第一次作業\ezstore\agent\tests\eval\datasets\quotation-actions.json
+Starting a temporary local server on port 18080 (stops automatically when done).
+Server ready at http://127.0.0.1:18080
+Warning: Could not obtain credentials: ('invalid_client: The OAuth client was not found.', {'error': 'invalid_client', 'error_description': 'The OAuth client was not found.'})
+WARNING:root:Could not fetch /app-info (HTTPError: 400 Client Error: Bad Request for url: http://127.0.0.1:18080/apps/quotation_agent/app-info); traces will omit agent_data.agents -- grading will degrade.
+Discovered root_agent_name=root_agent
+[generate] case[0] done
+[generate] case[1] done
+[generate] case[2] done
+[generate] case[3] done
+[generate] case[4] done
+[generate] case[5] done
+Traces saved to D:\筆電2\資料探勘第一次作業\ezstore\agent\artifacts\traces\traces_20261018_151539.json
+Local server stopped.
+──────────────────────────── Step 2/2: eval grade ─────────────────────────────
+Loaded 4 local custom metric(s). These execute in-process; user-supplied code runs with the CLI's privileges.
+Loading trace file(s) from D:\筆電2\資料探勘第一次作業\ezstore\agent\artifacts\traces\traces_20261018_151539.json...
+Loaded 6 total eval cases from 1 file(s).
+Running evaluation for metrics: custom_response_quality, link_present, refusal_or_action, agent_turn_count at 0.15/s (--qps to change)...
+Dropped 12 event(s) with no content; the eval service rejects them.
+WARNING:LiteLLM:litellm: could not pre-load bedrock-runtime response stream shape — Bedrock event-stream decoding will be unavailable. Error: No module named 'botocore'
+WARNING:LiteLLM:litellm: could not pre-load sagemaker-runtime response stream shape — SageMaker event-stream decoding will be unavailable. Error: No module named 'botocore'
+
+Evaluation Summary
+
+custom_response_quality:
+  num_cases_total: 6
+  num_cases_valid: 6
+  num_cases_error: 0
+  mean_score: 4.6667
+  stdev_score: 0.5164
+
+link_present:
+  num_cases_total: 6
+  num_cases_valid: 6
+  num_cases_error: 0
+  mean_score: 0.0000
+  stdev_score: 0.0000
+
+refusal_or_action:
+  num_cases_total: 6
+  num_cases_valid: 6
+  num_cases_error: 0
+  mean_score: 0.0000
+  stdev_score: 0.0000
+
+agent_turn_count:
+  num_cases_total: 6
+  num_cases_valid: 6
+  num_cases_error: 0
+  mean_score: 1.0000
+  stdev_score: 0.0000
+
+Saved full results to C:\Users\terry\AppData\Local\Temp\claude\C--Users-terry-Documents-Obsidian-Vault\8488e0a0-064b-49dd-bb12-db322f395781\scratchpad\lab\break_out\results_20261018_151845.json
+Saved HTML results to C:\Users\terry\AppData\Local\Temp\claude\C--Users-terry-Documents-Obsidian-Vault\8488e0a0-064b-49dd-bb12-db322f395781\scratchpad\lab\break_out\results_20261018_151845.html
+exit=0
+restored ok
