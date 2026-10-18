@@ -83,7 +83,6 @@ def _percent(value: Decimal) -> str:
     return f"{(value * 100).quantize(Decimal('0.01'))}%"
 
 
-FACTOR_STEP = Decimal("0.0001")
 # 改價必須同時有這兩類規則可用，少了任何一類就不放行
 REQUIRED_RULES = {"margin_tiers": "改價核准層級", "factor_floor": "報價因子下限"}
 
@@ -101,16 +100,11 @@ def _tier_of(margin: Decimal, tiers: list, below: str) -> str:
 
 
 def gate_numbers(result: dict[str, Any], conservative: bool = True) -> tuple[Decimal, Decimal, Decimal]:
-    """判斷用的數字：不四捨五入的毛利率，以及二分法少調一格（報價因子 −0.0001）時的毛利率與因子。
-
-    試算結果的毛利率取到小數 4 位，24.9998% 會顯示成 25.00%；報價單 Agent 的二分法
-    最後也可能停在比試算少一格的報價因子。改價前的判斷用比較不利的那一組數字；
-    改完之後核對實際的報價單時（conservative=False），因子已經確定，不再扣一格。
-    """
+    """寫入前用已驗證的 MCP 二分法結果；寫入後核對實際值，毛利率不先捨入。"""
     cost_total = Decimal(result["cost_total"])
     factor = Decimal(result["new_factor"] if conservative else result["current_factor"])
-    low_factor = max(factor - FACTOR_STEP, FACTOR_STEP) if conservative else factor
-    total = Decimal(result["conservative_total"] if conservative else result["current_total"])
+    low_factor = factor
+    total = Decimal(result["new_total"] if conservative else result["current_total"])
     margin = (total - cost_total) / total if total else Decimal(-1)
     return margin, low_factor, factor
 
@@ -145,7 +139,7 @@ def evaluate_price_change(
         text = f"改價後毛利率 {_percent(shown_margin)}"
         if approval != shown:
             exact = f"{(margin * 100).quantize(Decimal('0.0001'))}%"
-            text += f"（二分法可能少調一格，以 {exact} 判斷）" if conservative else f"（不四捨五入是 {exact}）"
+            text += f"（以二分法結果未捨入毛利率 {exact} 判斷）" if conservative else f"（不四捨五入是 {exact}）"
         decision.verdicts.append(RuleVerdict(concept.id, concept.title, approval, text, concept.trust_note(now)))
         usable.add("margin_tiers")
 
@@ -188,8 +182,6 @@ def evaluate_price_change(
         if low_factor < floor:
             approval = _approval((fm.get("below_floor") or {}).get("approval", "sales_manager"))
             text = f"報價因子 {factor} 低於 {level} 的下限 {floor:.2f}{source}"
-            if factor >= floor:
-                text = f"報價因子 {factor}，二分法可能少調一格到 {low_factor}，低於 {level} 的下限 {floor:.2f}{source}"
         else:
             approval = "none"
             text = f"報價因子 {factor} 沒有低於 {level} 的下限 {floor:.2f}{source}"

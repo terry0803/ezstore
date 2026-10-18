@@ -42,7 +42,7 @@ from .a2a_client import STOPPED_STATES, A2AError, QuotationAgentClient
 from .amounts import _NUMERIC_CHARS, parse_number_token
 from .backend import Backend, BackendError
 from .conversion_journal import ConversionJournal
-from .write_intent import has_execution_hold, is_polite_request, is_price_confirmation, is_write_request
+from .write_intent import has_execution_hold, is_polite_request, is_price_confirmation, is_write_request, is_status_query
 from .computation import (
     ComputationError,
     attest_receipt,
@@ -591,6 +591,9 @@ def route(ctx: Context, node_input: Any):
     # 1. 程式拒答
     if _is_rule_refusal(text):
         return Event(output=REFUSAL_TEXT, route="off_topic", state={"pending": None, "last_check": None})
+    if is_status_query(text):
+        return Event(output="這是操作完成狀態的查詢；本次沒有執行複製、改價或轉單，也尚未核實先前操作是否完成。請到報價單／訂單清單確認。",
+                     route="off_topic", state={"pending": None, "last_check": None})
     # 使用者說不要做了（「算了」「先不要改了」）：清掉待補的要求和上一次試算，不沿用舊的值
     if has_execution_hold(_guard_text(text)) or _CANCEL_RE.search(text):
         return Event(output=CANCEL_TEXT, route="off_topic", state={"pending": None, "last_check": None})
@@ -833,9 +836,11 @@ async def _check_price(quotation_number: str, target_total: float) -> dict[str, 
     lines = [
         f"{result['quotation_number']}（{customer}，{result['customer_level']}，{status}）改成 {_plain(target_total)} 的試算：",
         f"- 報價因子 {result['current_factor']} → {result['new_factor']}",
-        f"- 總價 {result['current_total']} → {result['new_total']}（報價因子取到小數 4 位）",
+        f"- 總價 {result['current_total']} → {result['new_total']}（依 MCP 二分法與逐項單價捨入預測）",
         f"- 毛利率 {_percent(result['current_margin'])} → {_percent(result['new_margin'])}（利潤 {result['new_profit']}）",
     ]
+    if abs(float(result['new_total']) - target_total) >= 0.01:
+        lines.append("注意：依現行二分法，預測實際總價仍與目標有差距；核准判斷使用上述預測結果。")
     if not result["reachable"]:
         lines.append(
             f"這張單的總價只能在 {result['min_total']} 到 {result['max_total']} 之間（報價因子 0.01 到 5.0），"

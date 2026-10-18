@@ -34,7 +34,7 @@ from google.adk.workflow import Workflow
 from google.genai import types
 from pydantic import BaseModel, Field
 from .preflight import PreflightError, validate_change
-from .write_intent import has_execution_hold, is_write_request
+from .write_intent import has_execution_hold, is_write_request, is_status_query
 
 load_dotenv()
 
@@ -352,6 +352,8 @@ def _request_guard_text(text: str) -> str:
 
 def _keyword_operation(text: str) -> str | None:
     guard_text = _request_guard_text(text)
+    if is_status_query(guard_text):
+        return None
     if (not re.search(r"報價單|quotation|QT-\d{8}-\d{3,}", text, re.IGNORECASE)
             or _UNSUPPORTED_ACTION_RE.search(text) or _NEGATED_ACTION_RE.search(guard_text)
             or _EXPLANATION_REQUEST_RE.search(guard_text)):
@@ -742,6 +744,9 @@ def route(ctx: Context, node_input: Any):
     # 1. 程式拒答：提示注入、客戶／產品增修刪，一律擋下
     if _is_rule_refusal(text):
         return Event(output=REFUSAL_TEXT, route="off_topic", state={"pending_intent": None})
+    if is_status_query(text):
+        return Event(output="這是操作完成狀態的查詢；本次沒有執行複製、改價或轉單，也尚未核實先前操作是否完成。請到報價單／訂單清單確認。",
+                     route="off_topic", state={"pending_intent": None, "clarify_source_text": ""})
 
     # 使用者說不要做了：不管分類器怎麼判，都清掉待補的操作，不沿用上一輪記住的值
     if (has_execution_hold(_request_guard_text(text)) or _CANCEL_RE.search(text)

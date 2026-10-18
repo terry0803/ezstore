@@ -162,7 +162,7 @@ async def test_price_check_then_apply_needs_approval(runner):
     run, peer = runner
     session = await new_session(run)
     reply = await ask(run, session, "神盾局科技想把 QT-20260325-001 壓到 180000，可以嗎？")
-    assert "毛利率 32.17% → 20.28%" in reply
+    assert "毛利率 32.17% → 20.27%" in reply
     assert "判斷：需業務主管核准" in reply
     assert "試算驗證：通過" in reply
     assert "沒有套用" in reply and "已作廢" in reply

@@ -65,6 +65,20 @@ _POLITE_QUESTION = re.compile(
     re.IGNORECASE,
 )
 _QUESTION = re.compile(r"[?？]|[嗎呢]\s*[。.!！]?\s*$")
+_STATUS_QUERY = re.compile(
+    r"是否(?:已|有|成功|完成)|有沒有|有没有|有否|(?:確認|确认|查證|查证).*(?:已|完成|成功)"
+    r"|(?:複製|复制|改價|修改|轉成|轉為|转成|转为|轉單|转单).*(?:了嗎|了吗|成功了?|完成了?)[?？嗎吗]?"
+    r"|\b(?:has|have|was|were|did|is)\b.*\b(?:copied|duplicated|converted|changed|completed|succeeded)\b"
+    r"|\b(?:confirm|check|verify)\b.*\b(?:already|completed|successful)\b",
+    re.IGNORECASE,
+)
+
+
+def is_status_query(text: str) -> bool:
+    """Checking whether an operation happened never authorizes another write."""
+    return bool(_STATUS_QUERY.search(unicodedata.normalize("NFKC", text)))
+
+
 _ACTION = re.compile(
     r"複製|改|調|變更|變成|設定|設為|設成|轉|壓|降"
     r"|\b(?:copy|duplicate|clone|convert|turn|set|change|adjust|update)\b|\bfrom\b.+\bto\b",
@@ -83,7 +97,7 @@ _CONFIRM = re.compile(
 
 def is_write_request(text: str) -> bool:
     text = _GREETING.sub("", unicodedata.normalize("NFKC", text).strip())
-    if has_execution_hold(text):
+    if has_execution_hold(text) or is_status_query(text):
         return False
     if is_price_confirmation(text):
         return True

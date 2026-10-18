@@ -32,7 +32,7 @@ status: stable
       "source_sha256": "<來源 JSON 的 sha256>",
       "source": {"quotation_number": "QT-20260325-001", "...": "..."},
       "parameters": {"quotation_number": "QT-20260325-001", "target_total": 180000},
-      "result": {"new_factor": "0.6977", "new_margin": "0.2028", "...": "..."},
+      "result": {"new_factor": "0.6976", "new_margin": "0.2027", "...": "..."},
       "executed_at": "2026-10-17T02:00:00Z"
     }
     ```

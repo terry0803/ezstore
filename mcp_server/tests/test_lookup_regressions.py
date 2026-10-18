@@ -7,6 +7,44 @@ spec=importlib.util.spec_from_file_location('reviewed_mcp',Path(__file__).resolv
 server=importlib.util.module_from_spec(spec)
 spec.loader.exec_module(server)
 
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('rows,target', [
+    ([('0.04', 100000)], 3000),
+    ([('0.01', 1000)], 5),
+    ([('650', 3)], 649.95),
+    ([('1', 3)], 3.015),
+    ([('120000', 2), ('18000', 1)], 180000),
+    ([('0.04', 100000), ('3.57', 123)], 3500),
+    ([('650', 10)], 100000),
+    ([('650', 10)], 1),
+])
+async def test_attested_prediction_matches_real_mcp_search(monkeypatch, rows, target):
+    from contextlib import asynccontextmanager
+    from decimal import Decimal, ROUND_HALF_UP
+    import runpy
+    compute = runpy.run_path(str(Path(__file__).resolve().parents[2] / 'knowledge/ezstore/references/computations/price_change_impact.py'))['compute']
+    items = [{'product_id':i+1,'list_price':price,'product_cost':'0','quantity':qty,'unit_price':price} for i,(price,qty) in enumerate(rows)]
+    q = {'id':1,'customer_id':1,'quotation_number':'QT-20260330-001','pricing_factor':'1','items':items}
+    predicted = compute(q,target)
+    writes = []
+    async def require(_number):
+        return q
+    @asynccontextmanager
+    async def editing(_q):
+        yield {**q,'id':2,'quotation_number':'QT-20261018-999'}
+    async def put(_path, payload, **kwargs):
+        factor = Decimal(str(payload['pricing_factor']))
+        total = sum((Decimal(price)*factor).quantize(Decimal('0.01'), ROUND_HALF_UP)*qty for price,qty in rows)
+        writes.append((factor,total))
+        return {**q,'id':2,'pricing_factor':str(factor),'total_price':str(total)}
+    monkeypatch.setattr(server,'_require_quotation',require)
+    monkeypatch.setattr(server,'_editing_copy',editing)
+    monkeypatch.setattr(server,'_put',put)
+    await server.adjust_total_price(q['quotation_number'],target)
+    assert Decimal(predicted['new_factor']) == writes[-1][0]
+    assert Decimal(predicted['new_total']) == writes[-1][1]
+
 @pytest.mark.asyncio
 async def test_ambiguous_customer_does_not_choose_first(monkeypatch):
     async def get(*args,**kwargs):

@@ -34,6 +34,26 @@ def _total(items: list, factor: Decimal) -> Decimal:
                 * i["quantity"] for i in items), Decimal(0))
 
 
+def _search(items: list, target: Decimal) -> tuple[Decimal, Decimal]:
+    """Mirror MCP's float midpoints/round(), then backend Decimal unit rounding.
+
+    Quantized unit prices create plateaus; target/list_total is not a bound on
+    the factor at which MCP will stop. Keep the last (20th) result on a miss.
+    """
+    lo, hi = float(FACTOR_MIN), float(FACTOR_MAX)
+    for _ in range(20):
+        mid = (lo + hi) / 2.0
+        factor = _d(round(mid, 4))
+        total = _total(items, factor)
+        if abs(float(total) - float(target)) < 0.01:
+            break
+        if float(total) < float(target):
+            lo = mid
+        else:
+            hi = mid
+    return factor.quantize(_FACTOR), total
+
+
 def compute(quotation: dict, target_total) -> dict:
     items = quotation.get("items") or []
     if not items:
@@ -53,10 +73,8 @@ def compute(quotation: dict, target_total) -> dict:
     current_profit = current_total - cost_total
 
     # 後端的報價因子存到小數 4 位
-    raw_factor = target / list_total
-    reachable = FACTOR_MIN <= raw_factor <= FACTOR_MAX
-    new_factor = min(max(raw_factor, FACTOR_MIN), FACTOR_MAX).quantize(_FACTOR, ROUND_HALF_UP)
-    new_total = _total(items, new_factor)
+    reachable = _total(items, FACTOR_MIN) <= target <= _total(items, FACTOR_MAX)
+    new_factor, new_total = _search(items, target)
     new_profit = new_total - cost_total
 
     # 測試資料有些報價單存的總價、利潤和品項重算不同，標出來
@@ -80,7 +98,7 @@ def compute(quotation: dict, target_total) -> dict:
         "reachable": reachable,
         "new_factor": str(new_factor),
         "new_total": _money(new_total),
-        "conservative_total": _money(_total(items, max(new_factor - _FACTOR, _FACTOR))),
+        "conservative_total": _money(new_total),
         "new_profit": _money(new_profit),
         "new_margin": _rate(new_profit, new_total),
         "max_total": _money(_total(items, FACTOR_MAX)),

@@ -113,8 +113,8 @@ def test_order_conversion_rules(bundle_path, snapshot):
 def test_gate_uses_rounded_amounts_and_actual_factor():
     from decimal import Decimal
     from pricing_advisor.policies import gate_numbers
-    result = {"list_total": "3", "cost_total": "2.26", "new_factor": "1.0050",
-              "new_total": "3.03", "conservative_total": "3.00",
+    result = {"list_total": "3", "cost_total": "2.26", "new_factor": "0.9950",
+              "new_total": "3.00", "conservative_total": "3.00",
               "current_factor": "1.0050", "current_total": "3.03"}
     assert gate_numbers(result)[0] < Decimal("0.25")
     margin, low, factor = gate_numbers(result, conservative=False)

@@ -313,7 +313,7 @@ async def check_glossary_examples(ctx: VerifyContext, concept) -> tuple[bool, li
     result = compute(q, 180000)
     total, cost, _, profit = _recompute(q)
     ok = (total, cost, profit) == (Decimal(211560), Decimal(143500), Decimal(68060))
-    ok &= result["new_profit"] == "36506.60" and result["new_margin"] == "0.2028"
+    ok &= result["new_profit"] == "36480.80" and result["new_margin"] == "0.2027"
     return ok, [f"QT-20260325-001 重算 總價 {total}、成本 {cost}、利潤 {profit}；壓到 180000 利潤 {result['new_profit']}、毛利率 {result['new_margin']}"]
 
 

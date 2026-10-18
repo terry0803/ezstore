@@ -16,15 +16,15 @@ async def test_price_change_impact_numbers(bundle_path, fake_backend):
     assert result["list_total"] == "258000.00"
     assert result["cost_total"] == "143500.00"
     assert result["current_margin"] == "0.3217"
-    assert result["new_factor"] == "0.6977"
-    assert result["new_total"] == "180006.60"
-    assert result["new_margin"] == "0.2028"
+    assert result["new_factor"] == "0.6976"
+    assert result["new_total"] == "179980.80"
+    assert result["new_margin"] == "0.2027"
     assert result["stored_mismatch"] == ["profit_amount"]  # 老師 seed 存的利潤是 66060，重算 68060
     assert set(receipt) == {
         "computation", "computation_sha256", "source_url", "source_sha256",
         "source", "parameters", "result", "executed_at",
     }
-    assert attest_receipt(bundle, receipt, claimed={"new_margin": "0.2028"})["ok"]
+    assert attest_receipt(bundle, receipt, claimed={"new_margin": "0.2027"})["ok"]
 
 
 @pytest.mark.asyncio
@@ -48,7 +48,7 @@ async def test_polluted_snapshot_is_detected(bundle_path, fake_backend, pollutio
     assert result["current_total"] == "211560.00"
     assert result["current_profit"] == "68060.00"
     assert result["current_margin"] == "0.3217"
-    assert result["new_total"] == "180006.60"
+    assert result["new_total"] == "179980.80"
     assert original["total_price"] == "211560"
     assert original["profit_amount"] == "66060"  # 共用的快照沒有被改到
     assert attest_receipt(bundle, receipt)["ok"]
@@ -139,12 +139,12 @@ async def test_parameters_are_checked(bundle_path, fake_backend):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('price,factor,quantity,total,target', [
-    ('650','0.3333',3,'649.95',649.95),
-    ('1','1.0050',3,'3.03',3.015),
-    ('0.01','0.5000',1000,'10.00',5),
+@pytest.mark.parametrize('price,factor,quantity,total,target,predicted', [
+    ('650','0.3333',3,'649.95',649.95,'649.95'),
+    ('1','1.0050',3,'3.03',3.015,'3.03'),
+    ('0.01','0.5000',1000,'10.00',5,'0.00'),
 ])
-async def test_cent_rounding_matches_quote_and_attestation(bundle_path, fake_backend, price, factor, quantity, total, target):
+async def test_cent_rounding_matches_quote_and_attestation(bundle_path, fake_backend, price, factor, quantity, total, target, predicted):
     q=copy.deepcopy(await fake_backend.find_quotation('QT-20260330-001'))
     q.update(pricing_factor=factor,total_price=total,profit_amount=total)
     q['items']=[{'list_price':price,'product_cost':'0','quantity':quantity}]
@@ -152,6 +152,6 @@ async def test_cent_rounding_matches_quote_and_attestation(bundle_path, fake_bac
     bundle=Bundle(bundle_path)
     receipt=await run_price_change_impact(bundle,fake_backend,q['quotation_number'],target)
     assert receipt['result']['current_total']==total
-    assert receipt['result']['new_total']==total
+    assert receipt['result']['new_total']==predicted
     assert receipt['result']['stored_mismatch']==[]
     assert attest_receipt(bundle,receipt)['ok']
