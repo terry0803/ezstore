@@ -1,0 +1,13 @@
+<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>暫緩執行與核准結果修復驗證</title>
+<style>body{font:17px/1.8 system-ui,sans-serif;background:#f4f7fa;color:#183044;max-width:960px;margin:40px auto;padding:0 22px}main{background:white;padding:28px;border-radius:14px}h1{font-size:28px;line-height:1.4}h2{font-size:21px;margin-top:30px}code{background:#edf2f7;padding:2px 5px;overflow-wrap:anywhere}td,th{padding:12px;border-bottom:1px solid #dde5ec;text-align:left}table{border-collapse:collapse;width:100%}.ok{color:#076248;font-weight:bold}</style>
+<main><p>2026-10-18 · 針對 e1d7d4d 審查結果</p><h1>「先別執行」阻擋整句；改價核對核准結果並揭露差額</h1>
+<p class="ok">本輪兩項問題已修復。兩個 Agent 共 1461 項測試與 7 個隔離 A2A 串接案例通過。</p>
+<h2>P1：跨子句暫緩指令</h2>
+<p>「幫我複製報價單 QT-20260330-001；先別執行」與轉訂單版本會在關鍵字補救、待補操作處理前被攔截。全域暫緩與同句否定改為共用否定用語表，包含「別／别」，避免兩份詞表再次不一致。兩個 Agent 同步修正，並清除待補意圖；顧問也清除上一輪改價試算狀態。</p>
+<p>測試涵蓋先別執行、請別執行、別操作、别执行、請勿送出、不想執行、不需要提交、別真的寫入，搭配複製／轉訂單與四種模型分類。另確認「分別執行」「特別執行」「能不能幫我…」不會被當成暫緩。</p>
+<h2>P2：精確核對已核准的結果</h2>
+<p>帶有核准快照的改價請求，寫後驗證改為精確比對核准因子、總價與利潤，並核對快照雜湊、目標、客戶等級、牌價與成本；不再以原始目標的容差否定已核准的結果。既有原單未變、品項與數量、明細加總、計算驗證與政策檢查仍保留。沒有核准快照的舊紀錄仍採原有目標容差檢查；新委派缺少快照時不會送出。</p>
+<table><tr><th>實測案例</th><th>結果</th></tr><tr><td>VIP；牌價 0.04、成本 0.01、數量 10,000；目標 320</td><td>二分法核准因子 0.8750、總價 400、毛利率 75%。建立一張符合核准的副本，寫後核對通過，原單完整內容不變。</td></tr><tr><td>對使用者的揭露</td><td>顧問的試算說明與最終核對都明示：實際 400，高於目標 320 共 80；已建立核准副本，但未精確達到指定目標。沒有宣稱已達成 320。</td></tr><tr><td>反向測試</td><td>同樣總價但因子變成 0.9、總價被改成原目標 320、利潤不符、來源／目標被換掉、成本或客戶等級不同，仍會核對失敗。沒有擴大容差或略過檢查。</td></tr></table>
+<h2>測試與部署</h2><ul><li>Agent：758 項單元與離線整合測試通過。</li><li>Advisor：703 項單元與離線整合測試通過，涵蓋高於目標、低於目標、精確達標及七種核准結果不符。</li><li>隔離 A2A／MCP／API 串接：7 項通過，包含本輪 320→400 案例及原子版本衝突回歸。所有寫入使用獨立測試資料庫。</li><li>本輪未呼叫 Gemini 或本地模型；未修改 backend、frontend、MCP 或知識庫計算程式，也未重跑其未變更的獨立套件。</li><li>兩個本機 Agent 已部署，映像與三個變更來源檔雜湊確認一致；前端 health、Agent 及 Advisor 入口正常。</li><li>原有 15 客戶、20 產品、12 報價、10 訂單部署前後完整內容 SHA-256 一致。隔離服務已停止。</li></ul>
+<h2>檔案與範圍</h2><p>修正位於兩個套件的 <code>write_intent.py</code> 與 <code>advisor/pricing_advisor/agent.py</code>。新增回歸測試為 <code>agent/tests/unit/test_execution_hold.py</code>、<code>advisor/tests/unit/test_execution_hold_and_approved_result.py</code>；真實串接腳本更新於 <code>scripts/verify_approved_price_guard.py</code>。</p>
+<p>本輪聚焦兩項已重現問題，不代表重新審查所有程式碼或保證零 bug。原有老師基底修改例外仍以 <code>scripts/check_assignment.py</code> 為準；本輪沒有新增基底修改。</p></main></html>

@@ -23,10 +23,17 @@ _EXPLAIN = re.compile(
     r"|\b(?:how|why|what|whether|explain|describe|support)\b",
     re.IGNORECASE,
 )
+# One vocabulary for negated actions AND global execution holds. Do not add
+# prohibition words to only one of these checks. Exclude 分別/特別 and polite
+# 能不能/可不可以 so ordinary requests do not become cancellations.
+_NEGATION_PATTERN = (
+    r"(?:(?<!可)不可以|不可(?!以)|(?<!能)不能|不准|禁止|不許|不许|不允許|不允许|不得|不要|請勿|请勿|不必|不用|(?<![分特個區識類告離差性級辨派])別|别|不想|不需要|先不|暫時不|暂时不|勿|不(?=把|將|将|再))"
+    r"|\b(?:do\s+not|don't|never)\b"
+)
 # A hold applies to the whole pending operation, including later clauses.
 # Match execution/authorization language rather than requiring a nearby price verb.
 _EXECUTION_HOLD = re.compile(
-    r"(?:(?<!可)不可以|不可(?!以)|(?<!能)不能|不准|禁止|不許|不许|不允許|不允许|不得|不要|請勿|不用|不必|先不|暫時不|暂时不)(?:真的|實際|实际|立即|馬上|马上)?\s*"
+    r"(?:" + _NEGATION_PATTERN + r")(?:真的|實際|实际|立即|馬上|马上)?\s*"
     r"(?:執行|执行|操作|寫入|写入|送出|提交|套用)"
     r"|(?:暫停|暂停|暫緩|暂缓)(?:執行|执行|操作|寫入|写入)?"
     r"|(?:等我|等待我|待我)(?:確認|确认|同意|核准|授權|授权)"
@@ -86,10 +93,7 @@ _ACTION = re.compile(
     r"|(?<![a-z])(?:copy|duplicate|clone|convert|turn|set|change|adjust|update)(?![a-z])|\bfrom\b.+\bto\b",
     re.IGNORECASE,
 )
-_NEGATION = re.compile(
-    r"(?:(?<!可)不可以|不可(?!以)|(?<!能)不能|不准|禁止|不許|不许|不允許|不允许|不得|不要|請勿|请勿|不必|不用|(?<![分特個區識類告離差性級辨派])別|别|不想|不需要|先不|暫時不|暂时不|勿|不(?=把|將|将|再))"
-    r"|\b(?:do\s+not|don't|never)\b", re.IGNORECASE,
-)
+_NEGATION = re.compile(_NEGATION_PATTERN, re.IGNORECASE)
 
 
 def has_negated_write(text: str) -> bool:

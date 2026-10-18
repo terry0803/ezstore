@@ -78,6 +78,20 @@ async def main():
         assert 'APPROVAL_CHANGED' in result.text, result.text
         assert await count()==before
         evidence.append({'case':'real_a2a_catalog_changed_no_draft','task_id':result.task_id,'reply':result.text})
+        vip=await req('POST','/customers',json={'name':'Plateau approval test','tax_id':f"{(int(key[-8:])+1)%100000000:08d}",'level':'vip'})
+        cheap=await req('POST','/products',json={'product_number':'PL-'+key,'name':'Plateau product','cost':'0.01','list_price':'0.04','inventory':20000})
+        q=await req('POST','/quotations',json={'customer_id':vip['id'],'pricing_factor':'1','items':[{'product_id':cheap['id'],'quantity':10000}]})
+        event=await advisor.apply_price(SimpleNamespace(state={}),{'quotation_number':q['quotation_number'],'target_total':320})
+        assert event.actions.route=='delegate'
+        assert event.output['approval_snapshot']['factor']=='0.8750'
+        assert event.output['approval_snapshot']['total']=='400.00'
+        before=await count()
+        response=await advisor._send_a2a(event.output)
+        assert '核對失敗' not in response.output and '符合核准試算結果' in response.output, response.output
+        assert '高於目標 80' in response.output and '未精確達到指定目標' in response.output
+        assert await count()==before+1
+        assert await req('GET',f"/quotations/{q['id']}")==q
+        evidence.append({'case':'real_advisor_320_target_400_approved_success_with_gap','reply':response.output})
         before=await count()
         result=await peer.send('EZSTORE_APPROVED_PRICE_V1\n{}')
         assert '未送出操作' in result.text

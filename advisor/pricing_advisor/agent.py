@@ -970,6 +970,14 @@ async def apply_price(ctx: Context, node_input: dict):
         preface = (
             f"重新試算：毛利率 {_percent(check['result']['new_margin'])}，{check['label']}，試算驗證通過。"
         )
+        predicted = Decimal(str(check['result']['new_total']))
+        difference = predicted - Decimal(str(target))
+        if difference:
+            preface += (
+                f"\n目標總價 {_plain(target)}；核准試算總價 {predicted}，"
+                f"{'高於' if difference > 0 else '低於'}目標 {abs(difference)}。"
+                "受單價捨入與二分法精度限制，本次依核准試算結果建立副本，並非精確達到目標總價。"
+            )
         return Event(
             output={
                 "text": request,
@@ -1071,14 +1079,33 @@ async def _verify_write_result(purpose: str, request: dict, reply: str) -> _Writ
                 return failed("新報價單的客戶與原單不同")
             if items(fresh) != items(original):
                 return failed("新報價單的產品或數量與原單不同")
-            # 副本可帶入產品目前的價格；容差依副本的定價與因子四位精度計算。
             list_total = sum(amount(item["list_price"]) * amount(item["quantity"]) for item in fresh["items"])
             target, actual = amount(request["target_total"]), amount(fresh["total_price"])
             if target <= 0 or list_total <= 0:
                 return failed("目標總價或品項定價不合法")
-            tolerance = max(Decimal("1"), list_total * Decimal("0.0001"))
-            if abs(actual - target) > tolerance:
-                return failed(f"新單總價 {actual} 不符合指定總價 {target}（容差 {tolerance}）")
+            approval = request.get("approval_snapshot")
+            if approval is not None:
+                # The atomic write was authorized against a specific rounded
+                # result, not a target-relative tolerance. Require exact agreement
+                # with that result; never widen tolerance to mask a wrong copy.
+                if (sha256_hex(canonical_json(approval["source"])) != original_hash
+                        or amount(approval["target_total"]) != target):
+                    return failed("核准快照或核准目標與本次請求不同")
+                if (actual != amount(approval["total"])
+                        or amount(fresh["pricing_factor"]) != amount(approval["factor"])
+                        or amount(fresh["profit_amount"]) != amount(approval["profit"])):
+                    return failed("新報價單的因子、總價或利潤不符合核准試算結果")
+                def catalog(document):
+                    return sorted((str(i['product_id']), amount(i['quantity']), amount(i['list_price']),
+                                   amount(i['product_cost'])) for i in document['items'])
+                if fresh.get('customer_level') != original.get('customer_level') or catalog(fresh) != catalog(original):
+                    return failed("新報價單的客戶等級、成本或牌價不符合核准快照")
+            else:
+                # Compatibility for earlier recorded requests without an approval
+                # snapshot. New guarded requests always use exact checks above.
+                tolerance = max(Decimal("1"), list_total * Decimal("0.0001"))
+                if abs(actual - target) > tolerance:
+                    return failed(f"新單總價 {actual} 不符合指定總價 {target}（容差 {tolerance}）")
             price_items = items(fresh, with_prices=True)
             if sum(row[3] for row in price_items) != actual:
                 return failed("新報價單總價與明細加總不符")
@@ -1103,7 +1130,15 @@ async def _verify_write_result(purpose: str, request: dict, reply: str) -> _Writ
             ]
             if request.get("original_factor") is not None:
                 lines.append(f"原單 {request['quotation_number']} 的報價因子還是 {request['original_factor']}")
-            lines.append("原單完整內容未變；新單客戶、產品與數量一致，總價符合指定目標的精度容差。")
+            if approval is not None:
+                lines.append("原單完整內容未變；新單客戶、產品、數量、因子、總價與利潤符合核准試算結果。")
+                difference = actual - target
+                if difference:
+                    lines.append(f"目標總價 {target}，實際總價 {actual}，{'高於' if difference > 0 else '低於'}目標 {abs(difference)}；已建立核准副本，但未精確達到指定目標總價。")
+                else:
+                    lines.append("實際總價與指定目標相同。")
+            else:
+                lines.append("原單完整內容未變；新單客戶、產品與數量一致，總價符合指定目標的精度容差。")
             return _WriteVerification("\n".join(lines), verified=True)
         if purpose == "convert_order":
             numbers = list(dict.fromkeys(_NEW_ORDER_RE.findall(reply)))
