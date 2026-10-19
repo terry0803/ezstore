@@ -119,8 +119,9 @@ def test_feasibility_question_rejects_even_positive_write_classification(questio
     text = f'可以幫我查詢 {Q} 總價改成 210000 {question}？'
     result = agent.route(SimpleNamespace(state={'last_user_text': text}), agent.Intent(intent=operation))
     assert result.actions.route == 'off_topic'
-    assert result.output == agent.EXPLAIN_TEXT
-    assert '沒有執行任何操作' in result.output
+    # 說明句固定；例句換成使用者問的操作和報價單
+    assert result.output.startswith('這句是在問做法或假設的情況，我沒有執行任何操作。')
+    assert agent.OPERATION_EXAMPLES[operation].replace('QT-20260330-001', Q) in result.output
 
 
 @pytest.mark.parametrize('word', ['查一下', '查詢', '查看', '看看', '看一下', '預覽', '估算', '試算', '算一下', '算算', '評估', '檢查', '模擬', '計算', '比較', '分析', '推演', '假想'])
@@ -271,3 +272,26 @@ def test_trailing_hold_cancels_the_pending_operation():
                                                'pending_intent': {'intent': 'duplicate_quotation', 'quotation_number': None}}),
                         agent.Intent(intent='provide_info', quotation_number=Q))
     assert event.output == agent.CANCEL_TEXT
+
+
+@pytest.mark.parametrize('text,total', [
+    (f'{Q} 總價改成 8000 利潤剩多少', '8000'),
+    (f'{Q} 改成 8000 的話毛利多少', '8000'),
+    (f'{Q} 總價改成 8000 後毛利幾趴', '8000'),
+    (f'{Q} 改成 20萬還有賺嗎', '20萬'),
+])
+def test_profit_question_gets_a_dedicated_reply(text, total):
+    """問改價後的利潤：不改價，說明這裡不試算、可以問議價顧問，再給實際改總價的說法（用使用者的單號和金額）。"""
+    event = agent.route(SimpleNamespace(state={'last_user_text': text}),
+                        agent.Intent(intent='adjust_total_price', quotation_number=Q, target_total_price=8000))
+    assert event.actions.route == 'off_topic'
+    assert event.output.startswith('這句是在問改價後的利潤或毛利，我沒有改價')
+    assert '議價顧問' in event.output
+    assert f'我要修改報價單總價，報價單編號：{Q}，總價改為 {total}' in event.output
+
+
+def test_hypothetical_price_question_uses_a_price_example():
+    event = agent.route(SimpleNamespace(state={'last_user_text': f'{Q} 改成 8000 好不好'}),
+                        agent.Intent(intent='adjust_total_price', quotation_number=Q, target_total_price=8000))
+    assert event.output.startswith('這句是在問做法或假設的情況')
+    assert '我要修改報價單總價' in event.output and '我要複製報價單' not in event.output

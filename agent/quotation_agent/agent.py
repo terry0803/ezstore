@@ -121,6 +121,32 @@ def _inquiry_reply(operation: str, text: str) -> str:
             f"確定要{label}，請直接說「{action}」。")
 
 
+def _explain_reply(operation: str, text: str) -> str:
+    """問做法或假設的句子：例句換成使用者問的那個操作和報價單，不一律用複製當例子。"""
+    found = QUOTATION_NUMBER_RE.search(text)
+    number = found.group(0).upper() if found else "QT-20260330-001"
+    example = OPERATION_EXAMPLES.get(operation, OPERATION_EXAMPLES["duplicate_quotation"]).replace("QT-20260330-001", number)
+    return ("這句是在問做法或假設的情況，我沒有執行任何操作。\n"
+            f"要我實際操作，請直接說，例如「{example}」。")
+
+
+# 問改價後的利潤、毛利、划不划算：報價單 Agent 不做試算，回覆說明並指向議價顧問
+_PROFIT_QUESTION_RE = re.compile(r"毛利|利潤|利润|獲利|获利|賺|赚|划算|成本|\bmargin\b|\bprofit\b", re.IGNORECASE)
+_STATED_TARGET_RE = re.compile(r"(?:改成|改為|改为|改到|調成|调成|調整為|调整为|調到|调到|設為|设为|設成|设成|壓到|压到|降到)\s*"
+                               r"([0-9][0-9,，.]*\s*萬?|[一二兩三四五六七八九十百千萬]+)")
+
+
+def _profit_question_reply(text: str) -> str:
+    """「QT-… 總價改成 8000 利潤剩多少」：沒有改價，說明這裡不試算利潤，告訴使用者去哪裡算、怎麼真的改。"""
+    found = QUOTATION_NUMBER_RE.search(text)
+    number = found.group(0).upper() if found else "QT-20260330-001"
+    amount = _STATED_TARGET_RE.search(text)
+    total = amount.group(1).strip() if amount else "你要的總價"
+    return ("這句是在問改價後的利潤或毛利，我沒有改價，資料都沒有變動。\n"
+            "報價單 Agent 只負責查詢、複製、改價和轉訂單，不試算利潤；改價後的毛利率和要誰核准，可以問議價顧問。\n"
+            f"確定要改總價，請直接說「我要修改報價單總價，報價單編號：{number}，總價改為 {total}」。")
+
+
 QUOTATION_NUMBER_RE = re.compile(r"(?<![A-Za-z0-9_-])QT-\d{8}-\d{3,}(?![A-Za-z0-9_-])", re.IGNORECASE)
 QUOTATION_TOKEN_RE = re.compile(r"[A-Za-z0-9_-]*QT-[A-Za-z0-9_-]*", re.IGNORECASE)
 
@@ -851,6 +877,9 @@ def route(ctx: Context, node_input: Any):
             if is_inquiry(guard_text):
                 return Event(output=_inquiry_reply(operation, text), route="off_topic",
                              state={"pending_intent": None, "clarify_source_text": ""})
+            if _PROFIT_QUESTION_RE.search(guard_text):
+                return Event(output=_profit_question_reply(text), route="off_topic",
+                             state={"pending_intent": None, "clarify_source_text": ""})
             if (re.search(r"因子|總價|\bfactor\b|\btotal\b", guard_text, re.I)
                     and not _EXPLANATION_REQUEST_RE.search(guard_text)
                     and not _PREVIEW_REQUEST_RE.search(guard_text)):
@@ -861,7 +890,7 @@ def route(ctx: Context, node_input: Any):
             if intent.intent == "provide_info" and pending:
                 return Event(output={"operation": operation, "missing": REQUIRED_FIELDS[operation], "fields": {}},
                              route="clarify", state={"pending_intent": None, "clarify_source_text": ""})
-            return Event(output=EXPLAIN_TEXT, route="off_topic",
+            return Event(output=_explain_reply(operation, text), route="off_topic",
                          state={"pending_intent": None, "clarify_source_text": ""})
 
     if "quotation_number" in REQUIRED_FIELDS[operation] and any(

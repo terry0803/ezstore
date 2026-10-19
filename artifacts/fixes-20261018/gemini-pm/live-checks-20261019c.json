@@ -1,0 +1,37 @@
+{
+  "at": "2026-10-19T14:19:37",
+  "results": [
+    {
+      "case": "agent_profit_question_reply",
+      "app": "quotation_agent",
+      "user": "QT-20260330-001 總價改成 8000 利潤剩多少",
+      "new_quotations": 0,
+      "passed": true,
+      "reply": "這句是在問改價後的利潤或毛利，我沒有改價，資料都沒有變動。\n報價單 Agent 只負責查詢、複製、改價和轉訂單，不試算利潤；改價後的毛利率和要誰核准，可以問議價顧問。\n確定要改總價，請直接說「我要修改報價單總價，報價單編號：QT-20260330-001，總價改為 8000」。"
+    },
+    {
+      "case": "agent_hypothetical_margin_reply",
+      "app": "quotation_agent",
+      "user": "QT-20260330-001 改成 8000 的話毛利多少",
+      "new_quotations": 0,
+      "passed": true,
+      "reply": "這句是在問改價後的利潤或毛利，我沒有改價，資料都沒有變動。\n報價單 Agent 只負責查詢、複製、改價和轉訂單，不試算利潤；改價後的毛利率和要誰核准，可以問議價顧問。\n確定要改總價，請直接說「我要修改報價單總價，報價單編號：QT-20260330-001，總價改為 8000」。"
+    },
+    {
+      "case": "agent_opinion_price_example",
+      "app": "quotation_agent",
+      "user": "QT-20260330-001 改成 8000 好不好",
+      "new_quotations": 0,
+      "passed": true,
+      "reply": "這句是在問做法或假設的情況，我沒有執行任何操作。\n要我實際操作，請直接說，例如「我要修改報價單總價，報價單編號：QT-20260330-001，總價改為 8000」。"
+    },
+    {
+      "case": "agent_plain_total_change_still_works",
+      "app": "quotation_agent",
+      "user": "我要修改報價單總價，報價單編號：QT-20260330-001，總價改為 8000",
+      "new_quotations": 1,
+      "passed": true,
+      "reply": "已透過二分法調整報價因子使總價逼近目標值（迭代 20 次）。\n原始報價單: QT-20260330-001（未修改） — http://localhost:3000/quotations/12\n新報價單: QT-20261019-001\n報價因子: 1.2308\n目標總價: 8000.0\n實際總價: 8000.2\n注意: 已達最大迭代次數，實際總價與目標仍有差距（報價因子搜尋範圍 0.01–5.0）。\n系統連結: http://localhost:3000/quotations/13"
+    }
+  ]
+}
