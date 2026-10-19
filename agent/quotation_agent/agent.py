@@ -1034,10 +1034,25 @@ def off_topic(node_input: Any) -> str:
     return node_input if isinstance(node_input, str) and node_input.strip() else REFUSAL_TEXT
 
 
-def respond(node_input: Any):
+# 使用者要求用 Markdown 顯示連結時，連結照 spec 維持純文字，但要說一聲，不要像沒聽到。
+# 「不要用 Markdown」這種說法本來就符合，不用多說明。
+_MARKDOWN_ASK_RE = re.compile(r"markdown|\bmd\b", re.I)
+_MARKDOWN_DECLINED_RE = re.compile(r"(?:不要|不用|不需要|別)\s*(?:用|使用)?\s*(?:markdown|md\b)", re.I)
+_MARKDOWN_NOTE = "系統連結一律用純文字顯示，所以沒有改成 Markdown 格式，直接點上面的網址就能打開。"
+
+
+def _with_markdown_note(user_text: str, reply: str) -> str:
+    if (_MARKDOWN_ASK_RE.search(user_text) and not _MARKDOWN_DECLINED_RE.search(user_text)
+            and re.search(r"https?://\S+/(?:quotations|orders)/\d+", reply)):
+        return f"{reply}\n{_MARKDOWN_NOTE}"
+    return reply
+
+
+def respond(ctx: Context, node_input: Any):
     """唯一輸出給使用者看的節點（Chat UI 依 nodeInfo.path 只顯示這裡的文字）。"""
     text = _content_text(node_input) if not isinstance(node_input, str) else node_input
     text = text.strip() or "抱歉，這次沒有產生回覆，請再試一次。"
+    text = _with_markdown_note(ctx.state.get("last_user_text", "") or "", text)
     yield Event(message=types.Content(role="model", parts=[types.Part.from_text(text=text)]))
     yield Event(output=text)
 

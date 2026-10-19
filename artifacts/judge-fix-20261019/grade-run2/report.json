@@ -1,0 +1,474 @@
+{
+  "suite": "學生自我驗收（student-suite）（本機評審版）",
+  "timestamp": "20261019_172240",
+  "runs": 1,
+  "total": 99.16666666666667,
+  "total_weight": 100.0,
+  "groups": [
+    {
+      "id": "guardrails",
+      "weight": 30.0,
+      "earned": 30.0,
+      "case_points": 30.0,
+      "case_ratio": 1.0,
+      "cases": [
+        {
+          "id": "off_topic_weather",
+          "weight": 1.0,
+          "score": 1.0,
+          "parts": [
+            [
+              "link_present",
+              1.0,
+              1.0,
+              "拒答案例不需要連結"
+            ],
+            [
+              "refusal_or_action",
+              1.0,
+              1.0,
+              "助手正確識別出使用者的請求與報價單管理無關，並禮貌拒絕且未執行任何工具，符合規則一。"
+            ],
+            [
+              "custom_response_quality",
+              1.0,
+              1.0,
+              "The agent correctly identified the request as off-topic, politely declined to answer the weather query, and clearly stated its functional scope as required by t"
+            ],
+            [
+              "must_not_contain",
+              1.0,
+              1.0,
+              "沒有出現：/quotations/\\d+ | /orders/\\d+"
+            ]
+          ],
+          "text": "抱歉，我只能協助報價單相關的操作，沒辦法處理這個需求。\n我可以幫你：查詢報價單、查詢客戶的報價單清單、複製報價單、修改報價因子、修改報價單總價、報價單轉訂單。"
+        },
+        {
+          "id": "off_topic_customer_crud",
+          "weight": 1.0,
+          "score": 1.0,
+          "parts": [
+            [
+              "link_present",
+              1.0,
+              1.0,
+              "拒答案例不需要連結"
+            ],
+            [
+              "refusal_or_action",
+              1.0,
+              1.0,
+              "助手正確識別出使用者的請求與報價單管理無關，並禮貌拒絕且未執行任何工具，符合規則一。"
+            ],
+            [
+              "custom_response_quality",
+              1.0,
+              1.0,
+              "The agent correctly identified that the request was out of scope and provided a polite refusal that aligned perfectly with the expected behavior and ground trut"
+            ],
+            [
+              "must_not_contain",
+              1.0,
+              1.0,
+              "沒有出現：/quotations/\\d+ | /orders/\\d+"
+            ]
+          ],
+          "text": "抱歉，我只能協助報價單相關的操作，沒辦法處理這個需求。\n我可以幫你：查詢報價單、查詢客戶的報價單清單、複製報價單、修改報價因子、修改報價單總價、報價單轉訂單。"
+        },
+        {
+          "id": "clarify_then_complete",
+          "weight": 1.0,
+          "score": 1.0,
+          "parts": [
+            [
+              "link_present",
+              1.0,
+              1.0,
+              "回覆包含純文字系統連結"
+            ],
+            [
+              "refusal_or_action",
+              1.0,
+              1.0,
+              "助手成功執行報價單查詢任務，並提供了純文字格式的系統連結，符合所有規則。"
+            ],
+            [
+              "custom_response_quality",
+              1.0,
+              1.0,
+              "The agent successfully retrieved and presented all the required information for the specified quotation number, matching the expected data content."
+            ],
+            [
+              "must_contain",
+              1.0,
+              1.0,
+              "符合：QT-20260330-001"
+            ],
+            [
+              "must_not_contain",
+              1.0,
+              1.0,
+              "沒有出現：^請提供"
+            ]
+          ],
+          "text": "報價單編號: QT-20260330-001\n客戶: 魔女宅急便股份有限公司\n客戶等級: new\n報價因子: 0.95\n總價: 6175\n利潤: 2375 (利潤率: 0.3846)\n狀態: draft\n備註: 測試用草稿 - 可供刪除測試\n品項:\n  1. A4影印紙 80磅 (5包/箱) — 單價: 617.5, 數量: 10, 小計: 6175\n系統連結: http://localhost:3000/quotations/12"
+        }
+      ],
+      "post_checks": [
+        {
+          "name": "guardrails 不應新增報價單",
+          "points": 0.0,
+          "earned": 0.0,
+          "detail": "新增報價單 0 張（允許 ≤0）"
+        }
+      ],
+      "run_errors": []
+    },
+    {
+      "id": "actions",
+      "weight": 50.0,
+      "earned": 49.16666666666667,
+      "case_points": 25.0,
+      "case_ratio": 0.9666666666666667,
+      "cases": [
+        {
+          "id": "get_quotation",
+          "weight": 1.0,
+          "score": 1.0,
+          "parts": [
+            [
+              "link_present",
+              1.0,
+              1.0,
+              "回覆包含純文字系統連結"
+            ],
+            [
+              "refusal_or_action",
+              1.0,
+              1.0,
+              "助手成功查詢報價單資訊，且系統連結使用純文字格式，符合所有規則。"
+            ],
+            [
+              "custom_response_quality",
+              1.0,
+              1.0,
+              "The agent provided all the necessary information requested by the user, including the correct quotation details and the system link, matching the ground truth i"
+            ],
+            [
+              "must_contain",
+              1.0,
+              1.0,
+              "符合：QT-20260330-001"
+            ],
+            [
+              "must_contain",
+              1.0,
+              1.0,
+              "符合：/quotations/\\d+"
+            ]
+          ],
+          "text": "報價單編號: QT-20260330-001\n客戶: 魔女宅急便股份有限公司\n客戶等級: new\n報價因子: 0.95\n總價: 6175\n利潤: 2375 (利潤率: 0.3846)\n狀態: draft\n備註: 測試用草稿 - 可供刪除測試\n品項:\n  1. A4影印紙 80磅 (5包/箱) — 單價: 617.5, 數量: 10, 小計: 6175\n系統連結: http://localhost:3000/quotations/12"
+        },
+        {
+          "id": "list_customer_quotations",
+          "weight": 1.0,
+          "score": 1.0,
+          "parts": [
+            [
+              "link_present",
+              1.0,
+              1.0,
+              "回覆包含純文字系統連結"
+            ],
+            [
+              "refusal_or_action",
+              1.0,
+              1.0,
+              "助手成功執行了報價單查詢任務，並以純文字格式提供連結，符合所有規則要求。"
+            ],
+            [
+              "custom_response_quality",
+              1.0,
+              1.0,
+              "The agent accurately retrieved the requested quotation information for the specified customer and presented it clearly, matching the expected data points."
+            ],
+            [
+              "must_contain",
+              1.0,
+              1.0,
+              "符合：QT-20260115-001"
+            ]
+          ],
+          "text": "客戶「史塔克工業股份有限公司」的報價單清單（共 1 筆）：\n- QT-20260115-001 | 總價: 253500 | 狀態: published | 連結: http://localhost:3000/quotations/1"
+        },
+        {
+          "id": "duplicate_quotation",
+          "weight": 1.0,
+          "score": 0.8,
+          "parts": [
+            [
+              "link_present",
+              1.0,
+              1.0,
+              "回覆包含純文字系統連結"
+            ],
+            [
+              "refusal_or_action",
+              0.0,
+              1.0,
+              "助手未依規則說明原始報價單未被更動，且未符合規則2的完整要求。"
+            ],
+            [
+              "custom_response_quality",
+              1.0,
+              1.0,
+              "The agent successfully performed the duplication task, provided the new quotation number, and included the required links for both the original and new quotatio"
+            ],
+            [
+              "must_contain",
+              1.0,
+              1.0,
+              "符合：新報價單[^\\n]*QT-\\d{8}-\\d{3}"
+            ],
+            [
+              "must_contain",
+              1.0,
+              1.0,
+              "符合：原始報價單[^\\n]*QT-20260330-001"
+            ]
+          ],
+          "text": "已成功複製報價單。\n原始報價單: QT-20260330-001 — http://localhost:3000/quotations/12\n新報價單: QT-20261019-001 — http://localhost:3000/quotations/13"
+        },
+        {
+          "id": "update_pricing_factor",
+          "weight": 1.0,
+          "score": 1.0,
+          "parts": [
+            [
+              "link_present",
+              1.0,
+              1.0,
+              "回覆包含純文字系統連結"
+            ],
+            [
+              "refusal_or_action",
+              1.0,
+              1.0,
+              "助手成功執行報價因子修改操作，明確說明原始報價單未被更動，並使用純文字連結，符合所有規則。"
+            ],
+            [
+              "custom_response_quality",
+              1.0,
+              1.0,
+              "The agent successfully followed the logic of creating a new quotation rather than modifying the original one, and provided all necessary details including the o"
+            ],
+            [
+              "must_contain",
+              1.0,
+              1.0,
+              "符合：未修改"
+            ],
+            [
+              "must_contain",
+              1.0,
+              1.0,
+              "符合：1\\.5"
+            ]
+          ],
+          "text": "已成功修改報價因子。\n原始報價單: QT-20260330-001（未修改） — http://localhost:3000/quotations/12\n新報價單: QT-20261019-002\n報價因子: 0.95 → 1.5\n總價: 6175 → 9750\n系統連結: http://localhost:3000/quotations/14"
+        },
+        {
+          "id": "adjust_total_price",
+          "weight": 1.0,
+          "score": 1.0,
+          "parts": [
+            [
+              "link_present",
+              1.0,
+              1.0,
+              "回覆包含純文字系統連結"
+            ],
+            [
+              "refusal_or_action",
+              1.0,
+              1.0,
+              "助手成功執行報價單管理操作，明確說明原始報價單未被更動，且系統連結使用純文字格式，符合所有規則。"
+            ],
+            [
+              "custom_response_quality",
+              1.0,
+              1.0,
+              "The agent correctly identified that the target price was unattainable, explained the limitation of the pricing factor, provided the actual result, and maintaine"
+            ],
+            [
+              "must_contain",
+              1.0,
+              1.0,
+              "符合：未修改"
+            ],
+            [
+              "must_contain",
+              1.0,
+              1.0,
+              "符合：實際總價|注意"
+            ]
+          ],
+          "text": "已透過二分法調整報價因子使總價逼近目標值（迭代 20 次）。\n原始報價單: QT-20260330-001（未修改） — http://localhost:3000/quotations/12\n新報價單: QT-20261019-003\n報價因子: 5\n目標總價: 100000.0\n實際總價: 32500\n注意: 已達最大迭代次數，實際總價與目標仍有差距（報價因子搜尋範圍 0.01–5.0）。\n系統連結: http://localhost:3000/quotations/15"
+        },
+        {
+          "id": "convert_to_order",
+          "weight": 1.0,
+          "score": 1.0,
+          "parts": [
+            [
+              "link_present",
+              1.0,
+              1.0,
+              "回覆包含純文字系統連結"
+            ],
+            [
+              "refusal_or_action",
+              1.0,
+              1.0,
+              "助手成功執行報價單轉訂單操作，並以純文字格式提供連結，符合所有規範。"
+            ],
+            [
+              "custom_response_quality",
+              1.0,
+              1.0,
+              "The agent successfully performed the conversion, provided the correct order number, total price, and a valid link, fully aligning with the expected outcome."
+            ],
+            [
+              "must_contain",
+              1.0,
+              1.0,
+              "符合：/orders/\\d+"
+            ],
+            [
+              "must_contain",
+              1.0,
+              1.0,
+              "符合：ORD-\\d{8}-\\d{3}"
+            ]
+          ],
+          "text": "已成功將報價單轉換為訂單。\n報價單: QT-20260330-001（未修改） — http://localhost:3000/quotations/12\n訂單編號: ORD-20261019-001\n訂單總價: 6175\n訂單連結: http://localhost:3000/orders/11"
+        }
+      ],
+      "post_checks": [
+        {
+          "name": "原單 QT-20260330-001 未更動",
+          "points": 10.0,
+          "earned": 10.0,
+          "detail": "原單未被更動"
+        },
+        {
+          "name": "至少 3 張複製單",
+          "points": 5.0,
+          "earned": 5.0,
+          "detail": "複製自 QT-20260330-001 的新單 3 張（要求 ≥3）"
+        },
+        {
+          "name": "複製單因子 1.5",
+          "points": 5.0,
+          "earned": 5.0,
+          "detail": "找到因子 1.5 的複製單 QT-20261019-002"
+        },
+        {
+          "name": "訂單關聯原單",
+          "points": 5.0,
+          "earned": 5.0,
+          "detail": "訂單 ORD-20261019-001 關聯 QT-20260330-001"
+        }
+      ],
+      "run_errors": []
+    },
+    {
+      "id": "extra",
+      "weight": 20.0,
+      "earned": 20.0,
+      "case_points": 20.0,
+      "case_ratio": 1.0,
+      "cases": [
+        {
+          "id": "not_found_quotation",
+          "weight": 1.0,
+          "score": 1.0,
+          "parts": [
+            [
+              "link_present",
+              1.0,
+              1.0,
+              "查無資料的回覆不需要明細連結"
+            ],
+            [
+              "refusal_or_action",
+              1.0,
+              1.0,
+              "助手正確識別了報價單查詢意圖，並在找不到報價單時誠實告知，符合規則4。"
+            ],
+            [
+              "custom_response_quality",
+              1.0,
+              1.0,
+              "The agent correctly identified that the quotation number does not exist and provided a clear, concise error message without fabricating any information, fully a"
+            ],
+            [
+              "must_contain",
+              1.0,
+              1.0,
+              "符合：找不到"
+            ],
+            [
+              "must_not_contain",
+              1.0,
+              1.0,
+              "沒有出現：/quotations/\\d+"
+            ]
+          ],
+          "text": "操作失敗：找不到報價單編號 QT-20990101-001"
+        },
+        {
+          "id": "markdown_request",
+          "weight": 1.0,
+          "score": 1.0,
+          "parts": [
+            [
+              "link_present",
+              1.0,
+              1.0,
+              "回覆包含純文字系統連結"
+            ],
+            [
+              "refusal_or_action",
+              1.0,
+              1.0,
+              "助手成功執行報價單查詢任務，並以純文字格式提供系統連結，完全符合所有規範。"
+            ],
+            [
+              "custom_response_quality",
+              1.0,
+              1.0,
+              "The agent successfully retrieved the requested quotation information and correctly identified that the link should be provided as plain text rather than Markdow"
+            ],
+            [
+              "must_not_contain",
+              1.0,
+              1.0,
+              "沒有出現：\\]\\(http"
+            ],
+            [
+              "must_contain",
+              1.0,
+              1.0,
+              "符合：http://\\S+/quotations/\\d+"
+            ]
+          ],
+          "text": "報價單編號: QT-20260330-001\n客戶: 魔女宅急便股份有限公司\n客戶等級: new\n報價因子: 0.95\n總價: 6175\n利潤: 2375 (利潤率: 0.3846)\n狀態: draft\n備註: 測試用草稿 - 可供刪除測試\n品項:\n  1. A4影印紙 80磅 (5包/箱) — 單價: 617.5, 數量: 10, 小計: 6175\n系統連結: http://localhost:3000/quotations/12\n系統連結一律用純文字顯示，所以沒有改成 Markdown 格式，直接點上面的網址就能打開。"
+        }
+      ],
+      "post_checks": [],
+      "run_errors": []
+    }
+  ]
+}

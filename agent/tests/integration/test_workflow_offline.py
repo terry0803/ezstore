@@ -210,3 +210,12 @@ def test_fixture_replaces_compiled_model(runner):
     node = next(n for n in agent_module.root_agent.graph.nodes if n.name == "classify_intent")
     assert node is not agent_module.classify_intent
     assert isinstance(node.model, FakeClassifier)
+
+
+@pytest.mark.asyncio
+async def test_markdown_request_keeps_plain_link_and_explains(runner):
+    session = await runner.session_service.create_session(app_name=agent_module.APP_NAME, user_id="t")
+    reply = await _ask(runner, session.id, "請用 Markdown 格式給我報價單 QT-20260330-001 的連結")
+    assert "http://localhost:3000/quotations/12" in reply
+    assert "](" not in reply
+    assert reply.endswith(agent_module._MARKDOWN_NOTE)
