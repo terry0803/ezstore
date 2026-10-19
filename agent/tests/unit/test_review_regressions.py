@@ -205,3 +205,22 @@ def test_plain_total_and_factor_are_not_treated_as_discount():
     event = agent.route(SimpleNamespace(state={'last_user_text': f'{Q} 的報價因子改成 0.9'}),
                         agent.Intent(intent='update_pricing_factor', quotation_number=Q, new_pricing_factor=0.9))
     assert event.actions.route == 'update_pricing_factor'
+
+
+@pytest.mark.parametrize('text,operation,verb,example', [
+    (f'可以幫我確認複製報價單 {Q} 是否保留備註嗎？', 'duplicate_quotation', '複製報價單', f'我要複製報價單，報價單編號：{Q}'),
+    (f'可以幫我確認複製報價單 {Q} 是否保留備註嗎？', 'off_topic', '複製報價單', f'我要複製報價單，報價單編號：{Q}'),
+    ('請問把 QT-20260301-001 轉訂單會保留備註嗎？', 'convert_to_order', '轉成訂單', '我要將報價單轉訂單，報價單編號：QT-20260301-001'),
+])
+def test_confirmation_inquiry_gets_its_own_reply(text, operation, verb, example):
+    """確認詢問不再回「問做法或假設」：說明沒有執行，告訴使用者怎麼查和怎麼真的做，單號用使用者給的。"""
+    event = agent.route(SimpleNamespace(state={'last_user_text': text}), agent.Intent(intent=operation))
+    assert event.actions.route == 'off_topic'
+    assert event.output.startswith(f'這句是在確認{verb}會怎麼處理，我沒有執行任何操作')
+    assert example in event.output and '我要查詢報價單' in event.output
+    assert event.output != agent.EXPLAIN_TEXT
+
+
+def test_how_to_question_keeps_the_explain_reply():
+    event = agent.route(SimpleNamespace(state={'last_user_text': f'請問如何複製報價單 {Q}'}), agent.Intent(intent='duplicate_quotation'))
+    assert event.output == agent.EXPLAIN_TEXT

@@ -35,7 +35,7 @@ from google.adk.workflow import Workflow
 from google.genai import types
 from pydantic import BaseModel, Field
 from .preflight import PreflightError, validate_change
-from .write_intent import has_execution_hold, has_negated_write, is_write_request, is_status_query, is_approval_query, is_duration_query, is_effect_query
+from .write_intent import has_execution_hold, has_negated_write, is_inquiry, is_write_request, is_status_query, is_approval_query, is_duration_query, is_effect_query
 
 load_dotenv()
 
@@ -107,6 +107,19 @@ EXPLAIN_TEXT = (
     "這句是在問做法或假設的情況，我沒有執行任何操作。\n"
     "要我實際操作，請直接說，例如「我要複製報價單，報價單編號：QT-20260330-001」。"
 )
+
+def _inquiry_reply(operation: str, text: str) -> str:
+    """確認詢問（「可以幫我確認複製…是否保留備註嗎？」）的回覆：說明沒有執行，告訴使用者怎麼查、怎麼真的做。"""
+    found = QUOTATION_NUMBER_RE.search(text)
+    number = found.group(0).upper() if found else "QT-20260330-001"
+    label = {"duplicate_quotation": "複製報價單", "update_pricing_factor": "改報價因子",
+             "adjust_total_price": "改總價", "convert_to_order": "轉成訂單"}.get(operation, "這個操作")
+    query = OPERATION_EXAMPLES["get_quotation"].replace("QT-20260330-001", number)
+    action = OPERATION_EXAMPLES.get(operation, OPERATION_EXAMPLES["duplicate_quotation"]).replace("QT-20260330-001", number)
+    return (f"這句是在確認{label}會怎麼處理，我沒有執行任何操作，資料都沒有變動。\n"
+            f"想先看報價單現在的內容（例如備註、品項），可以說「{query}」。\n"
+            f"確定要{label}，請直接說「{action}」。")
+
 
 QUOTATION_NUMBER_RE = re.compile(r"(?<![A-Za-z0-9_-])QT-\d{8}-\d{3,}(?![A-Za-z0-9_-])", re.IGNORECASE)
 QUOTATION_TOKEN_RE = re.compile(r"[A-Za-z0-9_-]*QT-[A-Za-z0-9_-]*", re.IGNORECASE)
@@ -831,6 +844,9 @@ def route(ctx: Context, node_input: Any):
         continuation = _bare_answer(text, pending, clarify_source)
         if (not is_write_request(guard_text)
                 and not (continuation and continuation[0] == operation)):
+            if is_inquiry(guard_text):
+                return Event(output=_inquiry_reply(operation, text), route="off_topic",
+                             state={"pending_intent": None, "clarify_source_text": ""})
             if (re.search(r"因子|總價|\bfactor\b|\btotal\b", guard_text, re.I)
                     and not _EXPLANATION_REQUEST_RE.search(guard_text)
                     and not _PREVIEW_REQUEST_RE.search(guard_text)):

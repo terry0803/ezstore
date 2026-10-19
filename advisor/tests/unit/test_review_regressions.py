@@ -275,3 +275,16 @@ def test_confirmation_inquiry_is_not_delegated_as_a_copy(text, classification):
     event = agent.route(SimpleNamespace(state={'last_user_text': text}), agent.AdvisorIntent(intent=classification))
     assert not (event.actions.route == 'delegate' and event.output.get('writes'))
     assert not (event.actions.route == 'delegate' and '複製' in event.output.get('text', ''))
+
+
+def test_confirmation_inquiry_gets_its_own_reply():
+    event = agent.route(SimpleNamespace(state={'last_user_text': '可以幫我確認複製報價單 QT-20260330-001 是否保留備註嗎？'}),
+                        agent.AdvisorIntent(intent='quotation_request'))
+    assert event.actions.route == 'off_topic'
+    assert event.output.startswith('這句是在確認複製報價單會怎麼處理，我沒有操作任何資料')
+    assert '幫我查詢報價單 QT-20260330-001' in event.output and '幫我複製報價單 QT-20260330-001' in event.output
+
+
+def test_how_to_copy_keeps_the_explain_reply():
+    event = agent.route(SimpleNamespace(state={'last_user_text': f'請問如何複製報價單 {Q}'}), agent.AdvisorIntent(intent='quotation_request'))
+    assert event.output == agent.EXPLAIN_TEXT

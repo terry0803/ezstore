@@ -43,7 +43,7 @@ from .a2a_client import STOPPED_STATES, A2AError, QuotationAgentClient
 from .amounts import _NUMERIC_CHARS, parse_number_token
 from .backend import Backend, BackendError
 from .conversion_journal import ConversionJournal
-from .write_intent import has_execution_hold, has_negated_write, is_polite_request, is_price_confirmation, is_write_request, is_status_query, is_approval_query, is_duration_query, is_effect_query
+from .write_intent import has_execution_hold, has_negated_write, is_inquiry, is_polite_request, is_price_confirmation, is_write_request, is_status_query, is_approval_query, is_duration_query, is_effect_query
 from .computation import (
     ComputationError,
     attest_receipt,
@@ -91,6 +91,15 @@ EXPLAIN_TEXT = (
     "這句是在問做法或假設的情況，我沒有操作任何資料。\n"
     "要我實際做，請直接說，例如「幫我複製報價單 QT-20260330-001」。"
 )
+
+def _copy_inquiry_reply(text: str) -> str:
+    """確認複製內容的詢問（「可以幫我確認複製…是否保留備註嗎？」）：不複製，告訴使用者怎麼查、怎麼真的複製。"""
+    found = QUOTATION_NUMBER_RE.search(text)
+    number = found.group(0).upper() if found else "QT-20260330-001"
+    return ("這句是在確認複製報價單會怎麼處理，我沒有操作任何資料。\n"
+            f"想先看報價單現在的內容（例如備註、品項），可以說「幫我查詢報價單 {number}」。\n"
+            f"確定要複製，請直接說「幫我複製報價單 {number}」。")
+
 
 QUOTATION_NUMBER_RE = re.compile(r"(?<![A-Za-z0-9_-])QT-\d{8}-\d{3,}(?![A-Za-z0-9_-])", re.IGNORECASE)
 QUOTATION_TOKEN_RE = re.compile(r"[A-Za-z0-9_-]*QT-[A-Za-z0-9_-]*", re.IGNORECASE)
@@ -693,6 +702,8 @@ def route(ctx: Context, node_input: Any):
             # 「不要複製」「教我如何複製」不能組成複製的指令送出去
             if copy and _NEGATED_ACTION_RE.search(guard_text):
                 return Event(output=CANCEL_TEXT, route="off_topic", state={"pending": None, "last_check": None})
+            if copy and not copy_followup and is_inquiry(guard_text):
+                return Event(output=_copy_inquiry_reply(text), route="off_topic", state={"pending": None, "last_check": None})
             if copy and not copy_followup and not is_write_request(guard_text):
                 return Event(output=EXPLAIN_TEXT, route="off_topic", state={"pending": None, "last_check": None})
             # 有報價單編號時不轉原句，由程式組出查詢或複製的句子；報價單 Agent 的寫入動作
