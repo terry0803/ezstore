@@ -98,10 +98,6 @@ if ($LASTEXITCODE -ne 0) {
     throw "Docker Compose action '$Action' failed (exit code $LASTEXITCODE)."
 }
 
-# Start and Restart recreate db and advisor on the new snapshot, so older
-# snapshots are no longer mounted. SyncKnowledge keeps db on its old snapshot.
-if ($DockerBindCache -and $Action -in @('Start', 'Restart')) {
-    Get-ChildItem -LiteralPath $cacheRoot -Directory -Filter 'snapshot-*' |
-        Where-Object { $_.FullName -ne $snapshotPath } |
-        ForEach-Object { Remove-Item -LiteralPath $_.FullName -Recurse -Force -Confirm:$false }
-}
+# A caller-provided cache can contain unrelated data, and a directory name is
+# not proof of ownership. Preserve all existing snapshots on every action.
+# Cleanup is intentionally manual, after checking ownership and active mounts.

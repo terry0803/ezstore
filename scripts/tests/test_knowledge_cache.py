@@ -5,6 +5,41 @@ import shutil
 import subprocess
 import pytest
 
+
+@pytest.mark.skipif(os.name != 'nt' or not shutil.which('pwsh'), reason='Windows startup helper')
+@pytest.mark.parametrize('action', ['Start', 'Restart', 'SyncKnowledge'])
+@pytest.mark.parametrize('exit_code', [0, 17])
+def test_cache_actions_preserve_unrelated_and_previous_snapshots(tmp_path, action, exit_code):
+    root = tmp_path / 'repo'
+    scripts = root / 'scripts'
+    scripts.mkdir(parents=True)
+    script = scripts / 'start-homework.ps1'
+    shutil.copyfile(Path(__file__).resolve().parents[1] / script.name, script)
+    knowledge = root / 'knowledge/ezstore'
+    knowledge.mkdir(parents=True)
+    (knowledge / 'policy.md').write_text('policy', encoding='utf-8')
+    (root / '.env').write_text('AGENT_MODEL=test', encoding='utf-8')
+    for name in ['docker-compose.yml', 'docker-compose.build.yml', 'docker-compose.advisor.yml']:
+        (root / name).write_text('services: {}', encoding='utf-8')
+    fake = tmp_path / 'fake'
+    fake.mkdir()
+    (fake / 'docker.cmd').write_text(f'@echo off\r\nexit /b {exit_code}\r\n', encoding='ascii')
+    env = {**os.environ, 'PATH': str(fake) + os.pathsep + os.environ['PATH']}
+    cache = tmp_path / 'cache'
+    protected = []
+    for name in ['snapshot-family-backup', 'snapshot-' + 'a' * 32, 'personal']:
+        folder = cache / name
+        folder.mkdir(parents=True)
+        path = folder / 'precious.txt'
+        path.write_bytes(b'irreplaceable data')
+        protected.append(path)
+    result = subprocess.run(['pwsh', '-NoProfile', '-File', str(script),
+                             '-Action', action, '-DockerBindCache', str(cache)],
+                            env=env, capture_output=True, text=True, encoding='utf-8', timeout=30)
+    assert (result.returncode == 0) == (exit_code == 0), result.stderr
+    assert all(path.read_bytes() == b'irreplaceable data' for path in protected)
+    assert len(list(cache.glob('snapshot-*/knowledge/policy.md'))) == 1
+
 @pytest.mark.skipif(os.name!='nt' or not shutil.which('pwsh'),reason='Windows startup helper')
 def test_sync_remembers_cache_and_copies_changed_knowledge(tmp_path):
     root=tmp_path/'repo';scripts=root/'scripts';scripts.mkdir(parents=True)

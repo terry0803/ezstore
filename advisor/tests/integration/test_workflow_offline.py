@@ -149,6 +149,30 @@ async def new_session(runner):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("question", [
+    "請幫我確認複製報價單 QT-20260325-001 要多久？",
+    "等主管同意後，再把 QT-20260325-001 總價改成 300000",
+])
+async def test_duration_and_external_consent_clear_pending_without_a2a(runner, question):
+    run, peer = runner
+    session = await new_session(run)
+    await ask(run, session, "幫我複製報價單")
+    await ask(run, session, question)
+    assert peer.requests == []
+    await ask(run, session, "QT-20260325-001")
+    assert len(peer.requests) == 1 and "查詢" in peer.requests[0]
+
+
+@pytest.mark.asyncio
+async def test_relative_increase_asks_for_final_total_without_a2a(runner):
+    run, peer = runner
+    session = await new_session(run)
+    reply = await ask(run, session, "幫我把 QT-20260325-001 總價調高 300000")
+    assert "目標總價" in reply
+    assert peer.requests == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("question", [
     "幫我確認 QT-20260330-001 總價改成 8000 是否需要主管核准",
     "幫我複製報價單 QT-20260330-001，需要誰核准",
     "幫我把 QT-20260330-001 轉成訂單，要不要簽核",

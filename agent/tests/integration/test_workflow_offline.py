@@ -112,6 +112,19 @@ async def _ask(runner, session_id, text):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("question", [
+    "請幫我確認複製報價單 QT-20260325-001 要多久？",
+    "等主管同意後，再把 QT-20260325-001 總價改成 300000",
+])
+async def test_duration_and_external_consent_clear_pending_without_mcp(runner, question):
+    session = await runner.session_service.create_session(app_name="quotation_agent", user_id="t")
+    await _ask(runner, session.id, "幫我複製報價單")
+    await _ask(runner, session.id, question)
+    await _ask(runner, session.id, "QT-20260325-001")
+    assert agent_module.mcp_toolset.calls == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("question", [
     "幫我確認 QT-20260330-001 總價改成 8000 是否需要主管核准",
     "幫我複製報價單 QT-20260330-001，需要誰核准",
     "幫我把 QT-20260330-001 轉成訂單，要不要簽核",

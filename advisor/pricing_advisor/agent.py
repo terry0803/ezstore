@@ -43,7 +43,7 @@ from .a2a_client import STOPPED_STATES, A2AError, QuotationAgentClient
 from .amounts import _NUMERIC_CHARS, parse_number_token
 from .backend import Backend, BackendError
 from .conversion_journal import ConversionJournal
-from .write_intent import has_execution_hold, has_negated_write, is_polite_request, is_price_confirmation, is_write_request, is_status_query, is_approval_query
+from .write_intent import has_execution_hold, has_negated_write, is_polite_request, is_price_confirmation, is_write_request, is_status_query, is_approval_query, is_duration_query
 from .computation import (
     ComputationError,
     attest_receipt,
@@ -95,10 +95,20 @@ EXPLAIN_TEXT = (
 QUOTATION_NUMBER_RE = re.compile(r"(?<![A-Za-z0-9_-])QT-\d{8}-\d{3,}(?![A-Za-z0-9_-])", re.IGNORECASE)
 QUOTATION_TOKEN_RE = re.compile(r"[A-Za-z0-9_-]*QT-[A-Za-z0-9_-]*", re.IGNORECASE)
 _TARGET_HINT_RE = re.compile(r"(壓到|降到|改成|改為|調到|變成|殺到|砍到|到|\bto)\s*$", re.IGNORECASE)
-# 「降 2 萬」「便宜 5000」「打九折」「降 10%」是相對的說法，不自己換算成總價
-_RELATIVE_RE = re.compile(r"\d\s*[%％]|[\d一二三四五六七八九]\s*折|(降|減|便宜|折讓|扣|少)[^\d到]{0,2}\d")
+# 「調高 2 萬」「降 2 萬」「便宜 5000」「打九折」需要明確的最終總價
+_RELATIVE_RE = re.compile(r"\d\s*[%％]|[\d一二三四五六七八九]\s*折|(?:調高|调高|提高|調低|调低|增加|加|降|減|减|便宜|折讓|扣|少)[^\d到至為为成]{0,2}\d")
 # 一般報價單操作（原句交給報價單 Agent）只能是查詢、清單、複製；帶有這些字就要先經過檢查
 _WRITE_RE = re.compile(r"改|調|降|壓|殺|砍|總價|因子|折|訂單|刪除|移除|發佈|核准")
+
+
+def _has_unresolved_relative_amount(text: str) -> bool:
+    normalized = _normalize_amounts(text)
+    # An explicit final target can supersede earlier relative context, e.g.
+    # "客戶想打九折，壓到 190000". A later increment must still clarify.
+    targets = [m.start() for m in _AMOUNT_TOKEN_RE.finditer(normalized)
+               if _TARGET_HINT_RE.search(normalized[:m.start()])]
+    last_target = max(targets, default=-1)
+    return any(m.start() > last_target for m in _RELATIVE_RE.finditer(normalized))
 
 # 程式層的拒答規則：分類器判成報價操作也一樣擋下。比對前先統一全形半形、大小寫，
 # 再拿掉空白與標點，「Ｉｇｎｏｒｅ」「i g n o r e」「忽 略」都會比對到。
@@ -592,6 +602,9 @@ def route(ctx: Context, node_input: Any):
     # 1. 程式拒答
     if _is_rule_refusal(text):
         return Event(output=REFUSAL_TEXT, route="off_topic", state={"pending": None, "last_check": None})
+    if is_duration_query(text):
+        return Event(output="這是在詢問操作耗時；本次沒有執行複製、改價或轉單。目前沒有可靠的執行時間估計。",
+                     route="off_topic", state={"pending": None, "last_check": None})
     if is_approval_query(text):
         # Use only fields explicitly supplied in this question, never model or
         # pending-write values. Both destinations are read-only and cannot dispatch A2A.
@@ -600,6 +613,7 @@ def route(ctx: Context, node_input: Any):
         invalid_number = any(not QUOTATION_NUMBER_RE.fullmatch(token) for token in QUOTATION_TOKEN_RE.findall(text))
         if (len(numbers) == 1 and not invalid_number and target is not None
                 and math.isfinite(target) and target > 0 and not ambiguous
+                and not _has_unresolved_relative_amount(text)
                 and not re.search(r"因子|訂單|订单|複製|复制|\b(?:factor|order|copy|duplicate)\b", text, re.I)):
             return Event(output={"quotation_number": numbers[0], "target_total": target},
                          route="price_check", state={"pending": None, "last_check": None})
@@ -727,7 +741,7 @@ def route(ctx: Context, node_input: Any):
     # 金額以使用者原文為準（程式抽取），抓不到只可用有效待補欄位。
     # 「降 2 萬」「打九折」是相對的說法，模型可能自己換算，所以不收，改問總價
     target, hinted, ambiguous_amount = _amount_from_text(text)
-    relative = not hinted and bool(_RELATIVE_RE.search(_normalize_amounts(text)))
+    relative = _has_unresolved_relative_amount(text)
     factor_only = "因子" in text and "總價" not in text
     # 「20 萬或 21 萬」「二百五」這種有兩種意思的金額要追問，也不能退回去用上一次試算的金額
     unclear = relative or factor_only or ambiguous_amount
@@ -1391,7 +1405,7 @@ def clarify(node_input: dict) -> str:
     if node_input.get("hint") == "amount":
         lines.append("你給的金額不只一個，或寫法有兩種意思（例如「二百五」「18萬5」），我不自己挑。請只說一個總價，例如 250000。")
     elif node_input.get("hint") == "relative":
-        lines.append("折數、降多少錢這類說法我不自己換算成總價，請直接告訴我客戶想要的總價。")
+        lines.append("調高、調低多少錢或折數這類相對變動，我不自己換算成總價；請直接告訴我調整後的目標總價。")
     elif node_input.get("hint") == "factor":
         lines.append("我用總價來判斷公司的規則，不直接改報價因子。請告訴我客戶想要的總價。")
     if node_input.get("invalid"):

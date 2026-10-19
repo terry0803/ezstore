@@ -37,6 +37,9 @@ _EXECUTION_HOLD = re.compile(
     r"(?:執行|执行|操作|寫入|写入|送出|提交|套用)"
     r"|(?:暫停|暂停|暫緩|暂缓)(?:執行|执行|操作|寫入|写入)?"
     r"|(?:等我|等待我|待我)(?:確認|确认|同意|核准|授權|授权)"
+    r"|(?:等(?!級|级|等)(?:待|到)?|待)[^，。；;,\n]*(?:同意|確認|确认|核准|核可|批准|簽核|签核|授權|授权)"
+    r"|(?:同意|核准|核可|批准|簽核|签核|授權|授权)(?:之)?[後后][，,\s]*(?:再|才)"
+    r"|\b(?:wait(?:ing)?\s+(?:for|until)|after|once)\b[^\n.!;]*(?:\bapproval\b|\bconsent\b|\bapprov(?:es?|ed)\b|\bconfirms?\b)"
     r"|(?:尚未|還沒|还没|沒有|没有)(?:確認|确认|同意|授權|授权)"
     r"|(?:沒有要|没有要|還沒要|还没要)(?:真的|實際|实际)?(?:改|轉|转|複製|复制|執行|执行)"
     r"|\b(?:do\s+not|don't|not\s+yet|hold\s+off|wait\s+for\s+my\s+(?:approval|confirmation))\b",
@@ -86,6 +89,19 @@ _STATUS_QUERY = re.compile(
 def is_status_query(text: str) -> bool:
     """Checking whether an operation happened never authorizes another write."""
     return bool(_STATUS_QUERY.search(unicodedata.normalize("NFKC", text)))
+
+
+_DURATION_QUERY = re.compile(
+    r"多久|多長時間|多长时间|多少(?:時間|时间|分鐘|分钟|小時|小时|秒|天)"
+    r"|何時(?:完成|結束)|何时(?:完成|结束)|幾(?:秒|分鐘|分钟|小時|小时|天)"
+    r"|\bhow\s+(?:long|much\s+time)\b",
+    re.IGNORECASE,
+)
+
+
+def is_duration_query(text: str) -> bool:
+    """Asking an operation's duration is not consent to start it."""
+    return bool(_DURATION_QUERY.search(unicodedata.normalize("NFKC", text)))
 
 
 _APPROVAL_TERM = r"(?:核准|核可|批准|審批|审批|審核|审核|簽核|签核|授權|授权|approval|authorization|authorisation)"
@@ -142,7 +158,7 @@ _CONFIRM = re.compile(
 
 def is_write_request(text: str) -> bool:
     text = _GREETING.sub("", unicodedata.normalize("NFKC", text).strip())
-    if has_execution_hold(text) or is_status_query(text) or is_approval_query(text) or has_negated_write(text):
+    if has_execution_hold(text) or is_status_query(text) or is_approval_query(text) or is_duration_query(text) or has_negated_write(text):
         return False
     if is_price_confirmation(text):
         return True

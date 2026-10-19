@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-Hant"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>四項授權、解析與快照修復驗證｜2026-10-19</title>
+<style>body{max-width:980px;margin:40px auto;padding:0 24px 50px;background:#f6f8fb;color:#203044;font:17px/1.8 system-ui,sans-serif}section{background:white;padding:22px 28px;margin:20px 0;border:1px solid #dce3ec;border-radius:12px}h1{font-size:30px}h2{font-size:22px}table{border-collapse:collapse;width:100%}th,td{text-align:left;vertical-align:top;padding:12px;border-bottom:1px solid #dce3ec}code{overflow-wrap:anywhere}.ok{color:#176642;font-weight:700}</style>
+<h1>四項授權、解析與快照修復驗證</h1>
+<p>2026-10-19｜審查基準：<code>5820cc2</code></p>
+<section><h2>修復結果</h2><p class="ok">四項問題已處理，兩個本機 Agent 已更新，主資料未變動。</p>
+<table><tr><th>問題</th><th>修正後行為</th></tr>
+<tr><td>詢問複製耗時卻新增副本</td><td>「要多久／多少時間／幾分鐘／how long」在授權及路由前保持唯讀，清除待補來源；明示沒有執行，不捏造耗時估計。</td></tr>
+<tr><td>等待主管同意卻立即改價</td><td>等待主管、客戶或具名他人確認／批准，以及「核准後才能」視為暫緩。清除待補與顧問上次試算，不安排自動延後執行；後續需重新提出明確要求。</td></tr>
+<tr><td>調高 300000 被當成調到 300000</td><td>相對增減須追問最終總價，不使用模型猜測或歷史值，不直接委派。「調高到 300000」仍是明確目標；先述折扣再指定最終總價仍受支援，目標後又追加增減則追問。第一個 Agent 的待補數字解析同步防護。</td></tr>
+<tr><td>啟動快取刪除無關 snapshot 目錄</td><td>移除啟動／重啟的自動遞迴刪除。保留全部既有快照與其他資料；舊快照會累積，需確認用途及掛載後手動清理。</td></tr></table></section>
+<section><h2>驗證</h2><ul>
+<li>Agent 單元及離線整合：890 通過。</li>
+<li>Advisor 單元及離線整合：858 通過。</li>
+<li>腳本套件：23 通過，另有 4 個子測試通過。</li>
+<li>合計 1,771 項測試及 4 個子測試；新增 161 項案例。</li>
+<li>完整 Workflow/session 新增 5 個案例：耗時詢問、等待主管同意、相對調價。假模型可能分類成寫入，但不發送 MCP/A2A 寫入。</li>
+<li>新增 6 個真實 PowerShell／假 Docker 隔離案例：Start、Restart、SyncKnowledge，各測成功與失敗，無關備份及既有快照內容皆保留。</li>
+<li>固定舊版純函式重現兩項授權回傳 true、相對增價規則未命中。隔離執行舊啟動腳本，確認保留備份測試因檔案被刪而失敗；測試資料皆為自行建立的拋棄式檔案。</li>
+</ul><p>測試命令：各 Agent 目錄執行 <code>.venv/Scripts/python.exe -m pytest tests/unit tests/integration -q --tb=short</code>；根目錄執行 <code>agent/.venv/Scripts/python.exe -m pytest scripts/tests -q --tb=short</code>。</p></section>
+<section><h2>部署與範圍</h2>
+<p>兩個本機 Agent 映像與 4 個 Python 來源檔 SHA-256 核對一致，健康檢查正常。部署前後 15 客戶、20 產品、12 報價、10 訂單的完整內容雜湊一致。啟動腳本修復位於本機原始碼目錄，主服務部署沒有使用舊腳本進行快取清理。</p>
+<p>本輪未呼叫 Gemini 或本地模型，未新增真實業務單據，未重跑未變更的 Go／MCP／前端套件。本輪修改限於兩個 Agent、啟動腳本、相關測試與報告。</p>
+<p>作業邊界檢查 <code>--allow-user-fixes</code> 通過；嚴格老師基底模式仍因先前已授權的 backend／frontend／MCP 修正而失敗，這是既有規格差異，不代表老師核准。</p>
+<p>上述證據針對本輪缺陷及測試涵蓋情境，不保證所有自然語句或整套系統沒有其他缺陷。</p></section></html>
