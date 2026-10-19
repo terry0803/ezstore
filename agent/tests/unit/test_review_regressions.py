@@ -159,3 +159,49 @@ def test_execution_hold_clears_pending_regardless_of_model(prefix, classificatio
     assert event.output == agent.CANCEL_TEXT
     assert event.actions.state_delta.get('pending_intent') is None
     assert event.actions.state_delta.get('clarify_source_text') == ''
+
+
+@pytest.mark.parametrize('text', [
+    f'可以幫我確認複製報價單 {Q} 是否保留備註嗎？',
+    f'請問複製 {Q} 會保留備註嗎？',
+    f'幫我確認複製 {Q} 後品項還在不在',
+    f'Can you check whether copying {Q} keeps the notes?',
+])
+@pytest.mark.parametrize('classification', ['duplicate_quotation', 'off_topic'])
+def test_confirmation_inquiry_never_copies(text, classification):
+    """外部檢查：「可以幫我確認複製…是否保留備註嗎？」問的是複製的內容，不能因為「可以幫我」就複製。
+    模型判成離題時，關鍵字補救也不能把它變成複製。"""
+    event = agent.route(SimpleNamespace(state={'last_user_text': text}),
+                        agent.Intent(intent=classification, quotation_number=Q))
+    assert event.actions.route not in agent._WRITE_TOOLS
+
+
+@pytest.mark.parametrize('text', [f'可以幫我複製報價單 {Q} 嗎？', f'是否能幫我複製報價單 {Q}？', f'請確認後幫我複製 {Q}'])
+def test_polite_copy_request_still_copies(text):
+    event = agent.route(SimpleNamespace(state={'last_user_text': text}),
+                        agent.Intent(intent='duplicate_quotation', quotation_number=Q))
+    assert event.actions.route == 'duplicate_quotation'
+
+
+@pytest.mark.parametrize('text', [
+    '請把報價單 QT-20260325-001 的總價改成20萬再打九折',
+    '請把報價單 QT-20260325-001 的總價改成20萬再打9折',
+    'QT-20260325-001 總價改成 200000 打八五折',
+    'QT-20260325-001 總價改成 200000，再給 10% off',
+])
+def test_appended_discount_asks_for_the_final_total(text):
+    """外部檢查：「改成20萬再打九折」以前用折扣前的 200000 改價。折扣要追問最後的總價，模型自己算的也不收。"""
+    event = agent.route(SimpleNamespace(state={'last_user_text': text}),
+                        agent.Intent(intent='adjust_total_price', quotation_number='QT-20260325-001', target_total_price=180000))
+    assert event.actions.route == 'clarify'
+    assert event.output['missing'] == ['target_total_price']
+    assert '折扣是相對的說法' in agent.clarify(event.output)
+
+
+def test_plain_total_and_factor_are_not_treated_as_discount():
+    event = agent.route(SimpleNamespace(state={'last_user_text': '請把報價單 QT-20260325-001 的總價改成 200000'}),
+                        agent.Intent(intent='adjust_total_price', quotation_number='QT-20260325-001', target_total_price=200000))
+    assert event.actions.route == 'adjust_total_price' and event.output['target_total_price'] == 200000
+    event = agent.route(SimpleNamespace(state={'last_user_text': f'{Q} 的報價因子改成 0.9'}),
+                        agent.Intent(intent='update_pricing_factor', quotation_number=Q, new_pricing_factor=0.9))
+    assert event.actions.route == 'update_pricing_factor'

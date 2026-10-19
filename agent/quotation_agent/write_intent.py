@@ -86,6 +86,24 @@ _STATUS_QUERY = re.compile(
 )
 
 
+# 確認、詢問某件事是不是這樣：「可以幫我確認複製報價單…是否保留備註嗎？」雖然有「可以幫我」，
+# 問的是複製的內容，不是要人複製。要在客氣請求的判斷之前擋下。
+# 「是否能／是否可以幫我…」是客氣的請求，不算。
+_INQUIRY = re.compile(
+    r"(?:確認|确认|確定|确定|查證|查证|想知道|問一下|问一下|請問|请问)[^，。；;,\n]*"
+    r"(?:是否|會不會|会不会|有沒有|有没有|還在|还在|保留|保持|一樣|一样|相同|維持|维持)"
+    r"|是否(?!能|可以|可|要)"
+    r"|(?:保留|保持|沿用|帶過去|带过去|一起複製|一起复制)[^，。；;,\n]*(?:嗎|吗|[?？])"
+    r"|\b(?:check|confirm|verify)\b[^\n.!;]*\b(?:whether|if)\b",
+    re.IGNORECASE,
+)
+
+
+def is_inquiry(text: str) -> bool:
+    """Asking to confirm a property of an operation never authorizes performing it."""
+    return bool(_INQUIRY.search(unicodedata.normalize("NFKC", text)))
+
+
 def is_status_query(text: str) -> bool:
     """Checking whether an operation happened never authorizes another write."""
     return bool(_STATUS_QUERY.search(unicodedata.normalize("NFKC", text)))
@@ -172,7 +190,8 @@ _CONFIRM = re.compile(
 
 def is_write_request(text: str) -> bool:
     text = _GREETING.sub("", unicodedata.normalize("NFKC", text).strip())
-    if has_execution_hold(text) or is_status_query(text) or is_approval_query(text) or is_duration_query(text) or is_effect_query(text) or has_negated_write(text):
+    if (has_execution_hold(text) or is_inquiry(text) or is_status_query(text) or is_approval_query(text)
+            or is_duration_query(text) or is_effect_query(text) or has_negated_write(text)):
         return False
     if is_price_confirmation(text):
         return True

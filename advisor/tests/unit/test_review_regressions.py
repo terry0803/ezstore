@@ -263,3 +263,15 @@ def test_execution_hold_clears_pending_regardless_of_model(prefix, classificatio
     assert event.output == agent.CANCEL_TEXT
     assert event.actions.state_delta.get('pending') is None
     assert event.actions.state_delta.get('last_check') is None
+
+
+@pytest.mark.parametrize('text', [
+    '可以幫我確認複製報價單 QT-20260330-001 是否保留備註嗎？',
+    '請問複製 QT-20260330-001 會保留備註嗎？',
+])
+@pytest.mark.parametrize('classification', ['quotation_request', 'off_topic'])
+def test_confirmation_inquiry_is_not_delegated_as_a_copy(text, classification):
+    """外部檢查：顧問以前把確認詢問改寫成「我要複製報價單…」並標成會寫入，經 A2A 送出。"""
+    event = agent.route(SimpleNamespace(state={'last_user_text': text}), agent.AdvisorIntent(intent=classification))
+    assert not (event.actions.route == 'delegate' and event.output.get('writes'))
+    assert not (event.actions.route == 'delegate' and '複製' in event.output.get('text', ''))

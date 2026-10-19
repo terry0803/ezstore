@@ -472,6 +472,13 @@ def _parse_number_token(token: str) -> float | None:
     return _clean_number(sign * result)
 
 
+_DISCOUNT_RE = re.compile(
+    r"(?:\d+(?:\.\d+)?|[一二三四五六七八九][一二三四五六七八九]?)\s*折(?!讓|让|扣)"
+    r"|\d+(?:\.\d+)?\s*[%％]\s*(?:off|折扣)|打\s*折",
+    re.IGNORECASE,
+)
+
+
 def _numeric_target(text: str, field: str, allow_bare: bool = False) -> tuple[float | None, bool]:
     """Return one field-specific target and whether this turn blocks history fallback."""
     text = text.translate(str.maketrans({"−": "-", "－": "-", "＋": "+", "﹣": "-"}))
@@ -482,6 +489,10 @@ def _numeric_target(text: str, field: str, allow_bare: bool = False) -> tuple[fl
     # Dates are never money or factors, even if the classifier drops punctuation.
     text = re.sub(r"\d{4}[-/.]\d{1,2}[-/.]\d{1,2}", " ", text)
     expected = "factor" if field == "new_pricing_factor" else "total"
+    # 「改成20萬再打九折」「9折」「八五折」「10% off」：折扣是相對的調整，程式不自己換算，
+    # 也不能只取折扣前的 20 萬；擋下整句、改問最後的總價。
+    if expected == "total" and _DISCOUNT_RE.search(text):
+        return None, True
     labels = list(_FIELD_RE.finditer(text))
     relevant_label = any(label.lastgroup == expected for label in labels)
     candidates = []
@@ -884,7 +895,8 @@ def route(ctx: Context, node_input: Any):
     if missing or invalid:
         pending_state = {"intent": operation, **fields}
         return Event(
-            output={"operation": operation, "missing": missing, "invalid": invalid, "fields": fields},
+            output={"operation": operation, "missing": missing, "invalid": invalid, "fields": fields,
+                    "hint": "discount" if "target_total_price" in missing and _DISCOUNT_RE.search(text) else ""},
             route="clarify",
             state={"pending_intent": pending_state},
         )
@@ -955,6 +967,8 @@ def clarify(node_input: dict) -> str:
         label = FIELD_LABELS[name].split("（")[0]
         limit = "，而且不能超過 9.9999（只存到小數 4 位）" if name == "new_pricing_factor" else ""
         lines.append(f"{label}必須大於 0{limit}，你給的數字不符合。")
+    if node_input.get("hint") == "discount":
+        lines.append("「打九折」這類折扣是相對的說法，我不自己換算，也不會只用折扣前的金額。請直接給最後的總價，例如 180000。")
     known = node_input.get("fields", {})
     given = [
         f"{FIELD_LABELS[k].split('（')[0]}：{_format_number(v) if isinstance(v, float) else v}"

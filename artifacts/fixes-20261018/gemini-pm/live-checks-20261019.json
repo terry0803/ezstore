@@ -1,0 +1,45 @@
+{
+  "at": "2026-10-19T13:59:23",
+  "results": [
+    {
+      "case": "agent_confirmation_inquiry_no_copy",
+      "app": "quotation_agent",
+      "user": "可以幫我確認複製報價單 QT-20260330-001 是否保留備註嗎？",
+      "new_quotations": 0,
+      "passed": true,
+      "reply": "這句是在問做法或假設的情況，我沒有執行任何操作。\n要我實際操作，請直接說，例如「我要複製報價單，報價單編號：QT-20260330-001」。"
+    },
+    {
+      "case": "advisor_confirmation_inquiry_no_copy",
+      "app": "pricing_advisor",
+      "user": "可以幫我確認複製報價單 QT-20260330-001 是否保留備註嗎？",
+      "new_quotations": 0,
+      "passed": true,
+      "reply": "這句是在問做法或假設的情況，我沒有操作任何資料。\n要我實際做，請直接說，例如「幫我複製報價單 QT-20260330-001」。"
+    },
+    {
+      "case": "agent_appended_discount_asks",
+      "app": "quotation_agent",
+      "user": "請把報價單 QT-20260325-001 的總價改成20萬再打九折",
+      "new_quotations": 0,
+      "passed": true,
+      "reply": "請提供目標總價（大於 0 的數字，例如 8000），我才能幫你修改報價單總價。\n「打九折」這類折扣是相對的說法，我不自己換算，也不會只用折扣前的金額。請直接給最後的總價，例如 180000。\n目前已知：報價單編號：QT-20260325-001"
+    },
+    {
+      "case": "agent_appended_discount_digit_asks",
+      "app": "quotation_agent",
+      "user": "請把報價單 QT-20260325-001 的總價改成20萬再打9折",
+      "new_quotations": 0,
+      "passed": true,
+      "reply": "請提供目標總價（大於 0 的數字，例如 8000），我才能幫你修改報價單總價。\n「打九折」這類折扣是相對的說法，我不自己換算，也不會只用折扣前的金額。請直接給最後的總價，例如 180000。\n目前已知：報價單編號：QT-20260325-001"
+    },
+    {
+      "case": "agent_polite_copy_still_copies",
+      "app": "quotation_agent",
+      "user": "可以幫我複製報價單 QT-20260330-001 嗎？",
+      "new_quotations": 1,
+      "passed": true,
+      "reply": "已成功複製報價單。\n原始報價單: QT-20260330-001 — http://localhost:3000/quotations/12\n新報價單: QT-20261019-001 — http://localhost:3000/quotations/13"
+    }
+  ]
+}
