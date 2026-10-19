@@ -104,6 +104,20 @@ def is_duration_query(text: str) -> bool:
     return bool(_DURATION_QUERY.search(unicodedata.normalize("NFKC", text)))
 
 
+_EFFECT_QUERY = re.compile(
+    r"會不會|会不会|是否會|是否会|會否|会否|有何影響|有何影响"
+    r"|(?:什麼|什么|哪些|什麼樣的|什么样的)(?:影響|影响|後果|后果)"
+    r"|(?:影響|影响|後果|后果)[^，。；;,\n]*[?？嗎吗呢]"
+    r"|\b(?:will|would|could|does)\b[^\n.!;]*\b(?:overwrite|replace|affect|delete|impact)\b",
+    re.IGNORECASE,
+)
+
+
+def is_effect_query(text: str) -> bool:
+    """A question about consequences does not authorize performing the action."""
+    return bool(_EFFECT_QUERY.search(unicodedata.normalize("NFKC", text)))
+
+
 _APPROVAL_TERM = r"(?:核准|核可|批准|審批|审批|審核|审核|簽核|签核|授權|授权|approval|authorization|authorisation)"
 _APPROVAL_QUERY = re.compile(
     # Embedded questions remain questions without punctuation and even inside
@@ -158,7 +172,7 @@ _CONFIRM = re.compile(
 
 def is_write_request(text: str) -> bool:
     text = _GREETING.sub("", unicodedata.normalize("NFKC", text).strip())
-    if has_execution_hold(text) or is_status_query(text) or is_approval_query(text) or is_duration_query(text) or has_negated_write(text):
+    if has_execution_hold(text) or is_status_query(text) or is_approval_query(text) or is_duration_query(text) or is_effect_query(text) or has_negated_write(text):
         return False
     if is_price_confirmation(text):
         return True

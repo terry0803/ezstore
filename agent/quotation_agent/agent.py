@@ -35,7 +35,7 @@ from google.adk.workflow import Workflow
 from google.genai import types
 from pydantic import BaseModel, Field
 from .preflight import PreflightError, validate_change
-from .write_intent import has_execution_hold, has_negated_write, is_write_request, is_status_query, is_approval_query, is_duration_query
+from .write_intent import has_execution_hold, has_negated_write, is_write_request, is_status_query, is_approval_query, is_duration_query, is_effect_query
 
 load_dotenv()
 
@@ -353,7 +353,7 @@ def _request_guard_text(text: str) -> str:
 
 def _keyword_operation(text: str) -> str | None:
     guard_text = _request_guard_text(text)
-    if is_status_query(guard_text) or is_approval_query(text) or is_duration_query(text) or has_execution_hold(guard_text) or has_negated_write(guard_text):
+    if is_status_query(guard_text) or is_approval_query(text) or is_duration_query(text) or is_effect_query(text) or has_execution_hold(guard_text) or has_negated_write(guard_text):
         return None
     if (not re.search(r"報價單|quotation|QT-\d{8}-\d{3,}", text, re.IGNORECASE)
             or _UNSUPPORTED_ACTION_RE.search(text) or _NEGATED_ACTION_RE.search(guard_text)
@@ -498,12 +498,16 @@ def _numeric_target(text: str, field: str, allow_bare: bool = False) -> tuple[fl
         if not (re.search(r"\d", token) or hinted or owner or bare):
             continue
         numeric_seen = True
-        if (owner and owner != expected) or _NON_TARGET_SUFFIX_RE.match(suffix):
+        if owner and owner != expected:
             continue
+        # A percentage is not an absolute target, but an appended increase or
+        # decrease must invalidate the earlier target before skipping its unit.
         if (owner == expected or hinted or allow_bare) and re.search(
             r"(?:調高|调高|提高|調低|调低|調降|降低|降|減少|減|增加|加|便宜|折讓|扣|少|最多|最少|至少|至多|不超過|低於|高於|小於|大於|不要|[<>≤≥])\s*$", prefix
         ):
             return None, True  # Relative changes and bounds are not an exact target.
+        if _NON_TARGET_SUFFIX_RE.match(suffix):
+            continue
         if re.match(r"[A-Za-z0-9_.]", suffix):
             continue
         if expected == "factor" and re.match(r"\s*[元塊圓]", suffix):
@@ -770,6 +774,9 @@ def route(ctx: Context, node_input: Any):
     # 1. 程式拒答：提示注入、客戶／產品增修刪，一律擋下
     if _is_rule_refusal(text):
         return Event(output=REFUSAL_TEXT, route="off_topic", state={"pending_intent": None})
+    if is_effect_query(text):
+        return Event(output="這是在詢問操作影響；本次沒有執行複製、改價或轉單。複製報價單會新增副本，不會覆蓋原單。",
+                     route="off_topic", state={"pending_intent": None, "clarify_source_text": ""})
     if is_duration_query(text):
         return Event(output="這是在詢問操作耗時；本次沒有執行複製、改價或轉單。目前沒有可靠的執行時間估計。",
                      route="off_topic", state={"pending_intent": None, "clarify_source_text": ""})

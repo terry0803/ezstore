@@ -148,6 +148,18 @@ async def new_session(runner):
 
 
 @pytest.mark.asyncio
+async def test_effect_query_never_delegates_or_resumes_copy(runner):
+    run, peer = runner
+    session = await new_session(run)
+    await ask(run, session, "幫我複製報價單")
+    reply = await ask(run, session, "可以幫我確認複製報價單 QT-20260330-001 會不會覆蓋原單？")
+    assert "沒有執行" in reply
+    assert peer.requests == []
+    await ask(run, session, "QT-20260330-001")
+    assert len(peer.requests) == 1 and "查詢" in peer.requests[0]
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("question", [
     "請幫我確認複製報價單 QT-20260325-001 要多久？",
     "等主管同意後，再把 QT-20260325-001 總價改成 300000",

@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-Hant"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>影響詢問與追加百分比修復驗證｜2026-10-19</title>
+<style>body{max-width:920px;margin:40px auto;padding:0 24px 48px;background:#f6f8fb;color:#203044;font:17px/1.8 system-ui,sans-serif}section{background:white;padding:22px 28px;margin:20px 0;border:1px solid #dce3ec;border-radius:12px}h1{font-size:28px}h2{font-size:22px}code{overflow-wrap:anywhere}.ok{color:#176642;font-weight:700}</style>
+<h1>影響詢問與追加百分比修復驗證</h1>
+<p>2026-10-19｜固定舊版 <code>69714b7</code></p>
+<section><h2>修復行為</h2>
+<p class="ok">兩項缺陷已修復，兩個本機 Agent 已部署。</p>
+<ol><li>「可以幫我確認複製報價單 QT-20260330-001 會不會覆蓋原單？」及是否會、會否、有何影響等詢問，在共用授權、關鍵字補救與兩個 Agent 路由前保持唯讀。清除待補操作，顧問也清除上一輪試算。回覆明示沒有操作，說明複製會新增副本、不覆蓋原單。</li>
+<li>「總價改成 20 萬再加／減 10%」先辨識相對調整，再決定是否跳過百分比單位；不得採用前半段 200000，也不得借用模型或歷史價格。追問最終總價，重新提供明確價格後才執行。其他欄位仍按欄位區別，附帶「毛利率 10%」「數量 10 件」不會讓明確總價失效。</li></ol></section>
+<section><h2>驗證結果</h2><ul>
+<li>Agent：938 項通過；Advisor：891 項通過，合計 1,829 項單元／離線整合測試，新增 81 項。</li>
+<li>原始版本的純函式重現影響詢問授權為 true；修正後 false，兩套共用授權規則檔逐位元一致。</li>
+<li>取舊版純解析函式重現「再加／減 10%」皆解析成 200000；修正後回傳缺少明確目標並阻止歷史值回填。</li>
+<li>新增 4 個完整 Workflow/session 案例：影響詢問無 MCP/A2A 寫入且清除待補，追加百分比不寫入，重新指定最終總價才呼叫一次假 MCP。沒有實際後端寫入。</li>
+<li>兩個部署映像、4 個程式來源雜湊核對一致，健康檢查正常。</li>
+<li>15 客戶、20 產品、12 報價、10 訂單部署前後完整內容 SHA-256 一致。</li>
+</ul><p>測試命令：各 Agent 目錄執行 <code>.venv/Scripts/python.exe -m pytest tests/unit tests/integration -q --tb=short</code>。Agent 套件保留 ADK 實驗功能警告，測試皆通過。</p></section>
+<section><h2>範圍與限制</h2>
+<p>本輪僅修改兩個 Agent、相關測試及報告。未呼叫 Gemini／本地模型，未重跑未變更的 scripts、Go、MCP、前端及真實 A2A 寫入測試。先前老師基底差異紀錄仍保留，本輪未新增保護目錄修改。</p>
+<p>測試證明本輪報告的缺陷及涵蓋語句通過，不代表已涵蓋所有自然語言或系統不存在其他缺陷。</p></section></html>

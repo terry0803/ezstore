@@ -43,7 +43,7 @@ from .a2a_client import STOPPED_STATES, A2AError, QuotationAgentClient
 from .amounts import _NUMERIC_CHARS, parse_number_token
 from .backend import Backend, BackendError
 from .conversion_journal import ConversionJournal
-from .write_intent import has_execution_hold, has_negated_write, is_polite_request, is_price_confirmation, is_write_request, is_status_query, is_approval_query, is_duration_query
+from .write_intent import has_execution_hold, has_negated_write, is_polite_request, is_price_confirmation, is_write_request, is_status_query, is_approval_query, is_duration_query, is_effect_query
 from .computation import (
     ComputationError,
     attest_receipt,
@@ -602,6 +602,9 @@ def route(ctx: Context, node_input: Any):
     # 1. 程式拒答
     if _is_rule_refusal(text):
         return Event(output=REFUSAL_TEXT, route="off_topic", state={"pending": None, "last_check": None})
+    if is_effect_query(text):
+        return Event(output="這是在詢問操作影響；本次沒有執行複製、改價或轉單。複製報價單會新增副本，不會覆蓋原單。",
+                     route="off_topic", state={"pending": None, "last_check": None})
     if is_duration_query(text):
         return Event(output="這是在詢問操作耗時；本次沒有執行複製、改價或轉單。目前沒有可靠的執行時間估計。",
                      route="off_topic", state={"pending": None, "last_check": None})

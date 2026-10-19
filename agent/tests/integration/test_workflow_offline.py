@@ -111,6 +111,27 @@ async def _ask(runner, session_id, text):
 
 
 @pytest.mark.asyncio
+async def test_effect_query_clears_pending_without_any_mcp(runner):
+    session = await runner.session_service.create_session(app_name="quotation_agent", user_id="t")
+    await _ask(runner, session.id, "幫我複製報價單")
+    reply = await _ask(runner, session.id, "可以幫我確認複製報價單 QT-20260330-001 會不會覆蓋原單？")
+    assert "沒有執行" in reply
+    await _ask(runner, session.id, "QT-20260330-001")
+    assert agent_module.mcp_toolset.calls == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("delta", ["再加 10%", "再減 10%"])
+async def test_appended_percentage_clarifies_then_accepts_explicit_final_total(runner, delta):
+    session = await runner.session_service.create_session(app_name="quotation_agent", user_id="t")
+    reply = await _ask(runner, session.id, "請把報價單 QT-20260330-001 總價改成 20 萬" + delta)
+    assert "請提供" in reply
+    assert agent_module.mcp_toolset.calls == []
+    await _ask(runner, session.id, "請把報價單 QT-20260330-001 總價改成 220000")
+    assert agent_module.mcp_toolset.calls == [("adjust_total_price", {"quotation_number":"QT-20260330-001", "target_total_price":220000.0})]
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("question", [
     "請幫我確認複製報價單 QT-20260325-001 要多久？",
     "等主管同意後，再把 QT-20260325-001 總價改成 300000",
