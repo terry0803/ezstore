@@ -224,3 +224,50 @@ def test_confirmation_inquiry_gets_its_own_reply(text, operation, verb, example)
 def test_how_to_question_keeps_the_explain_reply():
     event = agent.route(SimpleNamespace(state={'last_user_text': f'請問如何複製報價單 {Q}'}), agent.Intent(intent='duplicate_quotation'))
     assert event.output == agent.EXPLAIN_TEXT
+
+
+@pytest.mark.parametrize('text', [
+    f'{Q} 改成 8000 的話毛利多少', f'{Q} 改成 8000 的話', f'幫我算 {Q} 改成 8000 毛利多少',
+    f'{Q} 總價改成 8000 利潤剩多少', f'{Q} 改成 8000 毛利率是多少', f'萬一 {Q} 改成 8000，利潤會剩多少',
+    f'{Q} 改成 8000 好不好', f'{Q} 總價改成 8000 後毛利幾趴', f'假如把 {Q} 改成 8000', f'要是 {Q} 改成 8000 呢',
+])
+def test_hypothetical_and_result_questions_never_change_the_price(text):
+    """完整檢查：「改成 8000 的話毛利多少」以前真的改價。假設語氣、數量問句、問意見都只是在問。"""
+    event = agent.route(SimpleNamespace(state={'last_user_text': text}),
+                        agent.Intent(intent='adjust_total_price', quotation_number=Q, target_total_price=8000))
+    assert event.actions.route not in agent._WRITE_TOOLS
+
+
+@pytest.mark.parametrize('text', [
+    f'方便的話請幫我把 {Q} 總價改成 8000', f'可以的話，請把 {Q} 總價改成 8000',
+    f'幫我把 {Q} 總價改成 8000 好不好', f'如果可以，請把 {Q} 總價改成 8000',
+])
+def test_polite_openings_and_requests_still_change_the_price(text):
+    event = agent.route(SimpleNamespace(state={'last_user_text': text}),
+                        agent.Intent(intent='adjust_total_price', quotation_number=Q, target_total_price=8000))
+    assert event.actions.route == 'adjust_total_price' and event.output['target_total_price'] == 8000
+
+
+@pytest.mark.parametrize('text,operation', [
+    (f'我需要一份 {Q} 的複本', 'duplicate_quotation'),
+    (f'{Q} 可以下單了，幫我建立訂單', 'convert_to_order'),
+])
+def test_copy_and_order_synonyms_are_requests(text, operation):
+    event = agent.route(SimpleNamespace(state={'last_user_text': text}), agent.Intent(intent=operation, quotation_number=Q))
+    assert event.actions.route == operation
+
+
+def test_read_request_with_has_or_not_still_reads():
+    """「幫我查…的備註有沒有保留」是查報價單，不是問操作做完了沒。"""
+    event = agent.route(SimpleNamespace(state={'last_user_text': f'幫我查 {Q} 的備註有沒有保留'}),
+                        agent.Intent(intent='get_quotation', quotation_number=Q))
+    assert event.actions.route == 'get_quotation'
+    event = agent.route(SimpleNamespace(state={'last_user_text': f'{Q} 轉訂單了嗎'}), agent.Intent(intent='convert_to_order', quotation_number=Q))
+    assert event.actions.route == 'off_topic' and '完成狀態' in event.output
+
+
+def test_trailing_hold_cancels_the_pending_operation():
+    event = agent.route(SimpleNamespace(state={'last_user_text': f'{Q}，先不要', 'clarify_source_text': '我要複製報價單',
+                                               'pending_intent': {'intent': 'duplicate_quotation', 'quotation_number': None}}),
+                        agent.Intent(intent='provide_info', quotation_number=Q))
+    assert event.output == agent.CANCEL_TEXT

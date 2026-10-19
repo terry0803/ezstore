@@ -1,0 +1,61 @@
+{
+  "at": "2026-10-19T14:14:31",
+  "results": [
+    {
+      "case": "agent_hypothetical_margin_no_write",
+      "app": "quotation_agent",
+      "user": "QT-20260330-001 改成 8000 的話毛利多少",
+      "new_quotations": 0,
+      "passed": true,
+      "reply": "這句是在問做法或假設的情況，我沒有執行任何操作。\n要我實際操作，請直接說，例如「我要複製報價單，報價單編號：QT-20260330-001」。"
+    },
+    {
+      "case": "agent_remaining_profit_no_write",
+      "app": "quotation_agent",
+      "user": "QT-20260330-001 總價改成 8000 利潤剩多少",
+      "new_quotations": 0,
+      "passed": true,
+      "reply": "請告訴我您要對報價單做什麼操作：查詢報價單、查詢客戶的報價單清單、複製報價單、修改報價因子、修改報價單總價、報價單轉訂單。"
+    },
+    {
+      "case": "agent_opinion_no_write",
+      "app": "quotation_agent",
+      "user": "QT-20260330-001 改成 8000 好不好",
+      "new_quotations": 0,
+      "passed": true,
+      "reply": "這句是在問做法或假設的情況，我沒有執行任何操作。\n要我實際操作，請直接說，例如「我要複製報價單，報價單編號：QT-20260330-001」。"
+    },
+    {
+      "case": "advisor_hypothetical_no_write",
+      "app": "pricing_advisor",
+      "user": "QT-20260325-001 改成 200000 的話",
+      "new_quotations": 0,
+      "passed": true,
+      "reply": "QT-20260325-001（神盾局科技股份有限公司，vip，草稿）改成 200000 的試算：\n- 報價因子 0.8200 → 0.7751\n- 總價 211560.00 → 199975.80（依 MCP 二分法與逐項單價捨入預測）\n- 毛利率 32.17% → 28.24%（利潤 56475.80）\n注意：依現行二分法，預測實際總價仍與目標有差距；核准判斷使用上述預測結果。\n判斷：業務可直接調整\n- 改價核准層級（2026 年版）：改價後毛利率 28.24% → 業務可直接調整（未驗證）\n- 報價因子下限：報價因子 0.7751 沒有低於 vip 的下限 0.70 → 業務可直接調整（未驗證）\n沒有套用：改價核准層級（2025 年版，已作廢）、2026 第三季新客戶優惠（2026-10-01 起過期）\n試算驗證：通過（計算程式 sha256 e7401aebbfcf…，資料來源 http://backend:8080/api/v1/quotations/9，已重讀核對）\n注意：資料庫存的總價或利潤和品項重算不同，以上用品項重算。\n系統連結：http://localhost:3000/quotations/9\n下一步：可以直接調整。要改的話跟我說「幫我改」，我會經 A2A 請報價單 Agent 先複製再改總價，原單不動。"
+    },
+    {
+      "case": "advisor_if_no_write",
+      "app": "pricing_advisor",
+      "user": "假如把 QT-20260325-001 改成 200000",
+      "new_quotations": 0,
+      "passed": true,
+      "reply": "QT-20260325-001（神盾局科技股份有限公司，vip，草稿）改成 200000 的試算：\n- 報價因子 0.8200 → 0.7751\n- 總價 211560.00 → 199975.80（依 MCP 二分法與逐項單價捨入預測）\n- 毛利率 32.17% → 28.24%（利潤 56475.80）\n注意：依現行二分法，預測實際總價仍與目標有差距；核准判斷使用上述預測結果。\n判斷：業務可直接調整\n- 改價核准層級（2026 年版）：改價後毛利率 28.24% → 業務可直接調整（未驗證）\n- 報價因子下限：報價因子 0.7751 沒有低於 vip 的下限 0.70 → 業務可直接調整（未驗證）\n沒有套用：改價核准層級（2025 年版，已作廢）、2026 第三季新客戶優惠（2026-10-01 起過期）\n試算驗證：通過（計算程式 sha256 e7401aebbfcf…，資料來源 http://backend:8080/api/v1/quotations/9，已重讀核對）\n注意：資料庫存的總價或利潤和品項重算不同，以上用品項重算。\n系統連結：http://localhost:3000/quotations/9\n下一步：可以直接調整。要改的話跟我說「幫我改」，我會經 A2A 請報價單 Agent 先複製再改總價，原單不動。"
+    },
+    {
+      "case": "agent_copy_synonym_copies",
+      "app": "quotation_agent",
+      "user": "我需要一份 QT-20260330-001 的複本",
+      "new_quotations": 1,
+      "passed": true,
+      "reply": "已成功複製報價單。\n原始報價單: QT-20260330-001 — http://localhost:3000/quotations/12\n新報價單: QT-20261019-001 — http://localhost:3000/quotations/13"
+    },
+    {
+      "case": "agent_read_with_has_or_not_reads",
+      "app": "quotation_agent",
+      "user": "幫我查 QT-20260330-001 的備註有沒有保留",
+      "new_quotations": 0,
+      "passed": true,
+      "reply": "報價單編號: QT-20260330-001\n客戶: 魔女宅急便股份有限公司\n客戶等級: new\n報價因子: 0.95\n總價: 6175\n利潤: 2375 (利潤率: 0.3846)\n狀態: draft\n備註: 測試用草稿 - 可供刪除測試\n品項:\n  1. A4影印紙 80磅 (5包/箱) — 單價: 617.5, 數量: 10, 小計: 6175\n系統連結: http://localhost:3000/quotations/12"
+    }
+  ]
+}

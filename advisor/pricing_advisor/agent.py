@@ -393,7 +393,10 @@ _CANCEL_RE = re.compile(
     r"|(?:不要|不用|別|不必|不想)[^，。；;,\n]{0,4}(?:改|轉|動|複製|做|處理|壓|降)(?:價|單|訂單)?了"
     r"|不(?:改|轉|複製|做|壓|降)(?:價|單|訂單)?了"
     r"|取消(?:修改|操作|這次|剛剛|剛才|前面|上一個|改價|轉單)"
+    r"|(?:^|[，,。\s])(?:先不要|先不用|先別|暫時不要|暫時不用)\s*[。.!！]?\s*$"
 )
+# 「幫我查 QT-… 的備註有沒有保留」是要查報價單，不是問操作做完了沒；分類成查詢時照常查
+_READ_REQUEST_RE = re.compile(r"查詢|查询|查一下|查看|幫我查|帮我查|看一下|給我看|给我看|顯示|显示")
 _EXPLANATION_REQUEST_RE = re.compile(
     r"如何|怎麼|教我|操作(?:流程|方法|步驟)|(?:流程|步驟)(?:是|為)什麼"
     r"|^\s*(?:請問?|麻煩|我想|想要)?\s*(?:說明|解釋|如果|假設)"
@@ -631,7 +634,8 @@ def route(ctx: Context, node_input: Any):
                          route="price_check", state={"pending": None, "last_check": None})
         return Event(output={"question": text, "concept_ids": _keyword_concepts(_bundle(), text, limit=2)},
                      route="policy_question", state={"pending": None, "last_check": None})
-    if is_status_query(text):
+    if is_status_query(text) and not (intent.intent == "quotation_request" and _READ_REQUEST_RE.search(text)
+                                      and not _COPY_RE.search(text)):
         return Event(output="這是操作完成狀態的查詢；本次沒有執行複製、改價或轉單，也尚未核實先前操作是否完成。請到報價單／訂單清單確認。",
                      route="off_topic", state={"pending": None, "last_check": None})
     # 使用者說不要做了（「算了」「先不要改了」）：清掉待補的要求和上一次試算，不沿用舊的值

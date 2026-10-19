@@ -19,6 +19,10 @@ _EXPLAIN = re.compile(
     r"|查一下|查詢|查看|看看|看一下|預覽|估算|試算|算一下|算算|算出|評估|檢查"
     r"|模擬|模拟|計算|计算|比較|比较|分析|推算|推演|假想"
     r"|(?:的|後的|后的)(?:結果|结果|差異|差异|影響|影响)"
+    # 假設語氣：「改成 8000 的話」「萬一」「假如」。「方便的話／可以的話，請…」是客氣的開頭，不算
+    r"|(?<!方便)(?<!可以)(?<!可能)(?<!有空)(?<!需要)的話|萬一|假如|要是|倘若|若是"
+    # 沒有問號的數量問句：「毛利剩多少」「毛利幾趴」「是多少」
+    r"|多少|幾(?:趴|成|%|％|個點|个点|塊|块|元)|是幾"
     r"|\b(?:preview|estimate|simulate|simulation|calculate|compare|analyze|analyse|what-if)\b"
     r"|\b(?:how|why|what|whether|explain|describe|support)\b",
     re.IGNORECASE,
@@ -76,10 +80,10 @@ _POLITE_QUESTION = re.compile(
     r"|\b(?:can|could|would)\s+you\b|\bplease\b",
     re.IGNORECASE,
 )
-_QUESTION = re.compile(r"[?？]|[嗎呢]\s*[。.!！]?\s*$")
+_QUESTION = re.compile(r"[?？]|[嗎呢]\s*[。.!！]?\s*$|好不好|好嗎|好吗|行嗎|行吗")
 _STATUS_QUERY = re.compile(
     r"是否(?:已|有|成功|完成)|有沒有|有没有|有否|(?:確認|确认|查證|查证).*(?:已|完成|成功)"
-    r"|(?:複製|复制|改價|修改|轉成|轉為|转成|转为|轉單|转单).*(?:了嗎|了吗|成功了?|完成了?)[?？嗎吗]?"
+    r"|(?:複製|复制|改價|修改|轉成|轉為|转成|转为|轉單|转单|轉訂單|转订单|下單|下单).*(?:了嗎|了吗|成功了?|完成了?)[?？嗎吗]?"
     r"|\b(?:has|have|was|were|did|is)\b.*\b(?:copied|duplicated|converted|changed|completed|succeeded)\b"
     r"|\b(?:confirm|check|verify)\b.*\b(?:already|completed|successful)\b",
     re.IGNORECASE,
@@ -156,7 +160,7 @@ def is_approval_query(text: str) -> bool:
 
 
 _ACTION = re.compile(
-    r"複製|复制|改|調|调|變更|变更|變成|变成|設|设|轉|转|壓|压|降|殺|砍"
+    r"複製|复制|複本|副本|改|調|调|變更|变更|變成|变成|設|设|轉|转|壓|压|降|殺|砍|建立訂單|建立订单|下單|下单"
     r"|(?<![a-z])(?:copy|duplicate|clone|convert|turn|set|change|adjust|update)(?![a-z])|\bfrom\b.+\bto\b",
     re.IGNORECASE,
 )

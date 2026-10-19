@@ -288,3 +288,31 @@ def test_confirmation_inquiry_gets_its_own_reply():
 def test_how_to_copy_keeps_the_explain_reply():
     event = agent.route(SimpleNamespace(state={'last_user_text': f'請問如何複製報價單 {Q}'}), agent.AdvisorIntent(intent='quotation_request'))
     assert event.output == agent.EXPLAIN_TEXT
+
+
+@pytest.mark.parametrize('text', [
+    f'{Q} 改成 200000 的話', f'{Q} 總價改成 200000 利潤剩多少', f'{Q} 改成 200000 好不好', f'假如把 {Q} 改成 200000',
+    f'{Q} 改成 200000 的話毛利多少', f'萬一 {Q} 改成 200000，利潤會剩多少',
+])
+def test_hypothetical_and_result_questions_only_check(text):
+    """完整檢查：「改成 200000 的話」「利潤剩多少」「好不好」「假如」以前會真的改價。"""
+    event = agent.route(SimpleNamespace(state={'last_user_text': text}), agent.AdvisorIntent(intent='apply_price'))
+    assert event.actions.route != 'apply_price'
+
+
+def test_polite_opening_still_applies_the_price():
+    event = agent.route(SimpleNamespace(state={'last_user_text': f'方便的話請幫我把 {Q} 總價改成 200000'}),
+                        agent.AdvisorIntent(intent='apply_price'))
+    assert event.actions.route == 'apply_price' and event.output['target_total'] == 200000
+
+
+def test_read_request_with_has_or_not_is_delegated_as_a_query():
+    event = agent.route(SimpleNamespace(state={'last_user_text': '幫我查 QT-20260330-001 的備註有沒有保留'}),
+                        agent.AdvisorIntent(intent='quotation_request'))
+    assert event.actions.route == 'delegate' and event.output['text'].startswith('我要查詢報價單')
+    assert not event.output.get('writes')
+
+
+def test_trailing_hold_cancels():
+    event = agent.route(SimpleNamespace(state={'last_user_text': f'{Q} 總價改成 200000，先不要'}), agent.AdvisorIntent(intent='apply_price'))
+    assert event.output == agent.CANCEL_TEXT
