@@ -8,12 +8,12 @@
     {
       "eval_case_id": "price_check_needs_approval",
       "prompt": {"role": "user", "parts": [{"text": "神盾局科技想把 QT-20260325-001 壓到 180000，可以嗎？"}]},
-      "reference": {"response": {"role": "model", "parts": [{"text": "報價因子 0.8200 → 0.6977，毛利率 32.17% → 20.28%，依規則需業務主管核准（報價因子也低於 vip 下限 0.70）。試算驗證通過，附報價單純文字連結，不改資料。"}]}}
+      "reference": {"response": {"role": "model", "parts": [{"text": "報價因子 0.8200 → 0.6976，毛利率 32.17% → 20.27%，依規則需業務主管核准（報價因子也低於 vip 下限 0.70）。試算驗證通過，附報價單純文字連結，不改資料。"}]}}
     },
     {
       "eval_case_id": "price_check_expired_promo",
       "prompt": {"role": "user", "parts": [{"text": "天空之城科技想把 QT-20260328-001 壓到 76000，可以嗎？"}]},
-      "reference": {"response": {"role": "model", "parts": [{"text": "毛利率 34.87% 夠，但報價因子 0.8636 低於 new 的下限 0.90，需業務主管核准。第三季新客戶優惠已過期，沒有套用。試算驗證通過，附報價單連結。"}]}}
+      "reference": {"response": {"role": "model", "parts": [{"text": "毛利率 34.87% 夠，但報價因子 0.8637 低於 new 的下限 0.90，需業務主管核准。第三季新客戶優惠已過期，沒有套用。試算驗證通過，附報價單連結。"}]}}
     },
     {
       "eval_case_id": "apply_needs_approval",

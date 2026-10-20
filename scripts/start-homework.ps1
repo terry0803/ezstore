@@ -61,7 +61,8 @@ if ($DockerBindCache) {
         $override | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $overridePath -Encoding utf8
         New-Item -ItemType Directory -Path (Split-Path -Parent $cacheSetting) -Force | Out-Null
         Set-Content -LiteralPath $cacheSetting -Value $cacheRoot -Encoding utf8
-        Write-Host "Docker bind snapshots refreshed in $snapshotPath"
+        # Print only the snapshot name; the full cache path is local machine detail.
+        Write-Host "Docker bind snapshot refreshed: $(Split-Path -Leaf $snapshotPath)"
     } elseif (-not (Test-Path -LiteralPath $overridePath -PathType Leaf)) {
         throw 'Run -Action Start with this DockerBindCache first.'
     }

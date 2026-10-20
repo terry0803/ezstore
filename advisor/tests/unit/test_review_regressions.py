@@ -74,12 +74,21 @@ def test_stated_price_is_read_only_even_when_classified_as_apply_price():
     assert event.actions.route=='price_check'
 
 
-@pytest.mark.parametrize('text',['好，幫我改','請照剛才的試算改','apply it'])
+@pytest.mark.parametrize('text',['好，幫我改','請照剛才的試算改','apply it',
+                                 # 「就」開頭的接話也是確認（10/20 換說法檢查發現沒認出來，會回頭追問金額）
+                                 '好，就照剛才的試算改','就照剛才的試算改','好，就改吧'])
 def test_only_explicit_confirmation_can_reuse_the_checked_price(text):
     state={'last_user_text':text,'last_quotation':Q,'last_check':{'quotation_number':Q,'target_total':200000}}
     event=agent.route(SimpleNamespace(state=state),agent.AdvisorIntent(intent='apply_price'))
     assert event.actions.route=='apply_price'
     assert event.output=={'quotation_number':Q,'target_total':200000}
+
+
+@pytest.mark.parametrize('text',['就不要改了','好，就先不改','就試算一下','就照剛才的試算看看'])
+def test_jiu_opening_without_a_change_command_does_not_apply(text):
+    state={'last_user_text':text,'last_quotation':Q,'last_check':{'quotation_number':Q,'target_total':200000}}
+    event=agent.route(SimpleNamespace(state=state),agent.AdvisorIntent(intent='apply_price'))
+    assert event.actions.route!='apply_price'
 
 
 @pytest.mark.asyncio

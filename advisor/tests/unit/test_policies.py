@@ -34,7 +34,7 @@ async def test_deprecated_and_stale_rules_are_skipped(bundle_path, fake_backend)
 @pytest.mark.asyncio
 async def test_factor_floor_and_promo(bundle_path, fake_backend):
     bundle = Bundle(bundle_path)
-    # 10 月：促銷已過期，new 下限 0.90，因子 0.8636 要主管核准（毛利率 34.87% 夠）
+    # 10 月：促銷已過期，new 下限 0.90，因子 0.8637 要主管核准（毛利率 34.87% 夠）
     october = await _decision(bundle, fake_backend, "QT-20260328-001", 76000)
     assert october.approval == "sales_manager"
     # 8 月：促銷還有效，下限暫時是 0.85
