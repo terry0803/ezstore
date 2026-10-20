@@ -3,6 +3,7 @@
 ## 2026-10-20
 * **Verification**: `human:terry0803` 審核 [改價核准層級（2026 年版）](/policies/discount-approval.md)。錄影示範時審核
 * **Verification**: `process:okf-verify` 對照原始碼與執行中的系統，10 個條目通過：`system/customer-levels`、`system/pricing-formula`、`system/quotations-table`、`system/orders-table`、`system/backend-api`、`system/mcp-tools`、`system/quotation-agent`、`computations/price-change-impact`、`glossary/pricing-factor`、`glossary/profit-rate`。
+* **Update**: [報價因子下限](/policies/pricing-factor-floor.md) 的例子改照 MCP 改總價的二分法試算（因子 0.8637、總價 76005.60），[改價核准層級（2026 年版）](/policies/discount-approval.md) 寫明例子是照二分法算的，[毛利率（profit_rate）](/glossary/profit-rate.md) 的格式例子改用 20.27%。規則沒有改。
 
 ## 2026-10-18
 * **Update**: 金額精度修補。依使用者授權修改計算程式並重新登記 SHA-256：單價先 HALF_UP 到兩位，才乘數量；事前核准用同規則的 conservative_total，事後使用 current_total/current_factor。新增回歸案例，隔離資料庫 21 項 API/MCP 金額核對通過。重新執行 process:okf-verify 10/10；未新增 human 簽核。
