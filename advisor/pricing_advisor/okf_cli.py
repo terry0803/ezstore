@@ -57,13 +57,19 @@ def _replace_key(frontmatter: str, key: str, new_lines: list[str], after: str | 
     return "\n".join(out) + "\n"
 
 
+def _write_keeping_eol(path: Path, text: str) -> None:
+    """照原檔的換行寫回（Windows 上 write_text 預設會把 LF 檔改成 CRLF，整個檔案都變成 diff）。"""
+    eol = "\r\n" if b"\r\n" in path.read_bytes() else "\n"
+    path.write_text(text, encoding="utf-8", newline=eol)
+
+
 def write_frontmatter_key(path: Path, key: str, new_lines: list[str], after: str | None = None) -> None:
     text = path.read_text(encoding="utf-8")
     match = _FM_BLOCK.match(text)
     if not match:
         raise OKFError(f"{path} 沒有 frontmatter")
     updated = _replace_key(match.group(2), key, new_lines, after)
-    path.write_text(match.group(1) + updated + match.group(3) + text[match.end():], encoding="utf-8")
+    _write_keeping_eol(path, match.group(1) + updated + match.group(3) + text[match.end():])
 
 
 def _verified_lines(entries: list[dict]) -> list[str]:
@@ -94,7 +100,7 @@ def append_log(bundle: Bundle, lines: list[str]) -> None:
     else:
         title_end = text.find("\n") + 1
         text = f"{text[:title_end]}\n{heading}{entries}\n{text[title_end:]}"
-    log.write_text(re.sub(r"\n{3,}", "\n\n", text), encoding="utf-8")
+    _write_keeping_eol(log, re.sub(r"\n{3,}", "\n\n", text))
 
 
 # ---------------------------------------------------------------------------

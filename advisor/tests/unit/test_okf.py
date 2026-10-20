@@ -13,19 +13,20 @@ def test_bundle_is_conformant(bundle_path):
 
 
 def test_trust_tiers_and_bare_mapping(bundle_copy):
-    concept_file = bundle_copy / "policies" / "discount-approval.md"
+    # 用一個沒有人簽過的條目；discount-approval 會在錄影示範時被人工簽核
+    concept_file = bundle_copy / "policies" / "order-conversion.md"
     bundle = Bundle(bundle_copy)
-    assert bundle.get("policies/discount-approval").trust_tier() == "unverified"
+    assert bundle.get("policies/order-conversion").trust_tier() == "unverified"
 
-    set_verified(bundle.get("policies/discount-approval"), [{"by": "process:nightly", "at": "2026-10-17T00:00:00Z"}])
-    assert Bundle(bundle_copy).get("policies/discount-approval").trust_tier() == "machine-confirmed"
+    set_verified(bundle.get("policies/order-conversion"), [{"by": "process:nightly", "at": "2026-10-17T00:00:00Z"}])
+    assert Bundle(bundle_copy).get("policies/order-conversion").trust_tier() == "machine-confirmed"
 
     text = concept_file.read_text(encoding="utf-8").replace(
         "verified:\n  - { by: process:nightly, at: 2026-10-17T00:00:00Z }",
         "verified: { by: human:tester, at: 2026-10-17T01:00:00Z }",
     )
     concept_file.write_text(text, encoding="utf-8")
-    concept = Bundle(bundle_copy).get("policies/discount-approval")
+    concept = Bundle(bundle_copy).get("policies/order-conversion")
     assert concept.verified() == [{"by": "human:tester", "at": parse_time("2026-10-17T01:00:00Z")}]
     assert concept.trust_tier() == "human-reviewed"
 
@@ -50,13 +51,27 @@ def test_same_day_log_line_is_not_repeated(bundle_copy):
 
 def test_set_verified_keeps_other_frontmatter(bundle_copy):
     bundle = Bundle(bundle_copy)
-    concept = bundle.get("policies/discount-approval")
+    concept = bundle.get("policies/order-conversion")
     before, _, body_before = split_frontmatter(concept.path.read_text(encoding="utf-8"))
     set_verified(concept, [{"by": "human:tester", "at": "2026-10-17T01:00:00Z"}])
     after, _, body_after = split_frontmatter(concept.path.read_text(encoding="utf-8"))
     assert body_after == body_before
     assert {k: v for k, v in after.items() if k != "verified"} == before
     assert after["verified"] == [{"by": "human:tester", "at": parse_time("2026-10-17T01:00:00Z")}]
+
+
+def test_set_verified_keeps_line_endings(bundle_copy):
+    # Windows 上寫回時不能把 LF 檔改成 CRLF（或反過來），不然整個檔案都變成 diff
+    lf_file = bundle_copy / "policies" / "order-conversion.md"
+    lf_file.write_bytes(lf_file.read_bytes().replace(b"\r\n", b"\n"))
+    crlf_file = bundle_copy / "policies" / "discount-approval.md"
+    crlf_file.write_bytes(crlf_file.read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))
+    bundle = Bundle(bundle_copy)
+    entry = [{"by": "process:nightly", "at": "2026-10-17T00:00:00Z"}]
+    set_verified(bundle.get("policies/order-conversion"), entry)
+    set_verified(bundle.get("policies/discount-approval"), entry)
+    assert b"\r" not in lf_file.read_bytes()
+    assert b"\n" not in crlf_file.read_bytes().replace(b"\r\n", b"")
 
 
 def test_stale_and_deprecated(bundle_path):

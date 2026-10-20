@@ -11,6 +11,8 @@ margin_tiers:
   - { min_margin: 0.05, approval: general_manager, label: 需總經理核准 }
 below_lowest: { approval: forbidden, label: 不可報價 }
 generated: { by: claude-code/claude-opus-5-5, at: 2026-10-16T17:20:00Z }
+verified:
+  - { by: human:terry0803, at: 2026-10-20T06:47:40Z }
 status: stable
 stale_after: 2027-01-01T00:00:00Z
 sources:

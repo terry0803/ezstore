@@ -8,6 +8,8 @@ policies/ 是公司決策，程式驗證不了，要由人審核（okf sign）�
 from __future__ import annotations
 
 import asyncio
+import logging
+import warnings
 import hashlib
 import re
 from collections.abc import Awaitable, Callable
@@ -229,14 +231,19 @@ async def check_backend_api(ctx: VerifyContext, concept) -> tuple[bool, list[str
 
 
 async def check_mcp_tools(ctx: VerifyContext, concept) -> tuple[bool, list[str]]:
-    from google.adk.tools.mcp_tool import McpToolset
-    from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPConnectionParams
+    # ADK 的 MCP 工具會印實驗功能警告和「沒有 Google 預設憑證、不設 mTLS」的訊息，跟這裡的檢查無關，先關掉
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        logging.disable(logging.WARNING)
+        from google.adk.tools.mcp_tool import McpToolset
+        from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPConnectionParams
 
-    toolset = McpToolset(connection_params=StreamableHTTPConnectionParams(url=ctx.mcp_url, timeout=20.0))
-    try:
-        names = sorted(t.name for t in await toolset.get_tools())
-    finally:
-        await toolset.close()
+        toolset = McpToolset(connection_params=StreamableHTTPConnectionParams(url=ctx.mcp_url, timeout=20.0))
+        try:
+            names = sorted(t.name for t in await toolset.get_tools())
+        finally:
+            await toolset.close()
+            logging.disable(logging.NOTSET)
     expected = sorted(concept.frontmatter.get("mcp_tools") or [])
     code = ctx.source("mcp_server/server.py")
     bisect = concept.frontmatter.get("bisect") or {}
