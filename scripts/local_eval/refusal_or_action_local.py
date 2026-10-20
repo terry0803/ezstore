@@ -3,6 +3,7 @@
 import json
 import os
 import re
+import time
 import urllib.request
 
 from pydantic import BaseModel
@@ -39,11 +40,19 @@ def _ask(prompt, schema_hint, schema):
         client = genai.Client()
         # 一定要給 schema：只寫 application/json 時模型會自己取欄位名稱（例如 feedback、rating），
         # 找不到 score 就會被當成預設值。和 scripts/grading/response_quality.py 一樣用 schema 固定格式。
-        text = client.models.generate_content(
-            model=model, contents=prompt,
-            config=types.GenerateContentConfig(temperature=0, response_mime_type="application/json",
-                                               response_schema=schema),
-        ).text
+        # 模型忙線（503）或暫時超過頻率（429）時等一下再試，不要讓一次暫時錯誤變成整題失敗
+        for attempt in range(5):
+            try:
+                text = client.models.generate_content(
+                    model=model, contents=prompt,
+                    config=types.GenerateContentConfig(temperature=0, response_mime_type="application/json",
+                                                       response_schema=schema),
+                ).text
+                break
+            except Exception as error:
+                if attempt == 4 or not any(code in str(error) for code in ("503", "429", "UNAVAILABLE", "RESOURCE_EXHAUSTED")):
+                    raise
+                time.sleep(15 * (attempt + 1))
     match = re.search(r"\{.*\}", text or "", re.S)
     verdict = json.loads(match.group(0)) if match else None
     if not isinstance(verdict, dict) or "score" not in verdict:

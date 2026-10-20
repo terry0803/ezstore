@@ -215,7 +215,7 @@ UNDERSTAND_INSTRUCTION = """\
 欄位規則：
 - quotation_number：報價單編號，格式像 QT-20260325-001，原樣抄下
 - target_total：客戶想要的總價，轉成數字（「18 萬」寫 180000，「八千」寫 8000）
-- concept_ids：只有 policy_question 要填，從輸入附的知識目錄挑最相關的 1 到 3 個條目，照抄目錄裡的 id，不要自己編
+- concept_ids：只有 policy_question 要填，從下面的知識目錄挑最相關的 1 到 3 個條目，照抄目錄裡的 id，不要自己編
 - 訊息裡沒有的欄位留空，不要猜
 """
 
@@ -250,10 +250,15 @@ def _model():
     )
 
 
+def _understand_instruction(_ctx) -> str:
+    """知識目錄放在指令裡，不放在 load_context 的輸出：輸出會顯示在 ADK 網頁介面，整份目錄對使用者沒有意義。"""
+    return f"{UNDERSTAND_INSTRUCTION}\n知識目錄（id｜標題｜描述）：\n{_bundle().listing()}\n"
+
+
 understand = LlmAgent(
     name="understand",
     model=_model(),
-    instruction=UNDERSTAND_INSTRUCTION,
+    instruction=_understand_instruction,
     output_schema=AdvisorIntent,
     generate_content_config=types.GenerateContentConfig(temperature=0),
 )
@@ -589,14 +594,10 @@ def load_context(ctx: Context, node_input: Any):
             state={"last_user_text": text},
         )
     try:
-        listing = _bundle().listing()
+        _bundle().listing()  # 先確認讀得到知識庫；目錄本身由 understand 的指令帶入
     except OKFError as e:
         return Event(output=f"讀不到知識庫：{e}", route="no_credentials", state={"last_user_text": text})
-    prompt = (
-        f"知識目錄（id｜標題｜描述）：\n{listing}\n\n"
-        f"前一輪：{_state_summary(ctx)}\n"
-        f"使用者這一句：{text}"
-    )
+    prompt = f"前一輪：{_state_summary(ctx)}\n使用者這一句：{text}"
     return Event(output=prompt, route="classify", state={"last_user_text": text})
 
 
@@ -1443,12 +1444,23 @@ def off_topic(node_input: Any) -> str:
     return node_input if isinstance(node_input, str) and node_input.strip() else REFUSAL_TEXT
 
 
+def _markdown_lines(text: str) -> str:
+    """ADK 網頁介面用 Markdown 顯示回覆：單一換行會被併成同一段，條列後面接的一般文字會被併進上一個條列。
+    每行行尾加兩個空白（強制換行），條列結束後空一行，顯示才會和原本的分行一樣。"""
+    lines = text.split("\n")
+    out = []
+    for i, line in enumerate(lines):
+        if i and line.strip() and not line.lstrip().startswith("- ") and lines[i - 1].lstrip().startswith("- "):
+            out.append("")
+        out.append(line)
+    return "  \n".join(out)
+
+
 def respond(node_input: Any):
-    """唯一輸出給使用者看的節點。"""
+    """唯一輸出給使用者看的節點。只送一則訊息：另外再送 output 的話，網頁介面會把同一段回覆多顯示一次原始文字。"""
     text = node_input if isinstance(node_input, str) else _content_text(node_input)
     text = text.strip() or "抱歉，這次沒有產生回覆，請再試一次。"
-    yield Event(message=types.Content(role="model", parts=[types.Part.from_text(text=text)]))
-    yield Event(output=text)
+    yield Event(message=types.Content(role="model", parts=[types.Part.from_text(text=_markdown_lines(text))]))
 
 
 root_agent = Workflow(
