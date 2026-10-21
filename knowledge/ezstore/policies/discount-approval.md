@@ -12,7 +12,7 @@ margin_tiers:
 below_lowest: { approval: forbidden, label: 不可報價 }
 generated: { by: claude-code/claude-opus-5-5, at: 2026-10-16T17:20:00Z }
 verified:
-  - { by: human:terry0803, at: 2026-10-20T09:47:51Z }
+  - { by: human:terry0803, at: 2026-10-21T03:51:27Z }
 status: stable
 stale_after: 2027-01-01T00:00:00Z
 sources:
