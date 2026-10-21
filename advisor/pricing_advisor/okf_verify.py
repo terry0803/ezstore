@@ -257,7 +257,7 @@ async def check_mcp_tools(ctx: VerifyContext, concept) -> tuple[bool, list[str]]
     limit = concept.frontmatter.get("max_pricing_factor")
     if limit is not None:
         limit_ok = f'<= Decimal("{limit}")' in code
-        notes.append(f"報價因子上限 {limit}{'相符' if limit_ok else '不符 ✗'}")
+        notes.append(f"報價因子上限 {limit} {'相符' if limit_ok else '不符 ✗'}")
         code_ok = code_ok and limit_ok
     return names == expected and code_ok, notes
 
