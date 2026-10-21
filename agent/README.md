@@ -7,6 +7,8 @@
 ```
 START → load_context ──（no_credentials）──────────────────────────────┐
           │                                                             │
+          ├─（approved_price）→ adjust_total_price ─────────────────────┤
+          │                                                             │
           └─（classify）→ classify_intent → route                       │
                             ├─ get_quotation                            │
                             ├─ list_customer_quotations                 │
@@ -21,7 +23,7 @@ START → load_context ──（no_credentials）──────────�
 
 | 節點 | 種類 | 做什麼 |
 |------|------|--------|
-| `load_context` | 函式 | 取出使用者這一句。沒有任何模型憑證就直接走 `no_credentials` 到 `respond`，回覆設定說明。有待補的前一輪操作（`state.pending_intent`）就附在提示裡；state 是空的（例如評分題庫預先寫好第一輪）、但上一輪助手像在要資料（沒有系統連結，而且是「請提供」「請問」、問句結尾或「需要…編號」），改附上一輪的對話 |
+| `load_context` | 函式 | 取出使用者這一句。沒有任何模型憑證就直接走 `no_credentials` 到 `respond`，回覆設定說明。議價顧問經 A2A 送來的核准改價（第一行是 `EZSTORE_APPROVED_PRICE_V1`，後面是單號、目標總價和核准時的試算）檢查格式後走 `approved_price` 直接到 `adjust_total_price`，不經過模型，格式不對就回「未送出操作」。有待補的前一輪操作（`state.pending_intent`）就附在提示裡；state 是空的（例如評分題庫預先寫好第一輪）、但上一輪助手像在要資料（沒有系統連結，而且是「請提供」「請問」、問句結尾或「需要…編號」），改附上一輪的對話 |
 | `classify_intent` | `LlmAgent` | 唯一呼叫 LLM 的節點。輸出 Pydantic 的 `Intent`：八種意圖之一（6 個操作、`provide_info`、`off_topic`）加上抽出來的欄位 |
 | `route` | 函式 | 依 `Intent` 決定下一個節點與工具參數，全部是程式判斷：<br>1. 程式拒答：提示注入（先統一全形半形、大小寫、空白再比對）、客戶／產品增修刪。<br>2. 分類器判成離題時的補救：句子明確是六種操作之一（`_KEYWORD_OPERATIONS`）就改判；正在追問、使用者只回一個編號／數字／客戶名稱，就接回原本的操作（`_bare_answer`）。<br>3. 否定句（「不要複製」）和說明、假設句（「教我如何複製」「如果複製會怎樣」）不會變成寫入。<br>4. 報價單編號和數字一律從使用者原文抓，模型抽到的數字不直接用；含糊、兩個值或相對的說法就追問。<br>缺欄位或數字不合法就走 `clarify` 並存下 `pending_intent`，齊了就走對應的操作節點並清掉 `pending_intent` |
 | 6 個操作節點 | 函式 | 各呼叫一個 MCP 工具（`McpToolset.get_tools()` 取得工具後 `run_async`），回傳工具的文字。工具錯誤轉成「操作失敗：…」；會寫入的操作（`_WRITE_TOOLS`）遇到逾時、連不上或後端 4xx／5xx，加一句請使用者先查詢確認，因為可能已經建了新單 |
@@ -76,6 +78,7 @@ START → load_context ──（no_credentials）──────────�
 ```bash
 cp .env.example .env              # GEMINI_API_KEY，MCP_URL=http://localhost:8010/mcp
 uv sync --group dev --extra eval
+uv run python scripts/mcp_get_quotation.py QT-20260330-001   # spec 4.1：不經 Agent，直接用 MCP client 呼叫 get_quotation
 agents-cli playground --port 8501 # http://127.0.0.1:8501
 uv run pytest tests/unit tests/integration -q
 agents-cli eval run --dataset tests/eval/datasets/quotation-guardrails.json

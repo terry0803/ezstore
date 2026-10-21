@@ -252,10 +252,14 @@ async def check_mcp_tools(ctx: VerifyContext, concept) -> tuple[bool, list[str]]
         and f"BISECT_LOW, BISECT_HIGH = {bisect.get('low')}, {bisect.get('high')}" in code
         and f"BISECT_TOLERANCE = {bisect.get('tolerance')}" in code
     )
+    notes = [f"MCP 工具：{', '.join(names)}", f"二分法設定{'相符' if code_ok else '不符 ✗'}"]
+    # 只有條目寫了上限才比對，也才印出比對結果；沒寫就不宣稱上限相符
     limit = concept.frontmatter.get("max_pricing_factor")
     if limit is not None:
-        code_ok = code_ok and f'MAX_PRICING_FACTOR = Decimal("{limit}")' in code
-    return names == expected and code_ok, [f"MCP 工具：{', '.join(names)}", f"二分法與報價因子上限{'相符' if code_ok else '不符 ✗'}"]
+        limit_ok = f'<= Decimal("{limit}")' in code
+        notes.append(f"報價因子上限 {limit}{'相符' if limit_ok else '不符 ✗'}")
+        code_ok = code_ok and limit_ok
+    return names == expected and code_ok, notes
 
 
 async def check_quotation_agent(ctx: VerifyContext, concept) -> tuple[bool, list[str]]:

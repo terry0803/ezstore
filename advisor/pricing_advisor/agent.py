@@ -923,7 +923,8 @@ async def _check_price(quotation_number: str, target_total: float) -> dict[str, 
             lines.append(f"沒有套用：{_skipped_text(bundle, decision.skipped)}")
     lines.append(
         f"試算驗證：通過（計算程式 sha256 {attestation['details']['computation_sha256'][:12]}…，"
-        f"資料來源 {receipt['source_url']}，已重讀核對）"
+        # source_url 是容器內的 backend:8080，在對話畫面會變成點不開的連結，所以只寫報價單 id
+        f"資料來源是後端 API 的報價單 id {receipt['source_url'].rstrip('/').rsplit('/', 1)[-1]}，已重讀核對）"
     )
     if result["stored_mismatch"]:
         lines.append("注意：資料庫存的總價或利潤和品項重算不同，以上用品項重算。")

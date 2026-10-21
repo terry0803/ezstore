@@ -6,6 +6,7 @@ resource: http://localhost:8010/mcp
 tags: [mcp, quotation, tool]
 mcp_tools: [get_quotation, list_customer_quotations, duplicate_quotation, update_pricing_factor, adjust_total_price, convert_to_order]
 bisect: { low: 0.01, high: 5.0, max_iterations: 20, tolerance: 0.01 }
+max_pricing_factor: 9.9999
 generated: { by: claude-code/claude-opus-5-5, at: 2026-10-16T17:10:00Z }
 verified:
   - { by: process:okf-verify, at: 2026-10-21T07:22:17Z }
@@ -19,7 +20,7 @@ sources:
     last_modified: 2026-10-06T03:58:26Z
   - id: local-mcp-fix
     resource: ../../../mcp_server/server.py
-    title: 本地 MCP 客戶辨識與完整分頁修正（尚未推送）
+    title: 本作業修改後的 MCP Server（客戶辨識、完整分頁、報價因子上限、核准改價）
     author: process:codex
     last_modified: 2026-10-18T02:50:02Z
 ---
@@ -42,6 +43,7 @@ Streamable HTTP，Compose 內部 `http://mcp-server:8000/mcp`，對本機開 `ht
 - 改因子與改總價先複製，改的是副本，原單不動，回覆會寫「原始報價單：…（未修改）」。[^mcp-server]
 - 每則回覆附純文字連結，例如 `http://localhost:3000/quotations/12`、`http://localhost:3000/orders/11`。[^mcp-server]
 - 報價因子與目標總價要是大於 0 的有限數字，否則回「報價因子必須是大於 0 的有限數字」「目標總價必須是大於 0 的有限數字」。找不到報價單回「找不到報價單編號 …」。[^mcp-server]
+- 改報價因子時，因子取到小數 4 位後要介於 0.0001 和 9.9999（`max_pricing_factor`），複製前就檢查，超出就不建立副本。[^local-mcp-fix]
 - 後端報價因子欄位是 decimal(5,4)。本作業在 Agent 層預檢欄位容量，後端也檢查正因子與儲存範圍。MCP 寫入與二分法仍沿用課程流程；直接呼叫 MCP 仍可能在複製後遇到其他錯誤，必須查詢確認結果再重試。
 
 # 改總價的二分法

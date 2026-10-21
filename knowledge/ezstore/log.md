@@ -1,6 +1,7 @@
 # Directory Update Log
 
 ## 2026-10-21
+* **Update**: [改價影響試算](/computations/price-change-impact.md) 第 5 點和最後一段改成只寫目前的算法，拿掉修改過程的說明。[MCP 工具](/system/mcp-tools.md) 加上 `max_pricing_factor: 9.9999`，讓 okf verify 真的比對這個上限，來源標題改成目前的版本。計算程式沒有改。
 * **Verification**: `human:terry0803` 審核 [改價核准層級（2026 年版）](/policies/discount-approval.md)。錄影示範時審核
 * **Verification**: `process:okf-verify` 對照原始碼與執行中的系統，10 個條目通過：`system/customer-levels`、`system/pricing-formula`、`system/quotations-table`、`system/orders-table`、`system/backend-api`、`system/mcp-tools`、`system/quotation-agent`、`computations/price-change-impact`、`glossary/pricing-factor`、`glossary/profit-rate`。
 

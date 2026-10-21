@@ -278,6 +278,8 @@ Workflow graph (agent/quotation_agent/agent.py):
 
   START → load_context ──(no credentials)──────────────────────────────┐
             │                                                           │
+            ├─(approved_price)→ adjust_total_price   ← advisor's approved change via A2A, skips the model
+            │
             └─(classify)→ classify_intent (LlmAgent, output_schema=Intent) → route
                             ├─ get_quotation / list_customer_quotations / duplicate_quotation
                             ├─ update_pricing_factor / adjust_total_price / convert_to_order   ← each calls one MCP tool
@@ -285,6 +287,8 @@ Workflow graph (agent/quotation_agent/agent.py):
                             └─ off_topic  (refusal decided by code)
                           all → respond   (the only node the Chat UI shows)
 ```
+
+A message that starts with `EZSTORE_APPROVED_PRICE_V1` comes from the pricing advisor over A2A. It carries the approval snapshot (quotation number, target total, factor, total, profit); `load_context` checks its shape and sends it straight to `adjust_total_price`, and the backend re-checks the snapshot inside one transaction before it keeps the copy. A malformed message is refused without calling any tool.
 
 Every user message re-runs the graph from `START`. Cross-turn memory is the session state `pending_intent`. When the state is empty but the previous assistant turn was a clarification (for example a conversation history seeded by an eval case), `load_context` hands the previous user message to the classifier so the request still continues.
 
